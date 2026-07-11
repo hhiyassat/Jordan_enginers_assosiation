@@ -1,0 +1,239 @@
+{
+  "service_code": "BL-001",
+  "name_ar": "رخصة تجارية",
+  "name_en": "Business License",
+  "version": "1.0",
+
+  "workflow": {
+    "stages": [
+      {
+        "id": "initial_review",
+        "label_ar": "المراجعة الأولية",
+        "label_en": "Initial Review",
+        "role": "staff",
+        "sla_hours": 24,
+        "actions": ["approve", "reject", "request_modifications"]
+      },
+      {
+        "id": "legal_review",
+        "label_ar": "المراجعة القانونية",
+        "label_en": "Legal Review",
+        "role": "auditor",
+        "sla_hours": 48,
+        "actions": ["approve", "reject", "request_modifications"]
+      }
+    ]
+  },
+
+  "fee": {
+    "type": "tiered",
+    "field": "business_type",
+    "tiers": {
+      "retail":    100,
+      "wholesale": 200,
+      "service":   150,
+      "manufacturing": 300,
+      "food_beverage": 175
+    },
+    "default": 100,
+    "currency": "JOD"
+  },
+
+  "fields": [
+    {
+      "id": "business_name_ar",
+      "label_ar": "اسم المنشأة (عربي)",
+      "label_en": "Business Name (Arabic)",
+      "type": "text",
+      "required": true,
+      "max_length": 255,
+      "placeholder_ar": "أدخل اسم المنشأة بالعربية",
+      "section": "business_info"
+    },
+    {
+      "id": "business_name_en",
+      "label_ar": "اسم المنشأة (إنجليزي)",
+      "label_en": "Business Name (English)",
+      "type": "text",
+      "required": false,
+      "max_length": 255,
+      "section": "business_info"
+    },
+    {
+      "id": "business_type",
+      "label_ar": "نوع النشاط التجاري",
+      "label_en": "Business Type",
+      "type": "select",
+      "required": true,
+      "section": "business_info",
+      "options": [
+        { "value": "retail",         "label_ar": "تجارة تجزئة",    "label_en": "Retail" },
+        { "value": "wholesale",      "label_ar": "تجارة جملة",     "label_en": "Wholesale" },
+        { "value": "service",        "label_ar": "خدمات",          "label_en": "Service" },
+        { "value": "manufacturing",  "label_ar": "تصنيع",          "label_en": "Manufacturing" },
+        { "value": "food_beverage",  "label_ar": "مطاعم ومشروبات", "label_en": "Food & Beverage" }
+      ]
+    },
+    {
+      "id": "address",
+      "label_ar": "عنوان المنشأة",
+      "label_en": "Business Address",
+      "type": "text",
+      "required": true,
+      "max_length": 500,
+      "section": "location"
+    },
+    {
+      "id": "governorate",
+      "label_ar": "المحافظة",
+      "label_en": "Governorate",
+      "type": "select",
+      "required": true,
+      "section": "location",
+      "options": [
+        { "value": "amman",   "label_ar": "عمّان",    "label_en": "Amman" },
+        { "value": "zarqa",   "label_ar": "الزرقاء",  "label_en": "Zarqa" },
+        { "value": "irbid",   "label_ar": "إربد",     "label_en": "Irbid" },
+        { "value": "aqaba",   "label_ar": "العقبة",   "label_en": "Aqaba" },
+        { "value": "balqa",   "label_ar": "البلقاء",  "label_en": "Balqa" },
+        { "value": "karak",   "label_ar": "الكرك",    "label_en": "Karak" },
+        { "value": "mafraq",  "label_ar": "المفرق",   "label_en": "Mafraq" },
+        { "value": "jarash",  "label_ar": "جرش",      "label_en": "Jarash" },
+        { "value": "madaba",  "label_ar": "مادبا",    "label_en": "Madaba" },
+        { "value": "ajloun",  "label_ar": "عجلون",    "label_en": "Ajloun" },
+        { "value": "tafilah", "label_ar": "الطفيلة",  "label_en": "Tafilah" },
+        { "value": "maan",    "label_ar": "معان",     "label_en": "Ma'an" }
+      ]
+    },
+    {
+      "id": "owner_name",
+      "label_ar": "اسم صاحب المنشأة",
+      "label_en": "Owner Full Name",
+      "type": "text",
+      "required": true,
+      "section": "owner_info"
+    },
+    {
+      "id": "owner_national_id",
+      "label_ar": "رقم الهوية الوطنية",
+      "label_en": "National ID Number",
+      "type": "text",
+      "required": true,
+      "pattern": "^[0-9]{10}$",
+      "max_length": 10,
+      "min_length": 10,
+      "placeholder_ar": "10 أرقام",
+      "section": "owner_info"
+    },
+    {
+      "id": "owner_phone",
+      "label_ar": "رقم الهاتف",
+      "label_en": "Phone Number",
+      "type": "text",
+      "required": true,
+      "pattern": "^07[0-9]{8}$",
+      "max_length": 10,
+      "placeholder_ar": "07XXXXXXXX",
+      "section": "owner_info"
+    },
+    {
+      "id": "owner_email",
+      "label_ar": "البريد الإلكتروني",
+      "label_en": "Email Address",
+      "type": "email",
+      "required": false,
+      "section": "owner_info"
+    },
+    {
+      "id": "capital_amount",
+      "label_ar": "رأس المال (دينار أردني)",
+      "label_en": "Capital Amount (JOD)",
+      "type": "number",
+      "required": true,
+      "min": 1,
+      "section": "financial_info"
+    },
+    {
+      "id": "num_employees",
+      "label_ar": "عدد الموظفين المتوقع",
+      "label_en": "Expected Number of Employees",
+      "type": "number",
+      "required": false,
+      "min": 0,
+      "section": "financial_info"
+    },
+    {
+      "id": "additional_notes",
+      "label_ar": "ملاحظات إضافية",
+      "label_en": "Additional Notes",
+      "type": "textarea",
+      "required": false,
+      "max_length": 1000,
+      "section": "additional"
+    }
+  ],
+
+  "sections": [
+    { "id": "business_info", "label_ar": "معلومات المنشأة",       "label_en": "Business Information" },
+    { "id": "location",      "label_ar": "موقع المنشأة",           "label_en": "Location" },
+    { "id": "owner_info",    "label_ar": "معلومات صاحب المنشأة",   "label_en": "Owner Information" },
+    { "id": "financial_info","label_ar": "المعلومات المالية",       "label_en": "Financial Information" },
+    { "id": "additional",    "label_ar": "معلومات إضافية",          "label_en": "Additional Information" }
+  ],
+
+  "documents": [
+    {
+      "id": "national_id_copy",
+      "label_ar": "صورة الهوية الوطنية",
+      "label_en": "National ID Copy",
+      "required": true,
+      "accept": ["pdf", "jpg", "jpeg", "png"],
+      "max_size_mb": 5,
+      "description_ar": "صورة واضحة من الوجهين"
+    },
+    {
+      "id": "lease_agreement",
+      "label_ar": "عقد الإيجار أو سند التمليك",
+      "label_en": "Lease Agreement or Title Deed",
+      "required": true,
+      "accept": ["pdf"],
+      "max_size_mb": 10,
+      "description_ar": "عقد موثق للموقع التجاري"
+    },
+    {
+      "id": "municipality_form",
+      "label_ar": "نموذج البلدية",
+      "label_en": "Municipality Form",
+      "required": true,
+      "accept": ["pdf"],
+      "max_size_mb": 5,
+      "description_ar": "نموذج مكتمل من البلدية المعنية"
+    },
+    {
+      "id": "health_certificate",
+      "label_ar": "شهادة صحية (للمطاعم فقط)",
+      "label_en": "Health Certificate (F&B only)",
+      "required": false,
+      "accept": ["pdf", "jpg", "jpeg"],
+      "max_size_mb": 5,
+      "description_ar": "مطلوب فقط لنشاط المطاعم والمشروبات",
+      "conditional": { "field": "business_type", "value": "food_beverage" }
+    }
+  ],
+
+  "certificate": {
+    "template": "business_license_v1",
+    "validity_months": 12,
+    "title_ar": "رخصة تجارية",
+    "title_en": "Business License",
+    "fields_on_cert": [
+      "business_name_ar",
+      "business_name_en",
+      "business_type",
+      "address",
+      "governorate",
+      "owner_name",
+      "owner_national_id"
+    ]
+  }
+}

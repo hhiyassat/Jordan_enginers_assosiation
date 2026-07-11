@@ -1,0 +1,104 @@
+# ESP v2 Hukm Schema Generation Policy
+# Governs the schema generation pipeline for e-government services.
+# Applied by AdminController::generateSchema() and ::validateSchema().
+#
+# Azimah = production standard (all rules enforced)
+# Rukhsa = prototype/demo only (some rules may be waived, non-waivable remain)
+
+policy_name: esp_v2_hukm_schema_generation
+version: "1.0"
+effective_date: "2026-07-07"
+
+# ── Azimah Mode (Production) ─────────────────────────────────────────────────
+azimah:
+  required:
+    - service_name                            # name_ar and name_en present
+    - requirement_source_for_every_schema_node # all nodes carry requirement_source
+    - supported_field_types_only              # only ESP engine-compatible types
+    - required_fields_have_validation         # required:true fields have type
+    - workflow_steps_have_actor               # every stage has role
+    - workflow_steps_have_outcome             # every stage has actions[]
+    - documents_have_acceptance_rule          # every document has acceptance_rule
+    - fees_have_amount_or_calculation_rule    # fixed → amount; formula → description
+    - certificate_fields_have_source_mapping  # fields_on_cert references valid fields
+    - no_orphan_schema_nodes                  # no node without an SRS justification
+    - esp_engine_compatible_schema            # json_valid + structure matches ESP v2
+
+  quality_gates:
+    json_valid: true
+    traceability_required: true              # requirement_source on every node
+    audit_report_required: false             # Phase 6 — not yet implemented
+    engine_compatibility_required: true
+
+  blockers:
+    - ambiguous_requirement                   # SRS text is unclear/contradictory
+    - unsupported_field_type                  # type not in supported list
+    - missing_workflow_actor                  # review/approval with no role
+    - missing_fee_rule                        # fee mentioned, no amount or formula
+    - contradictory_workflow                  # auto-approval AND manual review
+    - sensitive_data_without_purpose          # PII/sensitive collected without purpose
+    - schema_node_without_requirement_source  # any node missing requirement_source
+
+  verdicts:
+    sahih:
+      description: Schema is valid, traceable, and ESP engine compatible.
+      action: publish
+    fasid:
+      description: Schema has repairable defects (missing labels, acceptance rules, etc.).
+      action: repair_then_revalidate
+    batil:
+      description: Schema has structural or traceability violations.
+      action: reject_and_regenerate
+
+# ── Rukhsa Mode (Prototype / Demo Only) ─────────────────────────────────────
+rukhsa:
+  allowed_only_in:
+    - prototype
+    - demo
+    - sandbox
+
+  requires:
+    - explicit_justification                  # caller must provide mode=rukhsa
+    - not_production_eligible_flag            # response includes mode:rukhsa
+
+  waivable:
+    - full_label_localization                 # missing label_ar or label_en
+    - help_text                               # no help/hint text on fields
+    - advanced_validation_messages            # missing custom validation messages
+    - sample_certificate_template             # certificate visual template
+    - documents_have_acceptance_rule          # acceptance_rule on documents
+
+  non_waivable:
+    - requirement_source_for_every_schema_node  # always required, even in demo
+    - supported_field_types_only                # engine must not break
+    - json_valid                                # schema must parse
+    - esp_engine_compatible_schema              # structure must be valid
+    - no_sensitive_data_without_purpose         # privacy always enforced
+    - no_orphan_schema_nodes                    # no code without sabab
+
+# ── Supported Field Types ─────────────────────────────────────────────────────
+supported_field_types:
+  - text
+  - textarea
+  - select
+  - radio
+  - multiselect
+  - checkbox_group
+  - number
+  - date
+  - email
+
+# ── Supported Workflow Roles ──────────────────────────────────────────────────
+supported_workflow_roles:
+  - staff
+  - auditor
+  - admin
+
+# ── Non-Waivable Security Rules ───────────────────────────────────────────────
+# These apply in both azimah and rukhsa and cannot be overridden.
+non_waivable_security:
+  - no_sensitive_data_without_purpose
+  - no_orphan_schema_nodes
+  - requirement_source_for_every_schema_node
+  - supported_field_types_only
+  - json_valid

@@ -1,0 +1,63 @@
+{
+  "_instructions": "Add the entries inside 'mcpServers' to your ~/Library/Application Support/Claude/claude_desktop_config.json. Run `cd ~/tenders/esp-v2/mcp && npm install` first.",
+
+  "mcpServers": {
+
+    "esp-security": {
+      "command": "node",
+      "args": ["/Users/husseinhiyassat/tenders/esp-v2/mcp/servers/security.js"],
+      "env": {
+        "BACKEND_PATH":  "/Users/husseinhiyassat/tenders/esp-v2/backend",
+        "FRONTEND_PATH": "/Users/husseinhiyassat/tenders/esp-v2/frontend"
+      }
+    },
+
+    "esp-quality": {
+      "command": "node",
+      "args": ["/Users/husseinhiyassat/tenders/esp-v2/mcp/servers/quality.js"],
+      "env": {
+        "BACKEND_PATH":  "/Users/husseinhiyassat/tenders/esp-v2/backend",
+        "FRONTEND_PATH": "/Users/husseinhiyassat/tenders/esp-v2/frontend"
+      }
+    },
+
+    "esp-compliance": {
+      "command": "node",
+      "args": ["/Users/husseinhiyassat/tenders/esp-v2/mcp/servers/compliance.js"],
+      "env": {
+        "BACKEND_PATH": "/Users/husseinhiyassat/tenders/esp-v2/backend"
+      }
+    },
+
+    "esp-orchestration": {
+      "command": "node",
+      "args": ["/Users/husseinhiyassat/tenders/esp-v2/mcp/servers/orchestration.js"],
+      "env": {
+        "ESP_API_BASE":           "http://localhost:8002/api",
+        "ESP_ADMIN_TOKEN":        "",
+        "NASHMI_BASE_URL":        "https://nashmi.manager.eqratech.com",
+        "NASHMI_INTEGRATION_KEY": "nashmi_secret_requrement_project_5152211"
+      }
+    },
+
+    "esp-nashmi-generator": {
+      "command": "node",
+      "args": ["/Users/husseinhiyassat/tenders/esp-v2/mcp/servers/nashmi-generator.js"],
+      "env": {
+        "ESP_API_BASE":    "http://localhost:8002/api",
+        "ESP_ADMIN_TOKEN": "",
+        "SERVICES_OUT_DIR": "/Users/husseinhiyassat/tenders/esp-v2/generated-services"
+      }
+    },
+
+    "esp-sdlc-security": {
+      "command": "node",
+      "args": ["/Users/husseinhiyassat/tenders/esp-v2/mcp/servers/sdlc-security.js"],
+      "env": {
+        "BACKEND_PATH":  "/Users/husseinhiyassat/tenders/esp-v2/backend",
+        "FRONTEND_PATH": "/Users/husseinhiyassat/tenders/esp-v2/frontend"
+      }
+    }
+
+  }
+}

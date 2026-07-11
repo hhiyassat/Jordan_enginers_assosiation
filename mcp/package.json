@@ -1,0 +1,20 @@
+{
+  "name": "esp-v2-mcp-servers",
+  "version": "1.0.0",
+  "description": "ESP v2 MCP servers for Claude Desktop integration",
+  "type": "module",
+  "scripts": {
+    "security":       "node servers/security.js",
+    "orchestration":  "node servers/orchestration.js",
+    "quality":        "node servers/quality.js",
+    "compliance":     "node servers/compliance.js",
+    "nashmi":         "node servers/nashmi-generator.js",
+    "schema-gen":     "node servers/schema-generator.js",
+    "sdlc-security":  "node servers/sdlc-security.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "@anthropic-ai/sdk": "^0.27.0",
+    "mysql2": "^3.6.0"
+  }
+}
