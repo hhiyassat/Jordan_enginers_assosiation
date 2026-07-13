@@ -2,5 +2,6 @@ backend/vendor/
 backend/.env
 frontend/node_modules/
 frontend/.env
+mcp/node_modules/
 *.log
 .DS_Store

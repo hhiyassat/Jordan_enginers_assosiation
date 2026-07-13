@@ -57,6 +57,17 @@
         "BACKEND_PATH":  "/Users/husseinhiyassat/tenders/esp-v2/backend",
         "FRONTEND_PATH": "/Users/husseinhiyassat/tenders/esp-v2/frontend"
       }
+    },
+
+    "esp-schema-generator": {
+      "command": "node",
+      "args": ["/Users/husseinhiyassat/tenders/esp-v2/mcp/servers/schema-generator.js"],
+      "env": {
+        "ANTHROPIC_API_KEY": "",
+        "ESP_API_BASE":      "http://localhost:8002/api",
+        "ESP_ADMIN_TOKEN":   "",
+        "SCHEMA_GEN_MODEL":  "claude-opus-4-8"
+      }
     }
 
   }

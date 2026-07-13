@@ -1,0 +1,296 @@
+{
+  "service_code": "2001",
+  "name_ar": "تجديد عضوية المهندس",
+  "name_en": "Engineer Membership Renewal",
+  "version": "1.0",
+  "description_ar": "تجديد العضوية السنوية للمهندس المسجّل لدى نقابة المهندسين الأردنيين",
+  "description_en": "Annual membership renewal for engineers registered with the Jordan Engineers Association",
+
+  "auth": {
+    "type": "otp",
+    "otp_channel": "sms"
+  },
+
+  "transaction_number": {
+    "format": "JEA-{YY}-{service_code}-{seq}",
+    "service_code_digits": 4,
+    "seq_digits": 4
+  },
+
+  "autosave": {
+    "enabled": true,
+    "storage": "cache",
+    "flush_on": "submit"
+  },
+
+  "storage": {
+    "backend": "s3"
+  },
+
+  "public_tracking": {
+    "enabled": true,
+    "verify_via": "otp",
+    "identity_provider": "dls"
+  },
+
+  "workflow": {
+    "first_step_actor": "admin",
+    "stages": [
+      {
+        "id": "initial_review",
+        "label_ar": "المراجعة الأولية",
+        "label_en": "Initial Review",
+        "role": "staff",
+        "sla_hours": 24,
+        "actions": ["approve", "reject", "request_modifications"]
+      },
+      {
+        "id": "dues_obligations_check",
+        "label_ar": "التحقق من الالتزامات المالية",
+        "label_en": "Dues & Obligations Check",
+        "role": "auditor",
+        "sla_hours": 48,
+        "actions": ["approve", "reject", "request_modifications"]
+      },
+      {
+        "id": "payment_confirmation",
+        "label_ar": "تأكيد الدفع",
+        "label_en": "Payment Confirmation",
+        "role": "admin",
+        "sla_hours": 24,
+        "actions": ["approve"]
+      },
+      {
+        "id": "certificate_issuance",
+        "label_ar": "إصدار الشهادة",
+        "label_en": "Certificate Issuance",
+        "role": "admin",
+        "sla_hours": 24,
+        "actions": ["approve"]
+      }
+    ]
+  },
+
+  "fee": {
+    "type": "fixed",
+    "amount": 25,
+    "currency": "JOD"
+  },
+
+  "fields": [
+    {
+      "id": "membership_number",
+      "label_ar": "رقم العضوية السابق",
+      "label_en": "Previous Membership Number",
+      "type": "text",
+      "required": true,
+      "max_length": 20,
+      "placeholder_ar": "أدخل رقم عضويتك في النقابة",
+      "section": "member_info"
+    },
+    {
+      "id": "full_name_ar",
+      "label_ar": "الاسم الرباعي (عربي)",
+      "label_en": "Full Name (Arabic)",
+      "type": "text",
+      "required": true,
+      "max_length": 255,
+      "placeholder_ar": "الاسم كما في الهوية الوطنية",
+      "section": "member_info"
+    },
+    {
+      "id": "full_name_en",
+      "label_ar": "الاسم (إنجليزي)",
+      "label_en": "Full Name (English)",
+      "type": "text",
+      "required": false,
+      "max_length": 255,
+      "section": "member_info"
+    },
+    {
+      "id": "national_id",
+      "label_ar": "الرقم الوطني",
+      "label_en": "National ID Number",
+      "type": "text",
+      "required": true,
+      "pattern": "^[0-9]{10}$",
+      "min_length": 10,
+      "max_length": 10,
+      "placeholder_ar": "10 أرقام",
+      "section": "member_info"
+    },
+    {
+      "id": "engineering_branch",
+      "label_ar": "التخصص الهندسي",
+      "label_en": "Engineering Branch",
+      "type": "select",
+      "required": true,
+      "section": "professional_info",
+      "options": [
+        { "value": "civil",       "label_ar": "هندسة مدنية",     "label_en": "Civil" },
+        { "value": "architecture","label_ar": "هندسة معمارية",   "label_en": "Architecture" },
+        { "value": "electrical",  "label_ar": "هندسة كهربائية",  "label_en": "Electrical" },
+        { "value": "mechanical",  "label_ar": "هندسة ميكانيكية", "label_en": "Mechanical" },
+        { "value": "chemical",    "label_ar": "هندسة كيميائية",  "label_en": "Chemical" },
+        { "value": "computer",    "label_ar": "هندسة حاسوب",     "label_en": "Computer" },
+        { "value": "industrial",  "label_ar": "هندسة صناعية",    "label_en": "Industrial" },
+        { "value": "mechatronics","label_ar": "هندسة ميكاترونكس","label_en": "Mechatronics" }
+      ]
+    },
+    {
+      "id": "grade",
+      "label_ar": "الدرجة الهندسية",
+      "label_en": "Engineering Grade",
+      "type": "select",
+      "required": true,
+      "section": "professional_info",
+      "options": [
+        { "value": "practitioner", "label_ar": "مهندس مزاول", "label_en": "Practitioner" },
+        { "value": "supervisor",   "label_ar": "مهندس مشرف",  "label_en": "Supervisor" },
+        { "value": "expert",       "label_ar": "مهندس خبير",  "label_en": "Expert" }
+      ]
+    },
+    {
+      "id": "workplace",
+      "label_ar": "جهة العمل الحالية",
+      "label_en": "Current Workplace",
+      "type": "text",
+      "required": false,
+      "max_length": 255,
+      "section": "professional_info"
+    },
+    {
+      "id": "phone",
+      "label_ar": "رقم الهاتف المحمول",
+      "label_en": "Mobile Phone Number",
+      "type": "text",
+      "required": true,
+      "pattern": "^07[0-9]{8}$",
+      "max_length": 10,
+      "placeholder_ar": "07XXXXXXXX",
+      "section": "contact_info"
+    },
+    {
+      "id": "email",
+      "label_ar": "البريد الإلكتروني",
+      "label_en": "Email Address",
+      "type": "email",
+      "required": false,
+      "section": "contact_info"
+    },
+    {
+      "id": "governorate",
+      "label_ar": "محافظة الإقامة",
+      "label_en": "Governorate of Residence",
+      "type": "select",
+      "required": true,
+      "section": "contact_info",
+      "options": [
+        { "value": "amman",   "label_ar": "عمّان",    "label_en": "Amman" },
+        { "value": "zarqa",   "label_ar": "الزرقاء",  "label_en": "Zarqa" },
+        { "value": "irbid",   "label_ar": "إربد",     "label_en": "Irbid" },
+        { "value": "aqaba",   "label_ar": "العقبة",   "label_en": "Aqaba" },
+        { "value": "balqa",   "label_ar": "البلقاء",  "label_en": "Balqa" },
+        { "value": "karak",   "label_ar": "الكرك",    "label_en": "Karak" },
+        { "value": "mafraq",  "label_ar": "المفرق",   "label_en": "Mafraq" },
+        { "value": "jarash",  "label_ar": "جرش",      "label_en": "Jarash" },
+        { "value": "madaba",  "label_ar": "مادبا",    "label_en": "Madaba" },
+        { "value": "ajloun",  "label_ar": "عجلون",    "label_en": "Ajloun" },
+        { "value": "tafilah", "label_ar": "الطفيلة",  "label_en": "Tafilah" },
+        { "value": "maan",    "label_ar": "معان",     "label_en": "Ma'an" }
+      ]
+    },
+    {
+      "id": "arrears_declaration",
+      "label_ar": "إقرار بعدم وجود التزامات مالية متأخرة",
+      "label_en": "Declaration of No Outstanding Dues",
+      "type": "radio",
+      "required": true,
+      "section": "declarations",
+      "options": [
+        { "value": "yes", "label_ar": "أقر بعدم وجود التزامات مالية متأخرة", "label_en": "I declare no outstanding dues" },
+        { "value": "no",  "label_ar": "لدي التزامات مالية متأخرة",           "label_en": "I have outstanding dues" }
+      ]
+    },
+    {
+      "id": "code_of_conduct_ack",
+      "label_ar": "الالتزام بميثاق السلوك المهني",
+      "label_en": "Code of Conduct Acknowledgement",
+      "type": "checkbox_group",
+      "required": true,
+      "section": "declarations",
+      "options": [
+        { "value": "acknowledged", "label_ar": "ألتزم بميثاق السلوك المهني لنقابة المهندسين الأردنيين", "label_en": "I commit to the JEA professional code of conduct" }
+      ]
+    },
+    {
+      "id": "additional_notes",
+      "label_ar": "ملاحظات إضافية",
+      "label_en": "Additional Notes",
+      "type": "textarea",
+      "required": false,
+      "max_length": 1000,
+      "section": "declarations"
+    }
+  ],
+
+  "sections": [
+    { "id": "member_info",       "label_ar": "بيانات العضو",           "label_en": "Member Information" },
+    { "id": "professional_info", "label_ar": "البيانات المهنية",        "label_en": "Professional Information" },
+    { "id": "contact_info",      "label_ar": "بيانات الاتصال",          "label_en": "Contact Information" },
+    { "id": "declarations",      "label_ar": "الإقرارات",               "label_en": "Declarations" }
+  ],
+
+  "documents": [
+    {
+      "id": "national_id_copy",
+      "label_ar": "صورة الهوية الوطنية",
+      "label_en": "National ID Copy",
+      "required": true,
+      "accept": ["pdf", "jpg", "jpeg", "png"],
+      "max_size_mb": 5,
+      "description_ar": "صورة واضحة من الوجهين"
+    },
+    {
+      "id": "previous_membership_card",
+      "label_ar": "بطاقة العضوية السابقة",
+      "label_en": "Previous Membership Card",
+      "required": true,
+      "accept": ["pdf", "jpg", "jpeg", "png"],
+      "max_size_mb": 5,
+      "description_ar": "صورة من بطاقة العضوية المنتهية أو الحالية"
+    },
+    {
+      "id": "personal_photo",
+      "label_ar": "صورة شخصية",
+      "label_en": "Personal Photo",
+      "required": true,
+      "accept": ["jpg", "jpeg", "png"],
+      "max_size_mb": 2,
+      "description_ar": "صورة شخصية حديثة بخلفية بيضاء"
+    },
+    {
+      "id": "cpd_certificates",
+      "label_ar": "شهادات التطوير المهني المستمر (إن وجدت)",
+      "label_en": "CPD Certificates (if any)",
+      "required": false,
+      "accept": ["pdf", "jpg", "jpeg", "png", "mp4"],
+      "max_size_mb": 25,
+      "description_ar": "شهادات الدورات أو تسجيل مرئي لورشة عمل معتمدة"
+    }
+  ],
+
+  "certificate": {
+    "template": "membership_renewal_v1",
+    "validity_months": 12,
+    "title_ar": "شهادة تجديد عضوية المهندس",
+    "title_en": "Engineer Membership Renewal Certificate",
+    "fields_on_cert": [
+      "membership_number",
+      "full_name_ar",
+      "full_name_en",
+      "engineering_branch",
+      "grade"
+    ]
+  }
+}

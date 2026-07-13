@@ -57,19 +57,26 @@
 | FR-015 | Admins can manage users (create, update role, activate/deactivate) | Must |
 | FR-016 | Admins can view a full audit log | Must |
 | FR-017 | Admins can create new service definitions via the service catalog API | Should |
+| FR-018 | Document upload slots accept MP4 video files in addition to PDF/JPG/PNG | Must | JEA Meeting 2026-07-12 |
+| FR-019 | Any citizen can track application status publicly by entering their transaction reference number; identity confirmed via OTP | Must | JEA Meeting 2026-07-12 |
+| FR-020 | Admin Dashboard is the sole entry point for initiating the first workflow step of any digital service for any applicant | Must | JEA Meeting 2026-07-12 |
 
 ---
 
 ## Non-Functional Requirements
 
-| ID | Statement | Priority |
-|----|-----------|----------|
-| NFR-001 | API response time ≤ 500ms for all read endpoints under normal load | Should |
-| NFR-002 | Platform supports multiple organizations (tenants) from a single codebase | Must |
-| NFR-003 | All UI text must be bilingual (Arabic RTL primary, English secondary) | Must |
-| NFR-004 | UI must comply with WCAG 2.1 AA accessibility standard | Must |
-| NFR-005 | System must support soft-delete for all user records | Must |
-| NFR-006 | Audit log retention: 7 years minimum | Must |
+| ID | Statement | Priority | Source |
+|----|-----------|----------|--------|
+| NFR-001 | API response time ≤ 500ms for all read endpoints under normal load | Should | Platform design |
+| NFR-002 | Platform supports multiple organizations (tenants) from a single codebase | Must | Platform design |
+| NFR-003 | All UI text must be bilingual (Arabic RTL primary, English secondary) | Must | Platform design |
+| NFR-004 | UI must comply with WCAG 2.1 AA accessibility standard | Must | Platform design |
+| NFR-005 | System must support soft-delete for all user records | Must | Platform design |
+| NFR-006 | Audit log retention: 7 years minimum | Must | Platform design |
+| NFR-007 | Authentication for applicants is OTP-only (SMS); no username/password login for applicant role | Must | JEA Meeting 2026-07-12 |
+| NFR-008 | Transaction reference number format: `{YY}{ServiceCode:4}{Seq:4}` — 10 digits, no separators, no prefix (e.g. 2620010001); year (2 digits) + service code (4 digits) + sequence (4 digits) | Must | JEA Meeting 2026-07-12 |
+| NFR-009 | Draft form data is autosaved to server-side cache on each field change; cache is flushed to persistent DB only on explicit user submit action | Must | JEA Meeting 2026-07-12 |
+| NFR-010 | All uploaded files stored on an S3-compatible object storage backend (not local filesystem) | Must | JEA Meeting 2026-07-12 |
 
 ---
 
@@ -119,4 +126,15 @@
 
 ---
 
-*ESP v2 Requirements Register v1.0 | 2026-07-06 | Total: 43 requirements*
+---
+
+## Integration Requirements
+
+| ID | Statement | Priority | Source |
+|----|-----------|----------|--------|
+| INT-001 | Public Tracking Module integrates with DLS (Digital Licensing System) to verify citizen identity before disclosing application status | Must | JEA Meeting 2026-07-12 |
+| INT-002 | OTP SMS delivery for applicant login is provided via an external SMS gateway; gateway is configurable via ENV | Must | JEA Meeting 2026-07-12 |
+
+---
+
+*ESP v2 Requirements Register v1.1 | 2026-07-13 | Total: 50 requirements | Updated: JEA meeting NFRs added*
