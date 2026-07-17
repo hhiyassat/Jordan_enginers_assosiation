@@ -102,6 +102,9 @@ export interface ServiceDefinition {
   id: number;
   code: string;
   parent_code?: string | null;
+  /** Optional visual grouping within a parent (e.g. استطلاع الموقع vs فحص المواد under JEA-SURV) */
+  subcategory_ar?: string | null;
+  subcategory_en?: string | null;
   name_ar: string;
   name_en: string;
   description_ar?: string;

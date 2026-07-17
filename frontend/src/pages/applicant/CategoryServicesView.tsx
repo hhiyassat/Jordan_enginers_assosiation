@@ -1,9 +1,30 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowRight, Plus, Clock } from 'lucide-react';
 import { servicesApi } from '../../api/client';
 import type { ServiceDefinition } from '../../types';
 import { PhaseBadge } from '../../components/ui/PhaseBadge';
+
+/**
+ * Groups an array of services by subcategory_ar. Services with no
+ * subcategory land in an "" (empty-string) bucket that the renderer
+ * treats as "ungrouped" (no header shown when it's the only bucket).
+ * Insertion order is preserved so the seeder's ordering drives the UI.
+ */
+function groupBySubcategory(services: ServiceDefinition[]): Array<{
+  ar: string;
+  en: string;
+  services: ServiceDefinition[];
+}> {
+  const groups = new Map<string, { ar: string; en: string; services: ServiceDefinition[] }>();
+  for (const svc of services) {
+    const ar = svc.subcategory_ar ?? '';
+    const en = svc.subcategory_en ?? '';
+    if (!groups.has(ar)) groups.set(ar, { ar, en, services: [] });
+    groups.get(ar)!.services.push(svc);
+  }
+  return Array.from(groups.values());
+}
 
 // Turn sla_hours (integer) into a human-readable string in Arabic.
 // > 24h → days; < 24 → hours; null → "—".
@@ -39,6 +60,10 @@ export function CategoryServicesView() {
 
   const category = all.find(s => s.code === categoryCode);
   const children = all.filter(s => s.parent_code === categoryCode);
+  const groups = useMemo(() => groupBySubcategory(children), [children]);
+  // Only render subcategory headers when at least one non-empty subcategory
+  // exists — otherwise we get a redundant empty header before every card.
+  const useGroupedLayout = groups.some(g => g.ar !== '');
 
   return (
     <div className="flex flex-col h-full" dir="rtl">
@@ -81,13 +106,38 @@ export function CategoryServicesView() {
           </div>
         )}
 
-        {!loading && !error && children.length > 0 && (
+        {!loading && !error && children.length > 0 && !useGroupedLayout && (
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 max-w-5xl">
             {children.map(svc => (
               <DetailServiceCard key={svc.id} service={svc} onOpen={() => navigate(`/apply/${svc.code}`)} />
             ))}
           </div>
         )}
+
+        {!loading && !error && useGroupedLayout && groups.map(g => {
+          const groupId = `subcat-${g.ar || 'general'}`;
+          return (
+            <section key={g.ar || 'general'} aria-labelledby={groupId} className="mb-8 max-w-5xl">
+              {g.ar && (
+                <header className="flex items-baseline justify-between gap-3 mb-3 border-b border-jea-border pb-2">
+                  <h3 id={groupId} className="text-base font-black text-jea-text" lang="ar">
+                    {g.ar}
+                  </h3>
+                  <div className="flex items-center gap-2 text-xs text-jea-muted">
+                    {g.en && <span lang="en" dir="ltr">{g.en}</span>}
+                    <span aria-hidden="true">·</span>
+                    <span lang="ar">{g.services.length} خدمة</span>
+                  </div>
+                </header>
+              )}
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                {g.services.map(svc => (
+                  <DetailServiceCard key={svc.id} service={svc} onOpen={() => navigate(`/apply/${svc.code}`)} />
+                ))}
+              </div>
+            </section>
+          );
+        })}
       </div>
     </div>
   );

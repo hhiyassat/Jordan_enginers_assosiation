@@ -68,7 +68,9 @@ class ServiceCatalogController extends Controller
         $services = ServiceDefinition::where('organization_id', $request->user()->organization_id)
             ->where('status', 'active')
             ->get([
-                'id', 'code', 'parent_code', 'name_ar', 'name_en',
+                'id', 'code', 'parent_code',
+                'subcategory_ar', 'subcategory_en',
+                'name_ar', 'name_en',
                 'description_ar', 'description_en', 'currency', 'base_fee', 'sla_hours',
                 'phase',
             ]);

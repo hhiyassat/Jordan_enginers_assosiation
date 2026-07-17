@@ -19,7 +19,9 @@ class ServiceDefinition extends Model
     use BelongsToOrganization, SoftDeletes;
 
     protected $fillable = [
-        'organization_id', 'code', 'parent_code', 'name_ar', 'name_en',
+        'organization_id', 'code', 'parent_code',
+        'subcategory_ar', 'subcategory_en',
+        'name_ar', 'name_en',
         'description_ar', 'description_en', 'currency', 'base_fee', 'sla_hours',
         'schema', 'status', 'phase',
     ];

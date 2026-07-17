@@ -114,6 +114,39 @@ class ServicePlan2026SeederTest extends TestCase
         $this->assertSame(1, $svc['phase']);
     }
 
+    public function test_survey_services_are_grouped_into_three_subcategories(): void
+    {
+        $this->runSeeder();
+
+        $counts = ServiceDefinition::where('organization_id', $this->org->id)
+            ->where('parent_code', 'JEA-SURV')
+            ->whereNotNull('subcategory_ar')
+            ->selectRaw('subcategory_ar, count(*) as c')
+            ->groupBy('subcategory_ar')
+            ->pluck('c', 'subcategory_ar')
+            ->toArray();
+
+        // User-requested grouping: 10 site survey / 2 material testing / 2 excavation.
+        $this->assertSame(10, $counts['استطلاع الموقع']       ?? 0, 'Site Survey subgroup count');
+        $this->assertSame(2,  $counts['فحص المواد للأبنية']    ?? 0, 'Material Testing subgroup count');
+        $this->assertSame(2,  $counts['الحفريات']              ?? 0, 'Excavations subgroup count');
+    }
+
+    public function test_catalog_api_returns_subcategory_fields(): void
+    {
+        $this->runSeeder();
+        $user = User::create([
+            'organization_id' => $this->org->id, 'name' => 'x', 'email' => 'sub@t.dev',
+            'password' => 'x', 'role' => 'applicant', 'is_active' => true, 'password_changed_at' => now(),
+        ]);
+        Sanctum::actingAs($user);
+
+        $res = $this->getJson('/api/v1/services');
+        $svc = collect($res->json('services'))->firstWhere('code', 'SRV-008');
+        $this->assertSame('فحص المواد للأبنية', $svc['subcategory_ar']);
+        $this->assertSame('Material Testing',     $svc['subcategory_en']);
+    }
+
     private function runSeeder(): void
     {
         // Silence the seeder's info() output during tests.

@@ -138,21 +138,24 @@ class ServicePlan2026Seeder extends Seeder
             ['code' => 'DRW-P-011', 'parent_code' => 'JEA-PROJ', 'phase' => 1, 'name_ar' => 'إعادة التصديق',                                'name_en' => 'Re-approval'],
             ['code' => 'DRW-P-012', 'parent_code' => 'JEA-PROJ', 'phase' => 1, 'name_ar' => 'مخططات الدفاع المدني',                        'name_en' => 'Civil Defence Drawings'],
 
-            // ── 2. استطلاع الموقع (JEA-SURV) — 13 services ──
-            ['code' => 'SRV-001', 'parent_code' => 'JEA-SURV', 'phase' => 1, 'name_ar' => 'تقارير استطلاع الموقع للأبنية المقترحة',     'name_en' => 'Site Survey — Proposed Buildings'],
-            ['code' => 'SRV-002', 'parent_code' => 'JEA-SURV', 'phase' => 1, 'name_ar' => 'تقارير استطلاع الموقع للأبنية القائمة',      'name_en' => 'Site Survey — Existing Buildings'],
-            ['code' => 'SRV-003', 'parent_code' => 'JEA-SURV', 'phase' => 1, 'name_ar' => 'تقارير استطلاع الموقع المؤجلة',              'name_en' => 'Deferred Site Survey'],
-            ['code' => 'SRV-004', 'parent_code' => 'JEA-SURV', 'phase' => 1, 'name_ar' => 'تقارير استطلاع الموقع للمشاريع الكبرى',       'name_en' => 'Site Survey — Large Projects'],
-            ['code' => 'SRV-005', 'parent_code' => 'JEA-SURV', 'phase' => 1, 'name_ar' => 'تقارير استطلاع الموقع لمشاريع الطاقة',        'name_en' => 'Site Survey — Energy Projects'],
-            ['code' => 'SRV-006', 'parent_code' => 'JEA-SURV', 'phase' => 1, 'name_ar' => 'تقارير استطلاع الموقع للمشاريع الحكومية',     'name_en' => 'Site Survey — Government Projects'],
-            ['code' => 'SRV-007', 'parent_code' => 'JEA-SURV', 'phase' => 1, 'name_ar' => 'تقارير تدعيم الحفريات — تصميم وإشراف',        'name_en' => 'Excavation Support — Design & Supervision'],
-            ['code' => 'SRV-008', 'parent_code' => 'JEA-SURV', 'phase' => 1, 'name_ar' => 'تقارير فحص المواد للأبنية المقترحة',           'name_en' => 'Material Testing — Proposed Buildings'],
-            ['code' => 'SRV-009', 'parent_code' => 'JEA-SURV', 'phase' => 1, 'name_ar' => 'تقارير فحص مواد للأبنية القائمة / الدراسة الإنشائية', 'name_en' => 'Material Testing — Existing / Structural Study'],
-            ['code' => 'SRV-010', 'parent_code' => 'JEA-SURV', 'phase' => 1, 'name_ar' => 'إعادة تصديق تقارير استطلاع الموقع مع إضافات',   'name_en' => 'Survey Re-approval — With Additions'],
-            ['code' => 'SRV-011', 'parent_code' => 'JEA-SURV', 'phase' => 1, 'name_ar' => 'إعادة تصديق تقارير استطلاع الموقع بدون إضافات', 'name_en' => 'Survey Re-approval — Without Additions'],
-            ['code' => 'SRV-012', 'parent_code' => 'JEA-SURV', 'phase' => 1, 'name_ar' => 'تقارير الحفريات — تصميم وإشراف',                'name_en' => 'Excavation Reports — Design & Supervision'],
-            ['code' => 'SRV-013', 'parent_code' => 'JEA-SURV', 'phase' => 2, 'name_ar' => 'بدل فاقد',                                       'name_en' => 'Replacement Copy'],
-            ['code' => 'SRV-014', 'parent_code' => 'JEA-SURV', 'phase' => 1, 'name_ar' => 'شهادة الكشف الحسي والكتب الرسمية',              'name_en' => 'Visual Inspection Certificate & Official Letters'],
+            // ── 2. استطلاع الموقع (JEA-SURV) — 14 services in 3 subcategories ──
+            // 2a. استطلاع الموقع (Site Survey proper) — 10
+            ['code' => 'SRV-001', 'parent_code' => 'JEA-SURV', 'subcategory_ar' => 'استطلاع الموقع', 'subcategory_en' => 'Site Survey',      'phase' => 1, 'name_ar' => 'تقارير استطلاع الموقع للأبنية المقترحة',      'name_en' => 'Site Survey — Proposed Buildings'],
+            ['code' => 'SRV-002', 'parent_code' => 'JEA-SURV', 'subcategory_ar' => 'استطلاع الموقع', 'subcategory_en' => 'Site Survey',      'phase' => 1, 'name_ar' => 'تقارير استطلاع الموقع للأبنية القائمة',       'name_en' => 'Site Survey — Existing Buildings'],
+            ['code' => 'SRV-003', 'parent_code' => 'JEA-SURV', 'subcategory_ar' => 'استطلاع الموقع', 'subcategory_en' => 'Site Survey',      'phase' => 1, 'name_ar' => 'تقارير استطلاع الموقع المؤجلة',               'name_en' => 'Deferred Site Survey'],
+            ['code' => 'SRV-004', 'parent_code' => 'JEA-SURV', 'subcategory_ar' => 'استطلاع الموقع', 'subcategory_en' => 'Site Survey',      'phase' => 1, 'name_ar' => 'تقارير استطلاع الموقع للمشاريع الكبرى',        'name_en' => 'Site Survey — Large Projects'],
+            ['code' => 'SRV-005', 'parent_code' => 'JEA-SURV', 'subcategory_ar' => 'استطلاع الموقع', 'subcategory_en' => 'Site Survey',      'phase' => 1, 'name_ar' => 'تقارير استطلاع الموقع لمشاريع الطاقة',         'name_en' => 'Site Survey — Energy Projects'],
+            ['code' => 'SRV-006', 'parent_code' => 'JEA-SURV', 'subcategory_ar' => 'استطلاع الموقع', 'subcategory_en' => 'Site Survey',      'phase' => 1, 'name_ar' => 'تقارير استطلاع الموقع للمشاريع الحكومية',      'name_en' => 'Site Survey — Government Projects'],
+            ['code' => 'SRV-010', 'parent_code' => 'JEA-SURV', 'subcategory_ar' => 'استطلاع الموقع', 'subcategory_en' => 'Site Survey',      'phase' => 1, 'name_ar' => 'إعادة تصديق تقارير استطلاع الموقع مع إضافات',    'name_en' => 'Survey Re-approval — With Additions'],
+            ['code' => 'SRV-011', 'parent_code' => 'JEA-SURV', 'subcategory_ar' => 'استطلاع الموقع', 'subcategory_en' => 'Site Survey',      'phase' => 1, 'name_ar' => 'إعادة تصديق تقارير استطلاع الموقع بدون إضافات',  'name_en' => 'Survey Re-approval — Without Additions'],
+            ['code' => 'SRV-013', 'parent_code' => 'JEA-SURV', 'subcategory_ar' => 'استطلاع الموقع', 'subcategory_en' => 'Site Survey',      'phase' => 2, 'name_ar' => 'بدل فاقد',                                        'name_en' => 'Replacement Copy'],
+            ['code' => 'SRV-014', 'parent_code' => 'JEA-SURV', 'subcategory_ar' => 'استطلاع الموقع', 'subcategory_en' => 'Site Survey',      'phase' => 1, 'name_ar' => 'شهادة الكشف الحسي والكتب الرسمية',               'name_en' => 'Visual Inspection Certificate & Official Letters'],
+            // 2b. فحص المواد للأبنية (Material Testing) — 2
+            ['code' => 'SRV-008', 'parent_code' => 'JEA-SURV', 'subcategory_ar' => 'فحص المواد للأبنية', 'subcategory_en' => 'Material Testing', 'phase' => 1, 'name_ar' => 'تقارير فحص المواد للأبنية المقترحة',                       'name_en' => 'Material Testing — Proposed Buildings'],
+            ['code' => 'SRV-009', 'parent_code' => 'JEA-SURV', 'subcategory_ar' => 'فحص المواد للأبنية', 'subcategory_en' => 'Material Testing', 'phase' => 1, 'name_ar' => 'تقارير فحص مواد للأبنية القائمة / الدراسة الإنشائية',        'name_en' => 'Material Testing — Existing / Structural Study'],
+            // 2c. الحفريات (Excavations) — 2
+            ['code' => 'SRV-007', 'parent_code' => 'JEA-SURV', 'subcategory_ar' => 'الحفريات', 'subcategory_en' => 'Excavations', 'phase' => 1, 'name_ar' => 'تقارير تدعيم الحفريات — تصميم وإشراف',                     'name_en' => 'Excavation Support — Design & Supervision'],
+            ['code' => 'SRV-012', 'parent_code' => 'JEA-SURV', 'subcategory_ar' => 'الحفريات', 'subcategory_en' => 'Excavations', 'phase' => 1, 'name_ar' => 'تقارير الحفريات — تصميم وإشراف',                           'name_en' => 'Excavation Reports — Design & Supervision'],
 
             // ── 3. الخدمات المالية (JEA-FIN) — 6 services ──
             ['code' => 'FIN-001', 'parent_code' => 'JEA-FIN', 'phase' => 3, 'name_ar' => 'صرف رواتب المهندسين المقيمين / آلية دعم الإشراف', 'name_en' => 'Resident Engineers Salary / Supervision Support'],
