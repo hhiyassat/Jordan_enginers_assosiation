@@ -71,6 +71,13 @@ export interface SchemaWorkflowStage {
   actions: string[];
 }
 
+export interface WorkflowVariant {
+  source?: string;
+  label_ar: string;
+  label_en: string;
+  stages: SchemaWorkflowStage[];
+}
+
 export interface ServiceSchema {
   service_code: string;
   name_ar: string;
@@ -79,7 +86,12 @@ export interface ServiceSchema {
   fields: SchemaField[];
   sections?: SchemaSection[];
   documents: SchemaDocument[];
-  workflow: { stages: SchemaWorkflowStage[] };
+  workflow: {
+    stages: SchemaWorkflowStage[];
+    metadata?: Record<string, unknown>;
+    variants?: Record<string, WorkflowVariant>;
+  };
+  flowchart_source?: string;
   fee: {
     type: 'fixed' | 'tiered' | 'formula';
     amount?: number;
@@ -117,6 +129,8 @@ export interface ServiceDefinition {
   status?: 'active' | 'inactive' | 'draft';
   /** JEA delivery phase 1..5 (colored dot/pill on the UI); null = unclassified */
   phase?: 1 | 2 | 3 | 4 | 5 | null;
+  /** Keys of alternate workflows available (e.g. ['modification']) */
+  variant_keys?: string[];
 }
 
 // ── Engineer ────────────────────────────────────────────────────────

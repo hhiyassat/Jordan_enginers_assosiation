@@ -1,9 +1,48 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { applicationsApi, servicesApi } from '../../api/client';
 import { DynamicForm } from '../../engine/DynamicForm';
 import { DocumentUploader } from '../../engine/DocumentUploader';
-import type { Application, ServiceDefinition } from '../../types';
+import type { Application, ServiceDefinition, SchemaWorkflowStage } from '../../types';
+import { WorkflowStepper } from '../../components/ui/WorkflowStepper';
+
+/**
+ * Map an Application.status to the corresponding stage_id in the
+ * schema's workflow. Used to highlight the applicant's current
+ * position on the WorkflowStepper. Best-effort heuristic — the engine
+ * still runs against the fixed ALLOWED_TRANSITIONS today.
+ */
+function stageIdForApplication(
+  stages: SchemaWorkflowStage[],
+  application: Application | null,
+): string | null {
+  if (stages.length === 0) return null;
+  if (!application) return stages[0]?.id ?? null;
+
+  switch (application.status) {
+    case 'draft':
+    case 'modifications_requested':
+      return stages[0]?.id ?? null;
+    case 'submitted':
+    case 'under_review': {
+      // Pick the first "review"-type stage (auditor role or *_review id).
+      const reviewStage = stages.find(s =>
+        s.role === 'auditor' || s.role === 'staff' || /review/i.test(s.id)
+      );
+      return (reviewStage ?? stages[Math.min(1, stages.length - 1)]).id;
+    }
+    case 'approved': {
+      const paymentStage = stages.find(s => /payment/i.test(s.id));
+      return (paymentStage ?? stages[stages.length - 2] ?? stages[stages.length - 1]).id;
+    }
+    case 'certificate_issued':
+      return stages[stages.length - 1]?.id ?? null;
+    case 'rejected':
+      return null;
+    default:
+      return stages[0]?.id ?? null;
+  }
+}
 
 type Step = 'form' | 'documents' | 'review';
 
@@ -21,7 +60,9 @@ type Step = 'form' | 'documents' | 'review';
  */
 export function Apply() {
   const { serviceCode } = useParams<{ serviceCode: string }>();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const variantKey = searchParams.get('variant');
 
   const [service, setService]         = useState<ServiceDefinition | null>(null);
   const [application, setApplication] = useState<Application | null>(null);
@@ -119,11 +160,27 @@ export function Apply() {
   ];
   const currentStepIndex = steps.findIndex(s => s.id === step);
 
+  // Workflow stages come from schema.workflow.stages by default, or from
+  // schema.workflow.variants[variantKey] when the applicant chose an
+  // alternate entry point (e.g. ?variant=modification for the
+  // "تعديل عقد سابق" flow).
+  const workflow = schema?.workflow;
+  const workflowStages: SchemaWorkflowStage[] =
+    (variantKey && workflow?.variants?.[variantKey]?.stages)
+      ?? workflow?.stages
+      ?? [];
+  const currentStageId = stageIdForApplication(workflowStages, application);
+  const activeVariant = variantKey ? workflow?.variants?.[variantKey] : undefined;
+
   return (
     <main className="max-w-3xl mx-auto px-4 py-8" dir="rtl">
       {/* Header */}
       <header className="mb-8">
-        <p className="text-sm text-gray-400 mb-1">تقديم طلب جديد</p>
+        <p className="text-sm text-gray-400 mb-1">
+          {activeVariant
+            ? <span lang="ar">{activeVariant.label_ar} · <span lang="en" dir="ltr">{activeVariant.label_en}</span></span>
+            : 'تقديم طلب جديد'}
+        </p>
         <h1 className="text-2xl font-bold text-gray-900">{schema.name_ar}</h1>
         {application && (
           <p className="text-sm text-blue-600 mt-1 font-mono" aria-label="رقم الطلب">
@@ -131,6 +188,19 @@ export function Apply() {
           </p>
         )}
       </header>
+
+      {/* Workflow stepper — read-only view of the schema's stages so the
+          applicant sees the full path their application will take. */}
+      {workflowStages.length > 0 && (
+        <div className="mb-8">
+          <WorkflowStepper
+            stages={workflowStages}
+            currentStageId={currentStageId}
+            titleAr={activeVariant ? `${activeVariant.label_ar} · مسار الطلب` : 'مسار الطلب'}
+            titleEn={activeVariant ? `${activeVariant.label_en} · Workflow` : 'Application workflow'}
+          />
+        </div>
+      )}
 
       {/* EDA-10 error banner — shown when returning from submission failure */}
       {Object.keys(errors).length > 0 && step === 'form' && (

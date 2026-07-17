@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowRight, Plus, Clock } from 'lucide-react';
+import { ArrowRight, Plus, Clock, Edit3 } from 'lucide-react';
 import { servicesApi } from '../../api/client';
 import type { ServiceDefinition } from '../../types';
 import { PhaseBadge } from '../../components/ui/PhaseBadge';
@@ -109,7 +109,12 @@ export function CategoryServicesView() {
         {!loading && !error && children.length > 0 && !useGroupedLayout && (
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 max-w-5xl">
             {children.map(svc => (
-              <DetailServiceCard key={svc.id} service={svc} onOpen={() => navigate(`/apply/${svc.code}`)} />
+              <DetailServiceCard
+                key={svc.id}
+                service={svc}
+                onOpen={() => navigate(`/apply/${svc.code}`)}
+                onOpenVariant={(v) => navigate(`/apply/${svc.code}?variant=${v}`)}
+              />
             ))}
           </div>
         )}
@@ -142,7 +147,12 @@ export function CategoryServicesView() {
               )}
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
                 {g.services.map(svc => (
-                  <DetailServiceCard key={svc.id} service={svc} onOpen={() => navigate(`/apply/${svc.code}`)} />
+                  <DetailServiceCard
+                    key={svc.id}
+                    service={svc}
+                    onOpen={() => navigate(`/apply/${svc.code}`)}
+                    onOpenVariant={(v) => navigate(`/apply/${svc.code}?variant=${v}`)}
+                  />
                 ))}
               </div>
             </section>
@@ -153,8 +163,15 @@ export function CategoryServicesView() {
   );
 }
 
-function DetailServiceCard({ service, onOpen }: { service: ServiceDefinition; onOpen: () => void }) {
+function DetailServiceCard({
+  service, onOpen, onOpenVariant,
+}: {
+  service: ServiceDefinition;
+  onOpen: () => void;
+  onOpenVariant?: (variantKey: string) => void;
+}) {
   const active = true; // API only returns active services
+  const hasModificationVariant = (service.variant_keys ?? []).includes('modification');
 
   return (
     <div
@@ -192,17 +209,30 @@ function DetailServiceCard({ service, onOpen }: { service: ServiceDefinition; on
           ))}
         </div>
 
-        <button
-          onClick={onOpen}
-          disabled={!active}
-          className={`w-full py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all duration-150 ${
-            active
-              ? 'bg-jea-primary text-white hover:bg-jea-hover active:bg-jea-topbarDeep'
-              : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-          }`}
-        >
-          {active ? (<><Plus size={11} />تقديم طلب</>) : (<><Clock size={11} />قريباً</>)}
-        </button>
+        <div className={`flex gap-2 ${hasModificationVariant ? '' : ''}`}>
+          <button
+            onClick={onOpen}
+            disabled={!active}
+            className={`flex-1 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all duration-150 ${
+              active
+                ? 'bg-jea-primary text-white hover:bg-jea-hover active:bg-jea-topbarDeep'
+                : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+            }`}
+          >
+            {active ? (<><Plus size={11} />تقديم طلب</>) : (<><Clock size={11} />قريباً</>)}
+          </button>
+          {hasModificationVariant && onOpenVariant && active && (
+            <button
+              onClick={() => onOpenVariant('modification')}
+              aria-label="تعديل عقد سابق · Modify existing contract"
+              title="تعديل عقد سابق · Modify existing contract"
+              className="py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1 transition-all duration-150 bg-white border border-jea-border text-jea-primary hover:bg-jea-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-jea-primary/40"
+            >
+              <Edit3 size={11} aria-hidden="true" />
+              <span lang="ar">تعديل</span>
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

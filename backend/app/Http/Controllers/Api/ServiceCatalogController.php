@@ -72,8 +72,22 @@ class ServiceCatalogController extends Controller
                 'subcategory_ar', 'subcategory_en',
                 'name_ar', 'name_en',
                 'description_ar', 'description_en', 'currency', 'base_fee', 'sla_hours',
-                'phase',
-            ]);
+                'phase', 'schema',
+            ])
+            // Trim the schema down to a lightweight variant_keys list so the
+            // frontend can show a "Modify" CTA without pulling the full
+            // workflow tree on every catalog listing.
+            ->map(function (ServiceDefinition $s) {
+                $variants = data_get($s->schema, 'workflow.variants', []);
+                $arr = $s->only([
+                    'id', 'code', 'parent_code',
+                    'subcategory_ar', 'subcategory_en',
+                    'name_ar', 'name_en',
+                    'description_ar', 'description_en', 'currency', 'base_fee', 'sla_hours', 'phase',
+                ]);
+                $arr['variant_keys'] = is_array($variants) ? array_keys($variants) : [];
+                return $arr;
+            });
 
         return response()->json(['services' => $services]);
     }
