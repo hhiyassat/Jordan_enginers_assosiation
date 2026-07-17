@@ -1,7 +1,35 @@
-import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  ArrowLeft, FolderOpen, FileText, FileCheck, GraduationCap,
+  CreditCard, Users, Scale, Wrench, Building2,
+} from 'lucide-react';
 import { servicesApi } from '../../api/client';
 import type { ServiceDefinition } from '../../types';
+
+// Icon selection by code prefix — matches the JEA portal design categories.
+const ICON_BY_PREFIX: Array<[string, React.ComponentType<{ size?: number; className?: string }>]> = [
+  ['JEA-CERT',  GraduationCap],
+  ['JEA-FIN',   CreditCard],
+  ['JEA-PROJ',  FolderOpen],
+  ['JEA-MISC',  Wrench],
+  ['JEA-DEC',   Scale],
+  ['JEA-ENG',   Users],
+  ['CERT',      GraduationCap],
+  ['FIN',       CreditCard],
+  ['PROJ',      FolderOpen],
+  ['MISC',      Wrench],
+  ['DEC',       Scale],
+  ['ENG',       Users],
+  ['SVC-PR',    FileCheck],
+  ['SVC-FI',    CreditCard],
+  ['SVC-TR',    FileText],
+];
+
+function iconFor(code: string) {
+  const hit = ICON_BY_PREFIX.find(([prefix]) => code.startsWith(prefix));
+  return hit ? hit[1] : Building2;
+}
 
 export function ServiceList() {
   const [services, setServices] = useState<ServiceDefinition[]>([]);
@@ -15,78 +43,110 @@ export function ServiceList() {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <LoadingGrid />;
-  if (error)   return <div className="p-8 text-red-600">{error}</div>;
+  // Top-level = anything without a parent. Categories = top-levels that have children.
+  // Display order pins مشاريعي (JEA-PROJ) first so it lands in the top-right cell (RTL).
+  const { topLevel, childCounts } = useMemo(() => {
+    const priority = ['JEA-PROJ'];
+    const top = services
+      .filter(s => !s.parent_code)
+      .sort((a, b) => {
+        const ia = priority.indexOf(a.code);
+        const ib = priority.indexOf(b.code);
+        if (ia !== -1 || ib !== -1) return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+        return 0;
+      });
+    const counts: Record<string, number> = {};
+    for (const svc of services) {
+      if (svc.parent_code) counts[svc.parent_code] = (counts[svc.parent_code] ?? 0) + 1;
+    }
+    return { topLevel: top, childCounts: counts };
+  }, [services]);
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8" dir="rtl">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">الخدمات الإلكترونية</h1>
-        <p className="text-gray-500 mt-1">اختر الخدمة التي تريد التقدم بطلب لها</p>
+    <div className="flex flex-col h-full" dir="rtl">
+      <div className="bg-jea-topbar px-6 py-5 shrink-0">
+        <h1 className="text-xl font-black text-white">الخدمات الإلكترونية</h1>
+        <p className="text-white/50 text-xs mt-0.5">
+          Electronic Services · نقابة المهندسين الأردنيين
+        </p>
       </div>
 
-      {services.length === 0 ? (
-        <div className="text-center py-16 text-gray-400">
-          <p className="text-4xl mb-3">📋</p>
-          <p>لا توجد خدمات متاحة حالياً</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {services.map(service => (
-            <ServiceCard key={service.id} service={service} />
-          ))}
-        </div>
-      )}
+      <div className="flex-1 overflow-y-auto bg-jea-bg p-6">
+        {loading && <TileGridSkeleton />}
+
+        {!loading && error && (
+          <div className="rounded-xl border border-jea-danger/30 bg-white p-6 text-jea-danger max-w-4xl">
+            {error}
+          </div>
+        )}
+
+        {!loading && !error && topLevel.length === 0 && (
+          <div className="rounded-xl border border-jea-border bg-white p-16 text-center text-jea-muted max-w-4xl">
+            <p className="text-4xl mb-3">📋</p>
+            <p className="text-sm font-bold text-jea-text">لا توجد خدمات متاحة حالياً</p>
+            <p className="text-xs mt-1">No services available</p>
+          </div>
+        )}
+
+        {!loading && !error && topLevel.length > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 max-w-4xl">
+            {topLevel.map(svc => (
+              <ServiceTile
+                key={svc.id}
+                service={svc}
+                childCount={childCounts[svc.code] ?? 0}
+              />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
 
-function ServiceCard({ service }: { service: ServiceDefinition }) {
-  const categoryColors: Record<string, string> = {
-    licensing: 'bg-blue-100 text-blue-700',
-    permits:   'bg-green-100 text-green-700',
-    default:   'bg-gray-100 text-gray-700',
+function ServiceTile({ service, childCount }: { service: ServiceDefinition; childCount: number }) {
+  const navigate = useNavigate();
+  const Icon = iconFor(service.code);
+  const isCategory = childCount > 0;
+  const description = service.description_ar ?? service.name_en;
+
+  const handleClick = () => {
+    // مشاريعي is special — it opens the user's projects list, not a services grid.
+    if (service.code === 'JEA-PROJ') navigate('/projects');
+    else if (isCategory)             navigate(`/services/${service.code}`);
+    else                             navigate(`/apply/${service.code}`);
   };
-  const color = categoryColors[service.category || ''] || categoryColors.default;
 
   return (
-    <Link
-      to={`/apply/${service.code}`}
-      className="block bg-white rounded-xl border border-gray-200 p-6 hover:border-blue-400 hover:shadow-md transition-all group"
+    <button
+      onClick={handleClick}
+      className="text-right rounded-2xl p-5 flex flex-col gap-3 shadow-sm border border-white/10 transition-all duration-200 bg-jea-primary hover:shadow-lg hover:-translate-y-0.5 cursor-pointer"
     >
-      <div className="flex items-start justify-between mb-4">
-        <div className="w-12 h-12 bg-navy rounded-xl flex items-center justify-center text-white text-xl">
-          📄
+      <div className="flex items-start justify-between">
+        <div className="w-11 h-11 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
+          <Icon size={22} className="text-white" />
         </div>
-        {service.category && (
-          <span className={`text-xs px-2 py-1 rounded-full font-medium ${color}`}>
-            {service.category}
-          </span>
-        )}
+        <ArrowLeft size={16} className="text-white/40 mt-1" />
       </div>
-
-      <h3 className="font-bold text-gray-900 text-lg group-hover:text-blue-600 transition-colors">
-        {service.name_ar}
-      </h3>
-      <p className="text-sm text-gray-400 mt-0.5">{service.name_en}</p>
-
-      {service.description_ar && (
-        <p className="text-sm text-gray-500 mt-3 line-clamp-2">{service.description_ar}</p>
+      <div>
+        <h3 className="text-base font-black text-white leading-snug">{service.name_ar}</h3>
+        <p className="text-white/60 text-[11px] mt-0.5">{service.name_en}</p>
+      </div>
+      <p className="text-white/70 text-xs leading-relaxed line-clamp-3">{description}</p>
+      {isCategory && (
+        <span className="text-[10px] font-bold text-white/70 mt-1">
+          {childCount} خدمة
+        </span>
       )}
-
-      <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between text-sm text-gray-500">
-        <span>💰 {service.base_fee} {service.currency}</span>
-        <span>⏱ {service.sla_hours} ساعة</span>
-      </div>
-    </Link>
+    </button>
   );
 }
 
-function LoadingGrid() {
+function TileGridSkeleton() {
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-      {[1, 2, 3].map(i => (
-        <div key={i} className="bg-gray-100 rounded-xl h-48 animate-pulse" />
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 max-w-4xl">
+      {[1, 2, 3, 4, 5, 6].map(i => (
+        <div key={i} className="rounded-2xl p-5 bg-jea-primary/40 h-40 animate-pulse" />
       ))}
     </div>
   );
