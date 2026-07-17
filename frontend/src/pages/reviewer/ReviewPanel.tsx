@@ -1,57 +1,82 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { applicationsApi, reviewApi } from '../../api/client';
+import { applicationsApi, reviewApi, type StageAction } from '../../api/client';
 import { DynamicForm } from '../../engine/DynamicForm';
 import type { Application } from '../../types';
 
-// Eqratech Methodology: سبب مطلوب for every non-approve action
-const DECISION_OPTIONS = [
-  {
-    value: 'approved',
-    label: '✅ موافقة',
-    color: 'border-green-400 bg-green-50 text-green-700',
-    notesRequired: false,
-    notesLabel: 'ملاحظات (اختياري)',
-    notesPlaceholder: 'أضف ملاحظة اختيارية...',
+/**
+ * Per-variant button colour classes. The backend registry classifies
+ * each action into one of these variants; the UI just maps colour.
+ */
+const VARIANT_STYLES: Record<StageAction['variant'], { active: string; idle: string }> = {
+  primary: {
+    active: 'border-jea-primary bg-jea-accent text-jea-primary',
+    idle:   'border-gray-200 text-gray-600 hover:border-jea-primary/40',
   },
-  {
-    value: 'modifications_requested',
-    label: '✏️ طلب تعديل',
-    color: 'border-orange-400 bg-orange-50 text-orange-700',
-    notesRequired: true,
-    notesLabel: 'وصف التعديلات المطلوبة *',
-    notesPlaceholder: 'اذكر بالتفصيل ما يجب تعديله — سيظهر هذا للمتقدم...',
+  success: {
+    active: 'border-emerald-400 bg-emerald-50 text-emerald-700',
+    idle:   'border-gray-200 text-gray-600 hover:border-emerald-300',
   },
-  {
-    value: 'rejected',
-    label: '❌ رفض',
-    color: 'border-red-400 bg-red-50 text-red-700',
-    notesRequired: true,
-    notesLabel: 'سبب الرفض *',
-    notesPlaceholder: 'اذكر سبب الرفض بوضوح — سيظهر هذا للمتقدم...',
+  warn: {
+    active: 'border-orange-400 bg-orange-50 text-orange-700',
+    idle:   'border-gray-200 text-gray-600 hover:border-orange-300',
   },
-] as const;
+  danger: {
+    active: 'border-red-400 bg-red-50 text-red-700',
+    idle:   'border-gray-200 text-gray-600 hover:border-red-300',
+  },
+  neutral: {
+    active: 'border-gray-400 bg-gray-100 text-gray-700',
+    idle:   'border-gray-200 text-gray-600 hover:border-gray-300',
+  },
+};
+
+function notesLabelFor(action: StageAction | null): { label: string; placeholder: string } {
+  if (!action) return { label: 'ملاحظات', placeholder: '' };
+  if (!action.requires_notes) {
+    return { label: `ملاحظات (اختياري) — ${action.label_ar}`, placeholder: 'أضف ملاحظة اختيارية...' };
+  }
+  if (action.id === 'reject') {
+    return { label: 'سبب الرفض *', placeholder: 'اذكر سبب الرفض بوضوح — سيظهر هذا للمتقدم...' };
+  }
+  if (action.id === 'request_modifications') {
+    return { label: 'وصف التعديلات المطلوبة *', placeholder: 'اذكر بالتفصيل ما يجب تعديله — سيظهر هذا للمتقدم...' };
+  }
+  return { label: `${action.label_ar} — سبب مطلوب *`, placeholder: 'اذكر السبب...' };
+}
 
 export function ReviewPanel() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  const [app, setApp]             = useState<Application | null>(null);
+  const [app, setApp]                       = useState<Application | null>(null);
+  const [availableActions, setAvailableActions] = useState<StageAction[]>([]);
+  const [selectedActionId, setSelectedActionId] = useState<string>('');
   const [loading, setLoading]     = useState(true);
   const [claiming, setClaiming]   = useState(false);
   const [deciding, setDeciding]   = useState(false);
-  const [decision, setDecision]   = useState('');
   const [notes, setNotes]         = useState('');
   const [notesError, setNotesError] = useState('');
   const [pageError, setPageError]   = useState('');
 
-  useEffect(() => {
+  const reload = () => {
     if (!id) return;
+    setLoading(true);
     applicationsApi.get(Number(id))
-      .then(r => setApp(r.application))
+      .then(r => {
+        setApp(r.application);
+        setAvailableActions(r.available_actions ?? []);
+      })
       .catch(e => setPageError((e as Error).message))
       .finally(() => setLoading(false));
-  }, [id]);
+  };
+
+  useEffect(() => { reload(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [id]);
+
+  // Only actions that actually cause a status transition are decision
+  // candidates — the others are informational (e.g. classify_technical).
+  const decisionActions = availableActions.filter(a => a.decision !== null);
+  const selectedAction = decisionActions.find(a => a.id === selectedActionId) ?? null;
 
   const handleClaim = async () => {
     if (!app) return;
@@ -60,6 +85,8 @@ export function ReviewPanel() {
     try {
       const r = await reviewApi.claim(app.id);
       setApp(r.application);
+      // Claiming may unlock new available actions for this actor.
+      reload();
     } catch (e: unknown) {
       setPageError((e as Error).message);
     } finally {
@@ -68,11 +95,10 @@ export function ReviewPanel() {
   };
 
   const handleDecide = async () => {
-    if (!app || !decision) return;
+    if (!app || !selectedAction || !selectedAction.decision) return;
 
-    // Frontend guard: Eqratech Methodology سبب مطلوب
-    const opt = DECISION_OPTIONS.find(o => o.value === decision);
-    if (opt?.notesRequired && !notes.trim()) {
+    // Backend also enforces notes-required; front-end guard for UX only.
+    if (selectedAction.requires_notes && !notes.trim()) {
       setNotesError('هذا الحقل مطلوب — يجب ذكر السبب وفق منهجية عقراتك');
       return;
     }
@@ -81,11 +107,13 @@ export function ReviewPanel() {
     setPageError('');
     setNotesError('');
     try {
-      await reviewApi.decide(app.id, decision, notes.trim() || undefined);
-      navigate('/review/queue', { state: { decided: true, decision } });
+      // Actions carry an annotation payload (e.g. override_first_auditor=true)
+      // — merge it into the review record for audit traceability.
+      const annotations = { action_id: selectedAction.id, ...selectedAction.annotation };
+      await reviewApi.decide(app.id, selectedAction.decision, notes.trim() || undefined, annotations);
+      navigate('/review/queue', { state: { decided: true, decision: selectedAction.decision, action: selectedAction.id } });
     } catch (err: unknown) {
       const apiErr = err as Error & { errors?: Record<string, string[]> };
-      // Surface backend validation (notes.required) if caught
       if (apiErr.errors?.notes) {
         setNotesError(apiErr.errors.notes[0]);
       } else {
@@ -122,7 +150,7 @@ export function ReviewPanel() {
   const stageLabel = schema?.workflow?.stages?.find(s => s.id === app.current_stage)?.label_ar
     ?? app.current_stage;
 
-  const selectedOpt = DECISION_OPTIONS.find(o => o.value === decision);
+  const notesUiCopy = notesLabelFor(selectedAction);
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8" dir="rtl">
@@ -268,57 +296,82 @@ export function ReviewPanel() {
             </div>
           )}
 
-          {/* Decision form — only when claimed and under_review */}
+          {/* Decision form — only when claimed and under_review.
+              Buttons are generated from the schema's stage.actions[]
+              (returned as available_actions on the GET response), so
+              services with an override_first_auditor action get an extra
+              button, and a service with no reviewer actions renders an
+              empty state instead of the wrong buttons. */}
           {isClaimed && app.status === 'under_review' && (
             <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
-              <h3 className="font-semibold text-gray-800 text-sm">قرار المراجعة</h3>
+              <h3 className="font-semibold text-gray-800 text-sm">
+                قرار المراجعة
+                <span className="text-gray-400 font-normal text-xs mx-1" dir="ltr">· Review decision</span>
+              </h3>
 
-              {/* Decision buttons */}
-              <div className="space-y-2">
-                {DECISION_OPTIONS.map(opt => (
-                  <button
-                    key={opt.value}
-                    onClick={() => { setDecision(opt.value); setNotesError(''); setNotes(''); }}
-                    className={`w-full text-right px-4 py-3 rounded-lg border-2 text-sm font-medium transition-all ${
-                      decision === opt.value ? opt.color : 'border-gray-200 text-gray-600 hover:border-gray-300'
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-
-              {/* Notes — shown whenever a decision is selected */}
-              {decision && (
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                    {selectedOpt?.notesLabel ?? 'ملاحظات'}
-                    {selectedOpt?.notesRequired && (
-                      <span className="text-red-500 mr-1 text-xs">— مطلوب وفق منهجية عقراتك</span>
-                    )}
-                  </label>
-                  <textarea
-                    value={notes}
-                    onChange={e => { setNotes(e.target.value); if (notesError) setNotesError(''); }}
-                    className={`w-full border rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none ${
-                      notesError ? 'border-red-400 bg-red-50' : 'border-gray-300'
-                    }`}
-                    rows={4}
-                    placeholder={selectedOpt?.notesPlaceholder}
-                  />
-                  {notesError && (
-                    <p className="mt-1 text-xs text-red-600">⚠ {notesError}</p>
-                  )}
+              {decisionActions.length === 0 && (
+                <div role="status" className="text-xs text-gray-500 bg-gray-50 rounded-lg px-3 py-2">
+                  لا توجد إجراءات متاحة في هذه المرحلة — يرجى مراجعة الإعداد.
                 </div>
               )}
 
-              <button
-                onClick={handleDecide}
-                disabled={!decision || deciding}
-                className="w-full py-2.5 bg-navy text-white rounded-lg hover:bg-blue-800 disabled:opacity-50 text-sm font-medium"
-              >
-                {deciding ? 'جارٍ الحفظ...' : 'تأكيد القرار'}
-              </button>
+              {decisionActions.length > 0 && (
+                <>
+                  <div className="space-y-2" role="group" aria-label="خيارات القرار">
+                    {decisionActions.map(action => {
+                      const cls = VARIANT_STYLES[action.variant];
+                      const isSelected = selectedActionId === action.id;
+                      return (
+                        <button
+                          key={action.id}
+                          type="button"
+                          onClick={() => { setSelectedActionId(action.id); setNotesError(''); setNotes(''); }}
+                          aria-pressed={isSelected}
+                          className={`w-full text-right px-4 py-3 rounded-lg border-2 text-sm font-medium transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-jea-primary/40 ${
+                            isSelected ? cls.active : cls.idle
+                          }`}
+                        >
+                          <span lang="ar">{action.label_ar}</span>
+                          <span className="text-gray-400 font-normal text-xs mx-1" lang="en" dir="ltr">· {action.label_en}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {selectedAction && (
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                        {notesUiCopy.label}
+                        {selectedAction.requires_notes && (
+                          <span className="text-red-500 mr-1 text-xs">— مطلوب وفق منهجية عقراتك</span>
+                        )}
+                      </label>
+                      <textarea
+                        value={notes}
+                        onChange={e => { setNotes(e.target.value); if (notesError) setNotesError(''); }}
+                        className={`w-full border rounded-lg p-3 text-sm focus:ring-2 focus:ring-jea-primary/40 focus:outline-none resize-none ${
+                          notesError ? 'border-red-400 bg-red-50' : 'border-gray-300'
+                        }`}
+                        rows={4}
+                        placeholder={notesUiCopy.placeholder}
+                        aria-invalid={notesError ? true : undefined}
+                        aria-describedby={notesError ? 'notes-error' : undefined}
+                      />
+                      {notesError && (
+                        <p id="notes-error" role="alert" className="mt-1 text-xs text-red-600">⚠ {notesError}</p>
+                      )}
+                    </div>
+                  )}
+
+                  <button
+                    onClick={handleDecide}
+                    disabled={!selectedAction || deciding}
+                    className="w-full py-2.5 bg-jea-topbar text-white rounded-lg hover:bg-jea-hover disabled:opacity-50 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-jea-primary/40"
+                  >
+                    {deciding ? 'جارٍ الحفظ...' : 'تأكيد القرار · Confirm decision'}
+                  </button>
+                </>
+              )}
             </div>
           )}
 

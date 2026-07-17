@@ -220,20 +220,21 @@ class WorkflowEngine
 
         // B-5 (schema layer): validate against the stage's declared actions array.
         // ALLOWED_TRANSITIONS is the global floor; the schema can restrict further.
-        // This is the connection between schema validation and generated services —
-        // every generated service has its own actions list per stage.
+        // Actions in the schema are mapped to internal decisions via the
+        // StageActions registry — the single source of truth for what each
+        // action id means (label, notes requirement, role, resulting status).
         $stage = $this->service->getStage($app->current_stage ?? '');
         if ($stage && isset($stage['actions']) && is_array($stage['actions'])) {
-            // Map schema action names to the status strings WorkflowEngine uses
-            $schemaActionMap = [
-                'approve'               => Application::STATUS_APPROVED,
-                'reject'                => Application::STATUS_REJECTED,
-                'request_modifications' => Application::STATUS_MODIFICATIONS_REQUESTED,
-            ];
-            $allowedBySchema = array_filter(
-                array_map(fn($a) => $schemaActionMap[$a] ?? null, $stage['actions'])
-            );
-            if (! in_array($decision, $allowedBySchema)) {
+            /** @var list<string> $stageActions */
+            $stageActions = $stage['actions'];
+            $allowedBySchema = [];
+            foreach ($stageActions as $actionId) {
+                $desc = StageActions::describe($actionId);
+                if ($desc && $desc['decision'] !== null) {
+                    $allowedBySchema[] = $desc['decision'];
+                }
+            }
+            if (! in_array($decision, array_unique($allowedBySchema))) {
                 $stageName = $stage['label_ar'] ?? $app->current_stage;
                 abort(422, "القرار '{$decision}' غير مسموح به في مرحلة '{$stageName}'.");
             }

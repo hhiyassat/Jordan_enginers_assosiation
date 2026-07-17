@@ -128,9 +128,20 @@ export const engineersApi = {
 
 // ── Applications ──────────────────────────────────────────────────────
 
+export interface StageAction {
+  id: string;
+  label_ar: string;
+  label_en: string;
+  variant: 'primary' | 'success' | 'warn' | 'danger' | 'neutral';
+  requires_notes: boolean;
+  decision: string | null;
+  annotation: Record<string, unknown>;
+  allowed_roles: string[];
+}
+
 export const applicationsApi = {
   list:   () => request<{ applications: Application[] }>('GET', '/applications'),
-  get:    (id: number) => request<{ application: Application }>('GET', `/applications/${id}`),
+  get:    (id: number) => request<{ application: Application; available_actions?: StageAction[] }>('GET', `/applications/${id}`),
   create: (service_code: string, data: Record<string, unknown>) =>
     request<{ application: Application }>('POST', '/applications', { service_code, data }),
   update: (id: number, data: Record<string, unknown>) =>

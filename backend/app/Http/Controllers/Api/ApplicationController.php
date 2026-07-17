@@ -51,7 +51,18 @@ class ApplicationController extends Controller
         $app = $this->findAccessible($request, $id);
         $app->load(['serviceDefinition', 'applicant:id,name,email', 'documents', 'reviews.reviewer:id,name,role', 'certificate']);
 
-        return response()->json(['application' => $app]);
+        // Attach the schema-driven action set for the caller's role at the
+        // application's current stage. The frontend renders one button per
+        // available action; unknown ids from a drifted schema are skipped.
+        $service = $app->serviceDefinition;
+        $available = $service instanceof \App\Models\ServiceDefinition
+            ? \App\Engine\StageActions::forApplication($app, $service, $request->user()?->role)
+            : [];
+
+        return response()->json([
+            'application'       => $app,
+            'available_actions' => $available,
+        ]);
     }
 
     // ── Create draft ──────────────────────────────────────────────────
