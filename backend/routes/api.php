@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\ApplicationController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\GsbController;
 use App\Http\Controllers\Api\IntegrationController;
+use App\Http\Controllers\Api\ProjectController;
 use App\Http\Controllers\Api\ServiceCatalogController;
 use Illuminate\Support\Facades\Route;
 
@@ -76,6 +77,11 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'token.inactivity', 'password.p
         Route::put('applications/{id}',                       [ApplicationController::class, 'update']);
         Route::post('applications/{id}/submit',               [ApplicationController::class, 'submit']);
         Route::post('applications/{id}/documents',            [ApplicationController::class, 'uploadDocument']);
+
+        // Projects — user's engineering projects (containers for applications)
+        Route::get('projects',        [ProjectController::class, 'index']);
+        Route::post('projects',       [ProjectController::class, 'store']);
+        Route::get('projects/{id}',   [ProjectController::class, 'show']);
     });
 
     // ── Reviewer routes ───────────────────────────────────────────────

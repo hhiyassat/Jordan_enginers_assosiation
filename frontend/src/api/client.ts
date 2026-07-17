@@ -1,7 +1,7 @@
 // ESP v2 — API Client
 // All requests go through this client for consistent error handling.
 
-import type { Application, ApplicationDocument, Certificate, DashboardStats, ServiceDefinition, User } from '../types';
+import type { Application, ApplicationDocument, Certificate, DashboardStats, Project, ServiceDefinition, User } from '../types';
 
 const BASE = '/api/v1';
 
@@ -72,6 +72,15 @@ export const authApi = {
 export const servicesApi = {
   list: () => request<{ services: ServiceDefinition[] }>('GET', '/services'),
   get:  (code: string) => request<{ service: ServiceDefinition }>('GET', `/services/${code}`),
+};
+
+// ── Projects ──────────────────────────────────────────────────────────
+
+export const projectsApi = {
+  list:   () => request<{ projects: Project[] }>('GET', '/projects'),
+  get:    (id: number) => request<{ project: Project }>('GET', `/projects/${id}`),
+  create: (data: Partial<Pick<Project, 'name_ar' | 'name_en' | 'type' | 'area_m2' | 'city' | 'contract_no'>>) =>
+    request<{ project: Project }>('POST', '/projects', data),
 };
 
 // ── Applications ──────────────────────────────────────────────────────

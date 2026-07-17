@@ -101,16 +101,35 @@ export interface ServiceSchema {
 export interface ServiceDefinition {
   id: number;
   code: string;
+  parent_code?: string | null;
   name_ar: string;
   name_en: string;
   description_ar?: string;
   description_en?: string;
   category?: string;
-  base_fee?: number;
-  sla_hours?: number;
+  base_fee?: number | string | null;
+  sla_hours?: number | null;
   currency: string;
-  schema: ServiceSchema;
-  status: 'active' | 'inactive' | 'draft';
+  schema?: ServiceSchema;
+  status?: 'active' | 'inactive' | 'draft';
+}
+
+// ── Project ─────────────────────────────────────────────────────────
+
+export interface Project {
+  id: number;
+  organization_id: number;
+  owner_user_id: number;
+  name_ar: string;
+  name_en?: string | null;
+  type?: string | null;
+  area_m2?: number | null;
+  city?: string | null;
+  contract_no?: string | null;
+  request_no?: string | null;
+  status: 'active' | 'pending' | 'archived';
+  created_at: string;
+  updated_at: string;
 }
 
 // ── Application ─────────────────────────────────────────────────────
