@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { BrowserRouter, Navigate, Route, Routes, useNavigate, useLocation } from 'react-router-dom';
 import {
-  LogOut, Home, FileText, Settings, ClipboardList, PlusCircle, ShieldCheck, Zap,
+  LogOut, Home, LayoutDashboard, FileText, Settings, ClipboardList, PlusCircle, ShieldCheck, Zap,
   Bell, Menu, Building2, User as UserIcon, Eye, EyeOff, AlertTriangle, LogIn,
 } from 'lucide-react';
 import { authApi } from './api/client';
@@ -17,6 +17,7 @@ import { ServiceList }             from './pages/applicant/ServiceList';
 import { CategoryServicesView }    from './pages/applicant/CategoryServicesView';
 import { ProjectsList }            from './pages/applicant/ProjectsList';
 import { ProjectDetail }           from './pages/applicant/ProjectDetail';
+import { Dashboard }               from './pages/applicant/Dashboard';
 import { Apply }                   from './pages/applicant/Apply';
 import { MyApplications }          from './pages/applicant/MyApplications';
 import { ReviewQueue }             from './pages/reviewer/ReviewQueue';
@@ -260,6 +261,7 @@ function navItemsForRole(role: User['role'] | undefined): NavItem[] {
   if (!role) return items;
 
   if (role === 'applicant') {
+    items.push({ to: '/dashboard',       ar: 'الرئيسية',   en: 'Dashboard',    Icon: LayoutDashboard });
     items.push({ to: '/services',        ar: 'الخدمات',    en: 'E-Services',   Icon: Home });
     items.push({ to: '/my-applications', ar: 'طلباتي',     en: 'My Requests',  Icon: FileText });
   }
@@ -276,6 +278,7 @@ function navItemsForRole(role: User['role'] | undefined): NavItem[] {
 }
 
 function pageTitleFor(pathname: string): { ar: string; en: string } {
+  if (pathname === '/dashboard') return { ar: 'الرئيسية', en: 'Dashboard' };
   if (pathname === '/services' || pathname.startsWith('/services/') || pathname.startsWith('/apply/')) return { ar: 'الخدمات الإلكترونية', en: 'E-Services Portal' };
   if (pathname.startsWith('/projects')) return { ar: 'مشاريعي', en: 'My Projects' };
   if (pathname.startsWith('/my-applications')) return { ar: 'طلباتي', en: 'My Requests' };
@@ -481,7 +484,7 @@ function HomeRedirect() {
   if (!user) return <Navigate to="/login" replace />;
   if (user.role === 'admin')   return <Navigate to="/admin" replace />;
   if (user.role === 'staff' || user.role === 'auditor') return <Navigate to="/review/queue" replace />;
-  return <Navigate to="/services" replace />;
+  return <Navigate to="/dashboard" replace />;
 }
 
 // ── Root ──────────────────────────────────────────────────────────────────────
@@ -496,6 +499,7 @@ export default function App() {
           <Route path="/" element={<RequireAuth><Layout><HomeRedirect /></Layout></RequireAuth>} />
 
           {/* Applicant-only */}
+          <Route path="/dashboard"               element={<RequireApplicant><Layout><Dashboard /></Layout></RequireApplicant>} />
           <Route path="/services"                element={<RequireApplicant><Layout><ServiceList /></Layout></RequireApplicant>} />
           <Route path="/services/:categoryCode"  element={<RequireApplicant><Layout><CategoryServicesView /></Layout></RequireApplicant>} />
           <Route path="/projects"                element={<RequireApplicant><Layout><ProjectsList /></Layout></RequireApplicant>} />
