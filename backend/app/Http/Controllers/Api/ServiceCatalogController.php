@@ -70,6 +70,7 @@ class ServiceCatalogController extends Controller
             ->get([
                 'id', 'code', 'parent_code', 'name_ar', 'name_en',
                 'description_ar', 'description_en', 'currency', 'base_fee', 'sla_hours',
+                'phase',
             ]);
 
         return response()->json(['services' => $services]);

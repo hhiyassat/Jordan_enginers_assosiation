@@ -112,6 +112,8 @@ export interface ServiceDefinition {
   currency: string;
   schema?: ServiceSchema;
   status?: 'active' | 'inactive' | 'draft';
+  /** JEA delivery phase 1..5 (colored dot/pill on the UI); null = unclassified */
+  phase?: 1 | 2 | 3 | 4 | 5 | null;
 }
 
 // ── Engineer ────────────────────────────────────────────────────────

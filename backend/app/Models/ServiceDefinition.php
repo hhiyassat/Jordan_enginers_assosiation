@@ -21,13 +21,14 @@ class ServiceDefinition extends Model
     protected $fillable = [
         'organization_id', 'code', 'parent_code', 'name_ar', 'name_en',
         'description_ar', 'description_en', 'currency', 'base_fee', 'sla_hours',
-        'schema', 'status',
+        'schema', 'status', 'phase',
     ];
 
     protected $casts = [
         'schema'    => 'array',
         'base_fee'  => 'decimal:2',
         'sla_hours' => 'integer',
+        'phase'     => 'integer',
     ];
 
     // ── Relationships ─────────────────────────────────────────────────

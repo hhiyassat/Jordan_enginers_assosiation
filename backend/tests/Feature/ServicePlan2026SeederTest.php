@@ -1,0 +1,128 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\Organization;
+use App\Models\ServiceDefinition;
+use App\Models\User;
+use Database\Seeders\ServicePlan2026Seeder;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Laravel\Sanctum\Sanctum;
+use Tests\TestCase;
+
+/**
+ * The 2026 services plan is the single source of truth for the JEA
+ * portal catalogue. These tests pin the phase-count invariants (which
+ * the plan footer commits to publicly: 20/13/12/4/9) and the shape of
+ * the API response so a future edit to the seeder can't silently drift.
+ */
+class ServicePlan2026SeederTest extends TestCase
+{
+    use RefreshDatabase;
+
+    private Organization $org;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->org = Organization::create([
+            'name_ar' => 'demo', 'name_en' => 'demo', 'slug' => 'demo', 'is_active' => true,
+        ]);
+    }
+
+    public function test_seeder_produces_phase_counts_matching_the_plan_footer(): void
+    {
+        $this->runSeeder();
+
+        $counts = ServiceDefinition::where('organization_id', $this->org->id)
+            ->selectRaw('phase, COUNT(*) as c')
+            ->groupBy('phase')
+            ->pluck('c', 'phase')
+            ->toArray();
+
+        // Footer of service-plan-payment.pdf: 20 / 13 / 12 / 4 / 9 → total 58.
+        $this->assertSame(20, $counts[1] ?? 0, 'Phase 1 must match plan');
+        $this->assertSame(13, $counts[2] ?? 0, 'Phase 2 must match plan');
+        $this->assertSame(12, $counts[3] ?? 0, 'Phase 3 must match plan');
+        $this->assertSame(4,  $counts[4] ?? 0, 'Phase 4 must match plan');
+        $this->assertSame(9,  $counts[5] ?? 0, 'Phase 5 must match plan');
+    }
+
+    public function test_seeder_is_idempotent(): void
+    {
+        $this->runSeeder();
+        $countAfterFirst = ServiceDefinition::where('organization_id', $this->org->id)->count();
+
+        $this->runSeeder();
+        $countAfterSecond = ServiceDefinition::where('organization_id', $this->org->id)->count();
+
+        $this->assertSame($countAfterFirst, $countAfterSecond,
+            'Re-running the seeder must not duplicate rows');
+    }
+
+    public function test_seeder_adds_the_new_survey_top_level_tile(): void
+    {
+        $this->runSeeder();
+
+        $survTile = ServiceDefinition::where('organization_id', $this->org->id)
+            ->where('code', 'JEA-SURV')
+            ->first();
+
+        $this->assertNotNull($survTile);
+        $this->assertNull($survTile->parent_code);
+        $this->assertSame('استطلاع الموقع', $survTile->name_ar);
+    }
+
+    public function test_services_are_attached_to_the_expected_parent_tiles(): void
+    {
+        $this->runSeeder();
+
+        $expected = [
+            'JEA-PROJ' => 12,
+            'JEA-SURV' => 14, // 13 numbered + شهادة الكشف الحسي which sits under survey per the plan
+            'JEA-FIN'  => 6,
+            'JEA-CERT' => 6,
+            'JEA-ENG'  => 2,
+            'JEA-DEC'  => 4,
+            'JEA-MISC' => 14,
+        ];
+
+        foreach ($expected as $parent => $count) {
+            $actual = ServiceDefinition::where('organization_id', $this->org->id)
+                ->where('parent_code', $parent)
+                ->count();
+            $this->assertSame($count, $actual,
+                "Expected {$count} services under {$parent}, got {$actual}");
+        }
+    }
+
+    public function test_catalog_api_returns_phase_field(): void
+    {
+        $this->runSeeder();
+        $user = User::create([
+            'organization_id' => $this->org->id, 'name' => 'x', 'email' => 'x@t.dev',
+            'password' => 'x', 'role' => 'applicant', 'is_active' => true, 'password_changed_at' => now(),
+        ]);
+        Sanctum::actingAs($user);
+
+        $res = $this->getJson('/api/v1/services');
+        $res->assertOk();
+
+        $svc = collect($res->json('services'))->firstWhere('code', 'DRW-P-001');
+        $this->assertNotNull($svc, 'DRW-P-001 must be in the catalog');
+        $this->assertArrayHasKey('phase', $svc);
+        $this->assertSame(1, $svc['phase']);
+    }
+
+    private function runSeeder(): void
+    {
+        // Silence the seeder's info() output during tests.
+        (new ServicePlan2026Seeder())->setContainer($this->app)
+            ->setCommand(new class extends \Illuminate\Console\Command {
+                public function info($string, $verbosity = null): void {}
+                public function error($string, $verbosity = null): void {}
+                public function warn($string, $verbosity = null): void {}
+            })
+            ->run();
+    }
+}

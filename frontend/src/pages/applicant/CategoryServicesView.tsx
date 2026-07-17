@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowRight, Plus, Clock } from 'lucide-react';
 import { servicesApi } from '../../api/client';
 import type { ServiceDefinition } from '../../types';
+import { PhaseBadge } from '../../components/ui/PhaseBadge';
 
 // Turn sla_hours (integer) into a human-readable string in Arabic.
 // > 24h → days; < 24 → hours; null → "—".
@@ -110,9 +111,12 @@ function DetailServiceCard({ service, onOpen }: { service: ServiceDefinition; on
             <h3 className="text-sm font-bold text-jea-text leading-snug">{service.name_ar}</h3>
             <p className="text-[10px] text-jea-muted mt-0.5">{service.name_en}</p>
           </div>
-          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 bg-jea-accent text-jea-primary">
-            متاح
-          </span>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <PhaseBadge phase={service.phase} variant="pill" />
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-jea-accent text-jea-primary">
+              متاح
+            </span>
+          </div>
         </div>
 
         <div className="grid grid-cols-3 gap-2 text-center">
