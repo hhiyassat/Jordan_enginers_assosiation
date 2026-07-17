@@ -84,6 +84,7 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'token.inactivity', 'password.p
 
         // Projects — user's engineering projects (containers for applications)
         Route::get('projects',        [ProjectController::class, 'index']);
+        Route::get('projects/quota',  [ProjectController::class, 'quota']);
         Route::post('projects',       [ProjectController::class, 'store']);
         Route::get('projects/{id}',   [ProjectController::class, 'show']);
     });

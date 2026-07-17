@@ -86,7 +86,18 @@ export const projectsApi = {
   get:    (id: number) => request<{ project: Project }>('GET', `/projects/${id}`),
   create: (data: Partial<Pick<Project, 'name_ar' | 'name_en' | 'type' | 'area_m2' | 'city' | 'contract_no'>>) =>
     request<{ project: Project }>('POST', '/projects', data),
+  quota:  () => request<QuotaStatus>('GET', '/projects/quota'),
 };
+
+export interface QuotaStatus {
+  year: number;
+  quota_m2: number | null;
+  used_m2: number;
+  remaining_m2: number | null;
+  percent_used: number | null;
+  projects_count: number;
+  unlimited: boolean;
+}
 
 // ── Applications ──────────────────────────────────────────────────────
 

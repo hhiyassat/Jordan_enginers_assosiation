@@ -1,19 +1,32 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Plus, Building2, MapPin } from 'lucide-react';
-import { projectsApi } from '../../api/client';
+import { projectsApi, type QuotaStatus } from '../../api/client';
 import type { Project } from '../../types';
 import { PageHero } from '../../components/ui/PageHero';
 import { Button } from '../../components/ui/Button';
 import { Modal } from '../../components/ui/Modal';
 import { TextField, FormField } from '../../components/ui/FormField';
+import { QuotaCard } from '../../components/ui/QuotaCard';
 
 export function ProjectsList() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState('');
   const [showAdd, setShowAdd]   = useState(false);
+  const [quota, setQuota]       = useState<QuotaStatus | null>(null);
+  const [quotaLoading, setQuotaLoading] = useState(true);
+  const [quotaError, setQuotaError]     = useState('');
   const navigate = useNavigate();
+
+  const loadQuota = () => {
+    setQuotaLoading(true);
+    setQuotaError('');
+    projectsApi.quota()
+      .then(setQuota)
+      .catch(e => setQuotaError((e as Error).message))
+      .finally(() => setQuotaLoading(false));
+  };
 
   const reload = () => {
     setLoading(true);
@@ -21,6 +34,7 @@ export function ProjectsList() {
       .then(r => setProjects(r.projects))
       .catch(e => setError(e.message))
       .finally(() => setLoading(false));
+    loadQuota();
   };
 
   useEffect(reload, []);
@@ -55,7 +69,14 @@ export function ProjectsList() {
         }
       />
 
-      <div className="flex-1 overflow-y-auto bg-jea-bg p-6">
+      <div className="flex-1 overflow-y-auto bg-jea-bg p-6 flex flex-col gap-6">
+        <QuotaCard
+          status={quota}
+          loading={quotaLoading}
+          error={quotaError}
+          onRetry={loadQuota}
+        />
+
         {loading && (
           <div className="flex flex-col gap-4 max-w-3xl" aria-busy="true" aria-label="جارٍ التحميل">
             {[1, 2, 3].map(i => (

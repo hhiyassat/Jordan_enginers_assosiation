@@ -23,6 +23,7 @@ class User extends Authenticatable
     protected $fillable = [
         'organization_id', 'name', 'email', 'password', 'role', 'phone',
         'is_active', 'must_change_password', 'password_changed_at', 'email_verified_at',
+        'annual_quota_m2',
     ];
 
     protected $hidden = ['password', 'remember_token'];
@@ -32,6 +33,7 @@ class User extends Authenticatable
         'password_changed_at' => 'datetime',
         'is_active'           => 'boolean',
         'must_change_password' => 'boolean',
+        'annual_quota_m2'     => 'integer',
     ];
 
     // ── Relationships ─────────────────────────────────────────────────
