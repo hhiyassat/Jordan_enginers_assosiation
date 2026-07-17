@@ -33,4 +33,9 @@ return [
     // older than now()->subYears(this).
     'audit_retention_years' => (int) env('AUDIT_LOG_RETENTION_YEARS', 7),
 
+    // Text captcha — see App\Services\CaptchaService and app/Http/Middleware/VerifyCaptcha.
+    // Toggle CAPTCHA_ENABLED=false in dev/tests to bypass.
+    'captcha_enabled'     => filter_var(env('CAPTCHA_ENABLED', true), FILTER_VALIDATE_BOOLEAN),
+    'captcha_ttl_minutes' => (int) env('CAPTCHA_TTL_MINUTES', 5),
+
 ];

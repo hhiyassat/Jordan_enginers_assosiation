@@ -10,6 +10,7 @@ import { JEALogo } from './components/JEALogo';
 import { SkipToContent } from './components/ui/SkipToContent';
 import { Button } from './components/ui/Button';
 import { TextField } from './components/ui/FormField';
+import { Captcha } from './components/ui/Captcha';
 
 // ── Pages ─────────────────────────────────────────────────────────────────────
 import { ServiceList }             from './pages/applicant/ServiceList';
@@ -86,26 +87,45 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
 function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
-  const [email, setEmail]       = useState('');
-  const [password, setPassword] = useState('');
-  const [showPass, setShowPass] = useState(false);
-  const [error, setError]       = useState('');
-  const [loading, setLoading]   = useState(false);
+  const [email, setEmail]         = useState('');
+  const [password, setPassword]   = useState('');
+  const [showPass, setShowPass]   = useState(false);
+  const [captcha, setCaptcha]     = useState({ id: '', answer: '' });
+  const [captchaKey, setCaptchaKey] = useState(0);
+  const [captchaError, setCaptchaError] = useState('');
+  const [error, setError]         = useState('');
+  const [loading, setLoading]     = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setCaptchaError('');
     if (!email.trim() || !password.trim()) {
       setError('يرجى إدخال البريد الإلكتروني وكلمة المرور');
       return;
     }
+    if (!captcha.answer || captcha.answer.length < 6) {
+      setCaptchaError('يرجى إدخال رمز التحقق كاملاً');
+      return;
+    }
     setLoading(true);
     try {
-      const r = await authApi.login(email, password);
+      const r = await authApi.login(email, password, captcha);
       login(r.token, r.user);
       navigate('/');
     } catch (err: unknown) {
-      setError((err as Error).message || 'خطأ في تسجيل الدخول');
+      const e = err as Error & { errors?: Record<string, string[]>; status?: number };
+      // Captcha is single-use — any failure invalidates the challenge on the
+      // server. Bump the key so the widget fetches a fresh SVG and clears
+      // the user's stale entry regardless of which validation failed.
+      setCaptchaKey(k => k + 1);
+      setCaptcha({ id: '', answer: '' });
+      const captchaMsg = e.errors?.captcha_answer?.[0];
+      if (captchaMsg) {
+        setCaptchaError(captchaMsg);
+      } else {
+        setError(e.message || 'خطأ في تسجيل الدخول');
+      }
     } finally {
       setLoading(false);
     }
@@ -186,6 +206,12 @@ function LoginPage() {
                   {showPass ? <EyeOff size={15} aria-hidden="true" /> : <Eye size={15} aria-hidden="true" />}
                 </button>
               }
+            />
+
+            <Captcha
+              onChange={setCaptcha}
+              resetKey={captchaKey}
+              error={captchaError}
             />
 
             {error && (

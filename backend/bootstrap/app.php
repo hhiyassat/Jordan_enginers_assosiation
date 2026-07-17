@@ -6,6 +6,7 @@ use App\Http\Middleware\LogApiAccess;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\TokenInactivityCheck;
 use App\Http\Middleware\ValidateIntegrationKey;
+use App\Http\Middleware\VerifyCaptcha;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -44,6 +45,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'integration.key'  => ValidateIntegrationKey::class,
             // GSB: MODEE Annex 4.15 §4.5 rule 11 — IP whitelist for GSB routes
             'gsb.ip_whitelist' => \App\Http\Middleware\GsbIpWhitelist::class,
+            // Text captcha for public forms (login, register, tracking)
+            'captcha'          => VerifyCaptcha::class,
         ]);
 
         // NOTE: statefulApi() (Sanctum SPA cookie auth) is intentionally REMOVED.

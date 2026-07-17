@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\ApplicationController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\CaptchaController;
 use App\Http\Controllers\Api\GsbController;
 use App\Http\Controllers\Api\IntegrationController;
 use App\Http\Controllers\Api\ProjectController;
@@ -45,9 +46,12 @@ Route::prefix('integration')
 
 Route::prefix('v1')->group(function () {
 
-    // SEC-009: Strict rate limit on login
-    Route::post('auth/login',    [AuthController::class, 'login'])->middleware('throttle:5,1');
-    Route::post('auth/register', [AuthController::class, 'register'])->middleware('throttle:10,1');
+    // Captcha challenge for public forms (unauthed, rate-limited)
+    Route::get('captcha', [CaptchaController::class, 'issue'])->middleware('throttle:30,1');
+
+    // SEC-009: Strict rate limit on login + captcha challenge
+    Route::post('auth/login',    [AuthController::class, 'login'])->middleware(['throttle:5,1', 'captcha']);
+    Route::post('auth/register', [AuthController::class, 'register'])->middleware(['throttle:10,1', 'captcha']);
 
     // FR-013: Public certificate verification
     Route::get('certificates/verify/{certNumber}', [ApplicationController::class, 'verifyCertificate']);
