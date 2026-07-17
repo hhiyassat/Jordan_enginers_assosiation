@@ -53,16 +53,25 @@ trait BelongsToOrganization
         });
     }
 
+    /** @return BelongsTo<Organization, $this> */
     public function organization(): BelongsTo
     {
         return $this->belongsTo(Organization::class);
     }
 
+    /**
+     * @param  Builder<$this> $query
+     * @return Builder<$this>
+     */
     public function scopeForOrganization(Builder $query, int $orgId): Builder
     {
         return $query->where($this->getTable() . '.organization_id', $orgId);
     }
 
+    /**
+     * @param  Builder<$this> $query
+     * @return Builder<$this>
+     */
     public function scopeForCurrentOrganization(Builder $query): Builder
     {
         $orgId = Auth::check() ? (Auth::user()->organization_id ?? null) : null;
@@ -72,6 +81,8 @@ trait BelongsToOrganization
     /**
      * Escape the global org scope. Use ONLY for admin cross-org queries,
      * integration jobs, or console context where scoping doesn't apply.
+     *
+     * @return Builder<static>
      */
     public static function withoutOrgScope(): Builder
     {

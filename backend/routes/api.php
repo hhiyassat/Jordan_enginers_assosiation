@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\ApplicationController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CaptchaController;
+use App\Http\Controllers\Api\EngineerController;
 use App\Http\Controllers\Api\GsbController;
 use App\Http\Controllers\Api\IntegrationController;
 use App\Http\Controllers\Api\ProjectController;
@@ -87,6 +88,12 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'token.inactivity', 'password.p
         Route::get('projects/quota',  [ProjectController::class, 'quota']);
         Route::post('projects',       [ProjectController::class, 'store']);
         Route::get('projects/{id}',   [ProjectController::class, 'show']);
+
+        // Engineers registered under the office (per-engineer m² quota)
+        Route::get('engineers',              [EngineerController::class, 'index']);
+        Route::post('engineers',             [EngineerController::class, 'store']);
+        Route::get('engineers/{id}',         [EngineerController::class, 'show']);
+        Route::get('engineers/{id}/quota',   [EngineerController::class, 'quota']);
     });
 
     // ── Reviewer routes ───────────────────────────────────────────────

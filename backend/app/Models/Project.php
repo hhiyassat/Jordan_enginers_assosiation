@@ -12,7 +12,8 @@ class Project extends Model
     use BelongsToOrganization, SoftDeletes;
 
     protected $fillable = [
-        'organization_id', 'owner_user_id', 'name_ar', 'name_en',
+        'organization_id', 'owner_user_id', 'engineer_id',
+        'name_ar', 'name_en',
         'type', 'area_m2', 'city', 'contract_no', 'request_no', 'status',
     ];
 
@@ -25,5 +26,11 @@ class Project extends Model
     public function owner(): BelongsTo
     {
         return $this->belongsTo(User::class, 'owner_user_id');
+    }
+
+    /** @return BelongsTo<Engineer, $this> */
+    public function engineer(): BelongsTo
+    {
+        return $this->belongsTo(Engineer::class);
     }
 }

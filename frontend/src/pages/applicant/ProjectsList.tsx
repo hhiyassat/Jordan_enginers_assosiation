@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Plus, Building2, MapPin } from 'lucide-react';
-import { projectsApi, type QuotaStatus } from '../../api/client';
-import type { Project } from '../../types';
+import { engineersApi, projectsApi, type OfficeQuota } from '../../api/client';
+import type { Engineer, Project } from '../../types';
 import { PageHero } from '../../components/ui/PageHero';
 import { Button } from '../../components/ui/Button';
 import { Modal } from '../../components/ui/Modal';
@@ -14,7 +14,7 @@ export function ProjectsList() {
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState('');
   const [showAdd, setShowAdd]   = useState(false);
-  const [quota, setQuota]       = useState<QuotaStatus | null>(null);
+  const [quota, setQuota]       = useState<OfficeQuota | null>(null);
   const [quotaLoading, setQuotaLoading] = useState(true);
   const [quotaError, setQuotaError]     = useState('');
   const navigate = useNavigate();
@@ -71,7 +71,10 @@ export function ProjectsList() {
 
       <div className="flex-1 overflow-y-auto bg-jea-bg p-6 flex flex-col gap-6">
         <QuotaCard
-          status={quota}
+          facet={quota?.totals ?? null}
+          year={quota?.year}
+          titleAr="إجمالي رصيد المكتب"
+          titleEn="Office annual m² total"
           loading={quotaLoading}
           error={quotaError}
           onRetry={loadQuota}
@@ -184,21 +187,42 @@ function AddProjectModal({
   onClose: () => void;
   onCreated: () => void;
 }) {
-  const [name_ar, setNameAr]   = useState('');
-  const [name_en, setNameEn]   = useState('');
-  const [type,    setType]     = useState('سكني');
-  const [area_m2, setArea]     = useState('');
-  const [city,    setCity]     = useState('');
-  const [saving,  setSaving]   = useState(false);
-  const [error,   setError]    = useState('');
+  const [name_ar, setNameAr]     = useState('');
+  const [name_en, setNameEn]     = useState('');
+  const [type,    setType]       = useState('سكني');
+  const [area_m2, setArea]       = useState('');
+  const [city,    setCity]       = useState('');
+  const [engineerId, setEngineerId] = useState<string>('');
+  const [engineers, setEngineers]   = useState<Engineer[]>([]);
+  const [engLoading, setEngLoading] = useState(false);
+  const [saving,  setSaving]     = useState(false);
+  const [error,   setError]      = useState('');
+
+  useEffect(() => {
+    if (!open) return;
+    setEngLoading(true);
+    engineersApi.list()
+      .then(r => {
+        setEngineers(r.engineers);
+        // Auto-select first engineer if none chosen yet.
+        if (r.engineers.length > 0 && !engineerId) {
+          setEngineerId(String(r.engineers[0].id));
+        }
+      })
+      .catch(() => setEngineers([]))
+      .finally(() => setEngLoading(false));
+    /* eslint-disable-next-line react-hooks/exhaustive-deps */
+  }, [open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     if (!name_ar.trim()) { setError('يرجى إدخال اسم المشروع'); return; }
+    if (!engineerId)     { setError('يرجى اختيار المهندس المسؤول'); return; }
     setSaving(true);
     try {
       await projectsApi.create({
+        engineer_id: parseInt(engineerId, 10),
         name_ar,
         name_en: name_en || null,
         type,
@@ -277,6 +301,29 @@ function AddProjectModal({
               <option>صناعي</option>
               <option>حكومي</option>
               <option>مختلط</option>
+            </select>
+          )}
+        </FormField>
+
+        <FormField label="المهندس المسؤول" labelEn="Assigned engineer" required>
+          {props => (
+            <select
+              {...props}
+              value={engineerId}
+              onChange={e => setEngineerId(e.target.value)}
+              disabled={engLoading || engineers.length === 0}
+              className="w-full border border-jea-border rounded-lg px-3 py-2.5 text-sm outline-none focus:border-jea-primary focus:ring-2 focus:ring-jea-primary/20 bg-white disabled:opacity-60"
+            >
+              {engLoading && <option value="">جارٍ التحميل...</option>}
+              {!engLoading && engineers.length === 0 && (
+                <option value="">لا يوجد مهندسون مسجلون</option>
+              )}
+              {engineers.map(e => (
+                <option key={e.id} value={e.id}>
+                  {e.name_ar} · {e.membership_number}
+                  {e.annual_quota_m2 != null && ` (${e.annual_quota_m2} م² سنوي)`}
+                </option>
+              ))}
             </select>
           )}
         </FormField>

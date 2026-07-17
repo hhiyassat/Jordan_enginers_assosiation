@@ -1,7 +1,7 @@
 // ESP v2 — API Client
 // All requests go through this client for consistent error handling.
 
-import type { Application, ApplicationDocument, Certificate, DashboardStats, Project, ServiceDefinition, User } from '../types';
+import type { Application, ApplicationDocument, Certificate, DashboardStats, Engineer, Project, ServiceDefinition, User } from '../types';
 
 const BASE = '/api/v1';
 
@@ -84,12 +84,15 @@ export const servicesApi = {
 export const projectsApi = {
   list:   () => request<{ projects: Project[] }>('GET', '/projects'),
   get:    (id: number) => request<{ project: Project }>('GET', `/projects/${id}`),
-  create: (data: Partial<Pick<Project, 'name_ar' | 'name_en' | 'type' | 'area_m2' | 'city' | 'contract_no'>>) =>
+  create: (data: Partial<Pick<Project, 'name_ar' | 'name_en' | 'type' | 'area_m2' | 'city' | 'contract_no'>> & { engineer_id: number }) =>
     request<{ project: Project }>('POST', '/projects', data),
-  quota:  () => request<QuotaStatus>('GET', '/projects/quota'),
+  quota:  () => request<OfficeQuota>('GET', '/projects/quota'),
 };
 
-export interface QuotaStatus {
+/** Per-engineer quota row (returned inside OfficeQuota.engineers). */
+export interface EngineerQuota {
+  engineer_id: number;
+  engineer_name_ar: string;
   year: number;
   quota_m2: number | null;
   used_m2: number;
@@ -98,6 +101,30 @@ export interface QuotaStatus {
   projects_count: number;
   unlimited: boolean;
 }
+
+export interface OfficeQuota {
+  year: number;
+  totals: {
+    quota_m2: number | null;
+    used_m2: number;
+    remaining_m2: number | null;
+    percent_used: number | null;
+    projects_count: number;
+    unlimited: boolean;
+    engineers_count: number;
+  };
+  engineers: EngineerQuota[];
+}
+
+// ── Engineers ────────────────────────────────────────────────────────
+
+export const engineersApi = {
+  list:   () => request<{ engineers: Engineer[] }>('GET', '/engineers'),
+  get:    (id: number) => request<{ engineer: Engineer }>('GET', `/engineers/${id}`),
+  create: (data: Partial<Pick<Engineer, 'name_ar' | 'name_en' | 'membership_number' | 'specialization' | 'phone' | 'email' | 'annual_quota_m2'>>) =>
+    request<{ engineer: Engineer }>('POST', '/engineers', data),
+  quota:  (id: number) => request<EngineerQuota>('GET', `/engineers/${id}/quota`),
+};
 
 // ── Applications ──────────────────────────────────────────────────────
 

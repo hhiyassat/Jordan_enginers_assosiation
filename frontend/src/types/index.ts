@@ -114,12 +114,32 @@ export interface ServiceDefinition {
   status?: 'active' | 'inactive' | 'draft';
 }
 
+// ── Engineer ────────────────────────────────────────────────────────
+
+export interface Engineer {
+  id: number;
+  organization_id: number;
+  office_user_id: number;
+  name_ar: string;
+  name_en?: string | null;
+  membership_number: string;
+  specialization?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  annual_quota_m2?: number | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 // ── Project ─────────────────────────────────────────────────────────
 
 export interface Project {
   id: number;
   organization_id: number;
   owner_user_id: number;
+  engineer_id?: number | null;
+  engineer?: Pick<Engineer, 'id' | 'name_ar' | 'name_en' | 'membership_number'> | null;
   name_ar: string;
   name_en?: string | null;
   type?: string | null;

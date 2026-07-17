@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import {
   FolderOpen, FileText, Award, Plus, ArrowLeft, MapPin, Building2,
 } from 'lucide-react';
-import { applicationsApi, projectsApi, type QuotaStatus } from '../../api/client';
+import { applicationsApi, projectsApi, type OfficeQuota } from '../../api/client';
 import type { Application, Project } from '../../types';
 import { useAuth } from '../../App';
 import { PageHero } from '../../components/ui/PageHero';
@@ -22,7 +22,7 @@ export function Dashboard() {
 
   const [projects, setProjects]         = useState<Project[]>([]);
   const [applications, setApplications] = useState<Application[]>([]);
-  const [quota, setQuota]               = useState<QuotaStatus | null>(null);
+  const [quota, setQuota]               = useState<OfficeQuota | null>(null);
 
   const [loading, setLoading]           = useState(true);
   const [quotaLoading, setQuotaLoading] = useState(true);
@@ -72,10 +72,13 @@ export function Dashboard() {
       />
 
       <div className="flex-1 overflow-y-auto bg-jea-bg p-6 flex flex-col gap-6">
-        {/* Row 1 — quota + counter tiles */}
+        {/* Row 1 — aggregate office quota + counter tiles */}
         <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_auto] gap-4 items-stretch">
           <QuotaCard
-            status={quota}
+            facet={quota?.totals ?? null}
+            year={quota?.year}
+            titleAr="إجمالي رصيد المكتب"
+            titleEn="Office annual m² total"
             loading={quotaLoading}
             error={quotaError}
             onRetry={loadQuota}
@@ -105,6 +108,28 @@ export function Dashboard() {
             />
           </div>
         </div>
+
+        {/* Per-engineer breakdown */}
+        {quota && quota.engineers.length > 0 && (
+          <section aria-labelledby="engineer-quotas">
+            <h2 id="engineer-quotas" className="text-sm font-black text-jea-text mb-3">
+              <span lang="ar">رصيد كل مهندس</span>
+              <span className="text-jea-muted font-normal text-xs mx-1" lang="en" dir="ltr">· Per-engineer quota</span>
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+              {quota.engineers.map(eng => (
+                <QuotaCard
+                  key={eng.engineer_id}
+                  facet={eng}
+                  year={eng.year}
+                  titleAr={eng.engineer_name_ar}
+                  titleEn={`Engineer #${eng.engineer_id}`}
+                  compact
+                />
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Row 2 — quick actions */}
         <section aria-labelledby="quick-actions">

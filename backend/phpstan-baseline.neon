@@ -349,49 +349,13 @@ parameters:
 			path: app/Models/Application.php
 
 		-
-			message: '#^Method App\\Models\\Application\:\:organization\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/Application.php
-
-		-
 			message: '#^Method App\\Models\\Application\:\:reviews\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\HasMany does not specify its types\: TRelatedModel, TDeclaringModel$#'
 			identifier: missingType.generics
 			count: 1
 			path: app/Models/Application.php
 
 		-
-			message: '#^Method App\\Models\\Application\:\:scopeForCurrentOrganization\(\) has parameter \$query with generic class Illuminate\\Database\\Eloquent\\Builder but does not specify its types\: TModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/Application.php
-
-		-
-			message: '#^Method App\\Models\\Application\:\:scopeForCurrentOrganization\(\) return type with generic class Illuminate\\Database\\Eloquent\\Builder does not specify its types\: TModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/Application.php
-
-		-
-			message: '#^Method App\\Models\\Application\:\:scopeForOrganization\(\) has parameter \$query with generic class Illuminate\\Database\\Eloquent\\Builder but does not specify its types\: TModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/Application.php
-
-		-
-			message: '#^Method App\\Models\\Application\:\:scopeForOrganization\(\) return type with generic class Illuminate\\Database\\Eloquent\\Builder does not specify its types\: TModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/Application.php
-
-		-
 			message: '#^Method App\\Models\\Application\:\:serviceDefinition\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/Application.php
-
-		-
-			message: '#^Method App\\Models\\Application\:\:withoutOrgScope\(\) return type with generic class Illuminate\\Database\\Eloquent\\Builder does not specify its types\: TModel$#'
 			identifier: missingType.generics
 			count: 1
 			path: app/Models/Application.php
@@ -475,42 +439,6 @@ parameters:
 			path: app/Models/Certificate.php
 
 		-
-			message: '#^Method App\\Models\\Certificate\:\:organization\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/Certificate.php
-
-		-
-			message: '#^Method App\\Models\\Certificate\:\:scopeForCurrentOrganization\(\) has parameter \$query with generic class Illuminate\\Database\\Eloquent\\Builder but does not specify its types\: TModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/Certificate.php
-
-		-
-			message: '#^Method App\\Models\\Certificate\:\:scopeForCurrentOrganization\(\) return type with generic class Illuminate\\Database\\Eloquent\\Builder does not specify its types\: TModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/Certificate.php
-
-		-
-			message: '#^Method App\\Models\\Certificate\:\:scopeForOrganization\(\) has parameter \$query with generic class Illuminate\\Database\\Eloquent\\Builder but does not specify its types\: TModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/Certificate.php
-
-		-
-			message: '#^Method App\\Models\\Certificate\:\:scopeForOrganization\(\) return type with generic class Illuminate\\Database\\Eloquent\\Builder does not specify its types\: TModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/Certificate.php
-
-		-
-			message: '#^Method App\\Models\\Certificate\:\:withoutOrgScope\(\) return type with generic class Illuminate\\Database\\Eloquent\\Builder does not specify its types\: TModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/Certificate.php
-
-		-
 			message: '#^Method App\\Models\\GsbCallLog\:\:scopeCitizenData\(\) has no return type specified\.$#'
 			identifier: missingType.return
 			count: 1
@@ -583,43 +511,7 @@ parameters:
 			path: app/Models/Organization.php
 
 		-
-			message: '#^Method App\\Models\\Project\:\:organization\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/Project.php
-
-		-
 			message: '#^Method App\\Models\\Project\:\:owner\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/Project.php
-
-		-
-			message: '#^Method App\\Models\\Project\:\:scopeForCurrentOrganization\(\) has parameter \$query with generic class Illuminate\\Database\\Eloquent\\Builder but does not specify its types\: TModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/Project.php
-
-		-
-			message: '#^Method App\\Models\\Project\:\:scopeForCurrentOrganization\(\) return type with generic class Illuminate\\Database\\Eloquent\\Builder does not specify its types\: TModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/Project.php
-
-		-
-			message: '#^Method App\\Models\\Project\:\:scopeForOrganization\(\) has parameter \$query with generic class Illuminate\\Database\\Eloquent\\Builder but does not specify its types\: TModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/Project.php
-
-		-
-			message: '#^Method App\\Models\\Project\:\:scopeForOrganization\(\) return type with generic class Illuminate\\Database\\Eloquent\\Builder does not specify its types\: TModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/Project.php
-
-		-
-			message: '#^Method App\\Models\\Project\:\:withoutOrgScope\(\) return type with generic class Illuminate\\Database\\Eloquent\\Builder does not specify its types\: TModel$#'
 			identifier: missingType.generics
 			count: 1
 			path: app/Models/Project.php
@@ -669,42 +561,6 @@ parameters:
 		-
 			message: '#^Method App\\Models\\ServiceDefinition\:\:getWorkflowStages\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
-			count: 1
-			path: app/Models/ServiceDefinition.php
-
-		-
-			message: '#^Method App\\Models\\ServiceDefinition\:\:organization\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/ServiceDefinition.php
-
-		-
-			message: '#^Method App\\Models\\ServiceDefinition\:\:scopeForCurrentOrganization\(\) has parameter \$query with generic class Illuminate\\Database\\Eloquent\\Builder but does not specify its types\: TModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/ServiceDefinition.php
-
-		-
-			message: '#^Method App\\Models\\ServiceDefinition\:\:scopeForCurrentOrganization\(\) return type with generic class Illuminate\\Database\\Eloquent\\Builder does not specify its types\: TModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/ServiceDefinition.php
-
-		-
-			message: '#^Method App\\Models\\ServiceDefinition\:\:scopeForOrganization\(\) has parameter \$query with generic class Illuminate\\Database\\Eloquent\\Builder but does not specify its types\: TModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/ServiceDefinition.php
-
-		-
-			message: '#^Method App\\Models\\ServiceDefinition\:\:scopeForOrganization\(\) return type with generic class Illuminate\\Database\\Eloquent\\Builder does not specify its types\: TModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/ServiceDefinition.php
-
-		-
-			message: '#^Method App\\Models\\ServiceDefinition\:\:withoutOrgScope\(\) return type with generic class Illuminate\\Database\\Eloquent\\Builder does not specify its types\: TModel$#'
-			identifier: missingType.generics
 			count: 1
 			path: app/Models/ServiceDefinition.php
 
