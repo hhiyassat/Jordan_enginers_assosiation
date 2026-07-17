@@ -5,7 +5,6 @@ namespace App\Models\Concerns;
 use App\Models\Organization;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Scope;
 use Illuminate\Support\Facades\Auth;
 
 /**
@@ -33,16 +32,9 @@ trait BelongsToOrganization
 {
     public static function bootBelongsToOrganization(): void
     {
-        static::addGlobalScope(new class implements Scope {
-            public function apply(Builder $builder, $model): void
-            {
-                if (!Auth::check()) return;
-                $orgId = Auth::user()->organization_id ?? null;
-                if (!$orgId) return;
-
-                $builder->where($model->getTable() . '.organization_id', $orgId);
-            }
-        });
+        // Global scope is a named class (not anonymous) so ::withoutOrgScope()
+        // can remove it by name.
+        static::addGlobalScope(new OrganizationScope());
 
         // On create, backfill organization_id from the auth user if unset.
         static::creating(function ($model) {
@@ -86,6 +78,6 @@ trait BelongsToOrganization
      */
     public static function withoutOrgScope(): Builder
     {
-        return static::query()->withoutGlobalScope(self::class);
+        return static::query()->withoutGlobalScope(OrganizationScope::class);
     }
 }
