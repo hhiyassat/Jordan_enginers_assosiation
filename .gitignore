@@ -5,3 +5,6 @@ frontend/.env
 mcp/node_modules/
 *.log
 .DS_Store
+
+# PHPUnit cache
+backend/.phpunit.cache/
