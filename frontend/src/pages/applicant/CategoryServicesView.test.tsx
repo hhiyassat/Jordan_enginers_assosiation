@@ -37,29 +37,27 @@ beforeEach(() => {
 
 describe('CategoryServicesView — subcategory grouping', () => {
   it('renders section headers when at least one child has a subcategory', async () => {
+    // Parent name is DIFFERENT from every subcategory so no header is suppressed.
     mockList.mockResolvedValue({
       services: [
-        svc({ id: 100, code: 'JEA-SURV', parent_code: null, name_ar: 'استطلاع الموقع' }),
-        svc({ id: 1, code: 'SRV-001', parent_code: 'JEA-SURV', subcategory_ar: 'استطلاع الموقع', subcategory_en: 'Site Survey', name_ar: 'A' }),
-        svc({ id: 2, code: 'SRV-002', parent_code: 'JEA-SURV', subcategory_ar: 'استطلاع الموقع', subcategory_en: 'Site Survey', name_ar: 'B' }),
-        svc({ id: 3, code: 'SRV-008', parent_code: 'JEA-SURV', subcategory_ar: 'فحص المواد للأبنية', subcategory_en: 'Material Testing', name_ar: 'C' }),
-        svc({ id: 4, code: 'SRV-007', parent_code: 'JEA-SURV', subcategory_ar: 'الحفريات', subcategory_en: 'Excavations', name_ar: 'D' }),
+        svc({ id: 100, code: 'PARENT', parent_code: null, name_ar: 'الفئة الأم' }),
+        svc({ id: 1, code: 'S-001', parent_code: 'PARENT', subcategory_ar: 'المجموعة الأولى',  subcategory_en: 'Group One',   name_ar: 'A' }),
+        svc({ id: 2, code: 'S-002', parent_code: 'PARENT', subcategory_ar: 'المجموعة الأولى',  subcategory_en: 'Group One',   name_ar: 'B' }),
+        svc({ id: 3, code: 'S-003', parent_code: 'PARENT', subcategory_ar: 'المجموعة الثانية', subcategory_en: 'Group Two',   name_ar: 'C' }),
+        svc({ id: 4, code: 'S-004', parent_code: 'PARENT', subcategory_ar: 'المجموعة الثالثة', subcategory_en: 'Group Three', name_ar: 'D' }),
       ],
     });
 
-    renderAt('JEA-SURV');
-    await waitFor(() => expect(screen.getByText('استطلاع الموقع', { selector: 'h3' })).toBeInTheDocument());
+    renderAt('PARENT');
+    await waitFor(() => expect(screen.getByText('المجموعة الأولى', { selector: 'h3' })).toBeInTheDocument());
 
-    // Each subcategory gets its own <h3> header.
-    expect(screen.getByText('استطلاع الموقع', { selector: 'h3' })).toBeInTheDocument();
-    expect(screen.getByText('فحص المواد للأبنية', { selector: 'h3' })).toBeInTheDocument();
-    expect(screen.getByText('الحفريات', { selector: 'h3' })).toBeInTheDocument();
+    expect(screen.getByText('المجموعة الأولى',  { selector: 'h3' })).toBeInTheDocument();
+    expect(screen.getByText('المجموعة الثانية', { selector: 'h3' })).toBeInTheDocument();
+    expect(screen.getByText('المجموعة الثالثة', { selector: 'h3' })).toBeInTheDocument();
 
-    // Header shows English label + AR count.
-    expect(screen.getByText('Site Survey')).toBeInTheDocument();
-    expect(screen.getByText('Material Testing')).toBeInTheDocument();
+    expect(screen.getByText('Group One')).toBeInTheDocument();
+    expect(screen.getByText('Group Two')).toBeInTheDocument();
 
-    // Each section is a landmark with aria-labelledby pointing at its h3.
     const sections = document.querySelectorAll('section[aria-labelledby]');
     expect(sections.length).toBe(3);
   });
@@ -67,20 +65,45 @@ describe('CategoryServicesView — subcategory grouping', () => {
   it('groups cards into the correct section', async () => {
     mockList.mockResolvedValue({
       services: [
+        svc({ id: 100, code: 'PARENT', parent_code: null, name_ar: 'الفئة الأم' }),
+        svc({ id: 1, code: 'S-001', parent_code: 'PARENT', subcategory_ar: 'المجموعة الأولى', subcategory_en: 'Group One',    name_ar: 'AAA' }),
+        svc({ id: 3, code: 'S-002', parent_code: 'PARENT', subcategory_ar: 'المجموعة الثانية', subcategory_en: 'Group Two',    name_ar: 'BBB' }),
+      ],
+    });
+
+    renderAt('PARENT');
+    await waitFor(() => expect(screen.getByText('AAA')).toBeInTheDocument());
+
+    const sections = document.querySelectorAll('section[aria-labelledby]');
+    const first = sections[0] as HTMLElement;
+    expect(within(first).getByText('AAA')).toBeInTheDocument();
+    expect(within(first).queryByText('BBB')).toBeNull();
+  });
+
+  it('suppresses the header of a subcategory that duplicates the parent name', async () => {
+    mockList.mockResolvedValue({
+      services: [
+        // Parent tile whose name_ar is استطلاع الموقع.
         svc({ id: 100, code: 'JEA-SURV', parent_code: null, name_ar: 'استطلاع الموقع' }),
-        svc({ id: 1, code: 'SRV-001', parent_code: 'JEA-SURV', subcategory_ar: 'استطلاع الموقع', subcategory_en: 'Site Survey', name_ar: 'AAA' }),
-        svc({ id: 3, code: 'SRV-008', parent_code: 'JEA-SURV', subcategory_ar: 'فحص المواد للأبنية', subcategory_en: 'Material Testing', name_ar: 'BBB' }),
+        // Main group shares the parent's name — its header must NOT render.
+        svc({ id: 1, code: 'SRV-A', parent_code: 'JEA-SURV', subcategory_ar: 'استطلاع الموقع', subcategory_en: 'Site Survey', name_ar: 'AAA' }),
+        // Distinct group — its header must render.
+        svc({ id: 2, code: 'SRV-B', parent_code: 'JEA-SURV', subcategory_ar: 'فحص المواد للأبنية', subcategory_en: 'Material Testing', name_ar: 'BBB' }),
       ],
     });
 
     renderAt('JEA-SURV');
     await waitFor(() => expect(screen.getByText('AAA')).toBeInTheDocument());
 
-    const sections = document.querySelectorAll('section[aria-labelledby]');
-    // First section (استطلاع الموقع) should contain AAA, not BBB.
-    const first = sections[0] as HTMLElement;
-    expect(within(first).getByText('AAA')).toBeInTheDocument();
-    expect(within(first).queryByText('BBB')).toBeNull();
+    // Only the non-duplicate subcategory should have a visible <h3> header.
+    const h3s = Array.from(document.querySelectorAll('h3')).map(el => el.textContent);
+    expect(h3s).toContain('فحص المواد للأبنية');
+    // Parent-duplicate header must NOT appear as an <h3>.
+    expect(h3s.filter(t => t === 'استطلاع الموقع')).toHaveLength(0);
+
+    // Both sections still exist as landmarks (aria-label OR aria-labelledby).
+    const sections = document.querySelectorAll('section[aria-labelledby], section[aria-label]');
+    expect(sections.length).toBe(2);
   });
 
   it('falls back to a flat grid when no subcategories are present', async () => {

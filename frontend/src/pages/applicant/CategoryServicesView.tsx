@@ -116,9 +116,19 @@ export function CategoryServicesView() {
 
         {!loading && !error && useGroupedLayout && groups.map(g => {
           const groupId = `subcat-${g.ar || 'general'}`;
+          // Suppress the header when this subcategory's name matches the
+          // parent category name — the whole page is already labelled by
+          // it, so a repeated <h3> just duplicates the hero/breadcrumb.
+          const isDuplicateOfParent = !!category && g.ar === category.name_ar;
+          const showHeader = !!g.ar && !isDuplicateOfParent;
           return (
-            <section key={g.ar || 'general'} aria-labelledby={groupId} className="mb-8 max-w-5xl">
-              {g.ar && (
+            <section
+              key={g.ar || 'general'}
+              aria-labelledby={showHeader ? groupId : undefined}
+              aria-label={showHeader ? undefined : (g.ar || undefined)}
+              className="mb-8 max-w-5xl"
+            >
+              {showHeader && (
                 <header className="flex items-baseline justify-between gap-3 mb-3 border-b border-jea-border pb-2">
                   <h3 id={groupId} className="text-base font-black text-jea-text" lang="ar">
                     {g.ar}
