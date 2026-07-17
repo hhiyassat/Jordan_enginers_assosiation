@@ -1,0 +1,18 @@
+includes:
+    - ./vendor/larastan/larastan/extension.neon
+    - ./phpstan-baseline.neon
+
+parameters:
+    # SEC-011: PHPStan level 6 required. Bump higher over time.
+    level: 6
+
+    # Scope: analyse the application code. Routes/seeders/factories are
+    # Laravel-heavy and add noise at level 6 — expand later once the app/
+    # baseline stays green.
+    paths:
+        - app
+
+    # Baseline captures legacy findings (see phpstan-baseline.neon). Any NEW
+    # code must be level-6 clean; add to the codebase and re-run `composer
+    # analyse` to see failures. Regenerate baseline after intentional cleanup:
+    #     ./vendor/bin/phpstan analyse --generate-baseline
