@@ -28,3 +28,19 @@ Schedule::command('gsb:prune-logs')
             'GSB log pruning failed — MODEE §4.9.3 retention policy at risk'
         );
     });
+
+// ── Audit log retention — NFR-006 ────────────────────────────────────
+//
+// Prune audit_logs older than AUDIT_LOG_RETENTION_YEARS (default 7).
+// Runs on the 1st of every month at 03:00 server time — cheap enough to run
+// often, but not on the daily hot path.
+
+Schedule::command('audit:prune')
+    ->monthlyOn(1, '03:00')
+    ->withoutOverlapping()
+    ->runInBackground()
+    ->onFailure(function () {
+        \Illuminate\Support\Facades\Log::critical(
+            'Audit log pruning failed — NFR-006 (7-year retention) at risk'
+        );
+    });

@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToOrganization;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * DATA-005: qr_token is SHA-256 HMAC-signed.
@@ -11,6 +13,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class Certificate extends Model
 {
+    use BelongsToOrganization, SoftDeletes;
+
     protected $fillable = [
         'application_id', 'organization_id', 'issued_to', 'issued_by',
         'certificate_number', 'qr_token', 'status', 'issued_date', 'expiry_date', 'cert_data',
@@ -25,5 +29,5 @@ class Certificate extends Model
     public function application(): BelongsTo { return $this->belongsTo(Application::class); }
     public function issuedTo(): BelongsTo    { return $this->belongsTo(User::class, 'issued_to'); }
     public function issuedBy(): BelongsTo    { return $this->belongsTo(User::class, 'issued_by'); }
-    public function organization(): BelongsTo{ return $this->belongsTo(Organization::class); }
+    // organization() provided by BelongsToOrganization trait
 }

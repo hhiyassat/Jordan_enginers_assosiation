@@ -2,9 +2,11 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToOrganization;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * ServiceDefinition
@@ -14,19 +16,22 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class ServiceDefinition extends Model
 {
+    use BelongsToOrganization, SoftDeletes;
+
     protected $fillable = [
-        'organization_id', 'code', 'name_ar', 'name_en',
-        'description_ar', 'description_en', 'currency', 'schema', 'status',
+        'organization_id', 'code', 'parent_code', 'name_ar', 'name_en',
+        'description_ar', 'description_en', 'currency', 'base_fee', 'sla_hours',
+        'schema', 'status',
     ];
 
-    protected $casts = ['schema' => 'array'];
+    protected $casts = [
+        'schema'    => 'array',
+        'base_fee'  => 'decimal:2',
+        'sla_hours' => 'integer',
+    ];
 
     // ── Relationships ─────────────────────────────────────────────────
-
-    public function organization(): BelongsTo
-    {
-        return $this->belongsTo(Organization::class);
-    }
+    // organization() provided by BelongsToOrganization trait
 
     public function applications(): HasMany
     {

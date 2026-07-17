@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToOrganization;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -20,7 +21,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class Application extends Model
 {
-    use SoftDeletes;
+    use SoftDeletes, BelongsToOrganization;
 
     protected $fillable = [
         'reference_number', 'organization_id', 'service_definition_id', 'applicant_id',
@@ -50,11 +51,7 @@ class Application extends Model
     const TERMINAL_STATUSES = [self::STATUS_REJECTED, self::STATUS_CERTIFICATE_ISSUED];
 
     // ── Relationships ────────────────────────────────────────────────────
-
-    public function organization(): BelongsTo
-    {
-        return $this->belongsTo(Organization::class);
-    }
+    // organization() provided by BelongsToOrganization trait
 
     public function serviceDefinition(): BelongsTo
     {
@@ -87,15 +84,7 @@ class Application extends Model
     }
 
     // ── Scopes ─────────────────────────────────────────────────────────
-
-    /**
-     * BR-004: Always scope by organization_id.
-     * Use this instead of bare Application::where(...) to prevent cross-org leakage.
-     */
-    public function scopeForOrganization($query, int $orgId)
-    {
-        return $query->where('organization_id', $orgId);
-    }
+    // scopeForOrganization + global scope provided by BelongsToOrganization trait
 
     // ── State helpers ──────────────────────────────────────────────────
 
@@ -122,17 +111,30 @@ class Application extends Model
     // ── Reference number generation ────────────────────────────────────
 
     /**
-     * Generate a reference number: ESP-{SERVICE_CODE}-{YYYYMMDD}-{SEQUENCE}
-     * Uses DB sequence (count+1) to avoid race conditions — fine for demo;
-     * production should use a DB sequence or Redis counter.
+     * NFR-008: Generate a 10-digit reference number of the form
+     *   {YY}{ServiceCode:4}{Seq:4}
+     * e.g. 2620010001 for service_definition_id 2001, first submission of 2026.
+     *
+     * The ServiceCode segment is derived from ServiceDefinition::id padded to
+     * 4 digits — stable across renames, unique per tenant. Sequence is
+     * per-service-per-year to give 9999 slots without collision.
+     *
+     * Old alpha references (ESP-XXX-...) remain valid for existing rows;
+     * only new records get the numeric format.
      */
-    public static function generateReference(string $serviceCode): string
+    public static function generateReference(ServiceDefinition $service): string
     {
-        $date  = now()->format('Ymd');
-        $today = now()->format('Y-m-d');
+        $yy      = str_pad((string) (now()->year % 100), 2, '0', STR_PAD_LEFT);
+        $svcCode = str_pad((string) ($service->id % 10000), 4, '0', STR_PAD_LEFT);
 
-        $count = self::whereDate('created_at', $today)->count() + 1;
+        $yearStart = now()->startOfYear();
+        $seq = self::withoutOrgScope()
+            ->where('service_definition_id', $service->id)
+            ->where('created_at', '>=', $yearStart)
+            ->count() + 1;
 
-        return sprintf('ESP-%s-%s-%04d', strtoupper($serviceCode), $date, $count);
+        $seqStr = str_pad((string) $seq, 4, '0', STR_PAD_LEFT);
+
+        return $yy . $svcCode . $seqStr;
     }
 }

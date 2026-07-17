@@ -25,4 +25,12 @@ return [
     'rate_limit_login'  => (int) env('RATE_LIMIT_LOGIN', 5),   // per minute
     'rate_limit_api'    => (int) env('RATE_LIMIT_API', 120),    // per minute
 
+    // API read SLO (NFR-001) — LogApiAccess middleware emits `slow_request`
+    // warnings when GET/HEAD requests exceed this (ms).
+    'slow_request_ms' => (int) env('SLOW_REQUEST_MS', 500),
+
+    // Audit log retention (NFR-006) — audit:prune command deletes rows
+    // older than now()->subYears(this).
+    'audit_retention_years' => (int) env('AUDIT_LOG_RETENTION_YEARS', 7),
+
 ];

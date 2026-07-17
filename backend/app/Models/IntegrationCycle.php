@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * IntegrationCycle
@@ -16,6 +17,9 @@ use Illuminate\Database\Eloquent\Model;
  */
 class IntegrationCycle extends Model
 {
+    use SoftDeletes;
+
+
     protected $fillable = [
         'cycle_ref',
         'service_name',

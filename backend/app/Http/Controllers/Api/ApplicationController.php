@@ -72,7 +72,7 @@ class ApplicationController extends Controller
         $fee = (new FeeCalculator($service))->calculate($request->data);
 
         $app = Application::create([
-            'reference_number'      => Application::generateReference($service->code),
+            'reference_number'      => Application::generateReference($service),
             'organization_id'       => $request->user()->organization_id,
             'service_definition_id' => $service->id,
             'applicant_id'          => $request->user()->id,
@@ -156,16 +156,22 @@ class ApplicationController extends Controller
 
         $request->validate([
             'document_id' => ['required', 'string'],
-            // SEC: restrict uploads to safe document types only; 10 MB max
-            'file'        => ['required', 'file', 'max:10240', 'mimes:pdf,jpg,jpeg,png,tiff,doc,docx'],
+            // SEC-008 + FR-018: allowlist docs (pdf/img/office) and video (mp4/mov/webm).
+            // Outer cap 100 MB accommodates video; per-slot cap is enforced by the
+            // service schema (documents[i].max_size_mb) via SchemaValidator downstream.
+            'file'        => ['required', 'file', 'max:102400', 'mimes:pdf,jpg,jpeg,png,tiff,doc,docx,mp4,mov,webm'],
         ]);
 
-        $file   = $request->file('file');
-        // Store under storage/app/uploads/ — use 'local' disk root directly
+        $file = $request->file('file');
+        // NFR-010: store on the configured default disk. Production must set
+        // FILESYSTEM_DISK=s3 (or another object-storage driver); dev may fall
+        // back to 'local' via .env. StorageServiceProvider fails fast at boot
+        // in production if the disk is not object storage.
+        $disk   = config('filesystems.default');
         $stored = $file->storeAs(
             "uploads/applications/{$app->id}",
             \Illuminate\Support\Str::uuid() . '.' . $file->getClientOriginalExtension(),
-            ['disk' => 'local']
+            ['disk' => $disk]
         );
 
         // Replace existing upload for this document slot
@@ -178,7 +184,7 @@ class ApplicationController extends Controller
             'document_id'       => $request->document_id,
             'original_filename' => $file->getClientOriginalName(),
             'stored_filename'   => basename($stored),
-            'disk'              => 'local',
+            'disk'              => $disk,
             'path'              => $stored,
             'mime_type'         => $file->getMimeType(),
             'size_bytes'        => $file->getSize(),
