@@ -44,9 +44,10 @@ export function ServiceList() {
   }, []);
 
   // Top-level = anything without a parent. Categories = top-levels that have children.
-  // Display order pins مشاريعي (JEA-PROJ) first so it lands in the top-right cell (RTL).
+  // Display order pins مشاريعي (JEA-PROJ) first and استطلاع الموقع (JEA-SURV)
+  // second so both anchor the top row (right side in RTL).
   const { topLevel, childCounts } = useMemo(() => {
-    const priority = ['JEA-PROJ'];
+    const priority = ['JEA-PROJ', 'JEA-SURV'];
     const top = services
       .filter(s => !s.parent_code)
       .sort((a, b) => {

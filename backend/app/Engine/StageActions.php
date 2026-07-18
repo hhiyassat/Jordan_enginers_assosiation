@@ -89,6 +89,19 @@ class StageActions
         'issue_certificate'       => ['label_ar' => 'إصدار الشهادة', 'label_en' => 'Issue Certificate', 'variant' => 'success', 'requires_notes' => false, 'decision' => null, 'annotation' => [], 'allowed_roles' => ['staff', 'admin']],
         'open_new_inspection'     => ['label_ar' => 'فتح كشف حسي جديد', 'label_en' => 'Open New Inspection', 'variant' => 'neutral', 'requires_notes' => false, 'decision' => null, 'annotation' => [], 'allowed_roles' => ['applicant']],
         'finalize'                => ['label_ar' => 'إنهاء', 'label_en' => 'Finalize', 'variant' => 'success', 'requires_notes' => false, 'decision' => null, 'annotation' => [], 'allowed_roles' => ['applicant']],
+
+        // Added for CatalogWorkflowsSeeder — cover the non-survey categories.
+        'disburse_payment'        => ['label_ar' => 'صرف المستحقات', 'label_en' => 'Disburse Payment', 'variant' => 'success', 'requires_notes' => false, 'decision' => null, 'annotation' => [], 'allowed_roles' => ['staff', 'admin']],
+        'register_engineer'       => ['label_ar' => 'تسجيل المهندس', 'label_en' => 'Register Engineer', 'variant' => 'success', 'requires_notes' => false, 'decision' => null, 'annotation' => [], 'allowed_roles' => ['staff', 'admin']],
+        'issue_decision'          => ['label_ar' => 'إصدار القرار', 'label_en' => 'Issue Decision', 'variant' => 'success', 'requires_notes' => true, 'decision' => null, 'annotation' => [], 'allowed_roles' => ['auditor', 'admin']],
+        'notify_parties'          => ['label_ar' => 'إشعار الأطراف', 'label_en' => 'Notify Parties', 'variant' => 'primary', 'requires_notes' => false, 'decision' => null, 'annotation' => [], 'allowed_roles' => ['staff', 'admin']],
+        'confirm_data_update'     => ['label_ar' => 'تأكيد تحديث البيانات', 'label_en' => 'Confirm Data Update', 'variant' => 'primary', 'requires_notes' => false, 'decision' => null, 'annotation' => [], 'allowed_roles' => ['staff']],
+        'book_slot'               => ['label_ar' => 'حجز الموعد', 'label_en' => 'Book Slot', 'variant' => 'primary', 'requires_notes' => false, 'decision' => null, 'annotation' => [], 'allowed_roles' => ['applicant']],
+        'serve_document'          => ['label_ar' => 'تسليم الوثيقة', 'label_en' => 'Serve Document', 'variant' => 'success', 'requires_notes' => false, 'decision' => null, 'annotation' => [], 'allowed_roles' => ['staff', 'admin']],
+        'schedule_inspection'     => ['label_ar' => 'جدولة الكشف', 'label_en' => 'Schedule Inspection', 'variant' => 'primary', 'requires_notes' => false, 'decision' => null, 'annotation' => [], 'allowed_roles' => ['staff']],
+        'conduct_inspection'      => ['label_ar' => 'إجراء الكشف', 'label_en' => 'Conduct Inspection', 'variant' => 'primary', 'requires_notes' => true, 'decision' => null, 'annotation' => [], 'allowed_roles' => ['staff', 'auditor']],
+        'publish_posting'         => ['label_ar' => 'نشر الإعلان', 'label_en' => 'Publish Posting', 'variant' => 'success', 'requires_notes' => false, 'decision' => null, 'annotation' => [], 'allowed_roles' => ['staff']],
+        'match_candidate'         => ['label_ar' => 'ترشيح مهندس', 'label_en' => 'Match Candidate', 'variant' => 'primary', 'requires_notes' => false, 'decision' => null, 'annotation' => [], 'allowed_roles' => ['applicant', 'staff']],
     ];
 
     /**
