@@ -60,11 +60,22 @@ class SurveyWorkflowsSeeder extends Seeder
             $schema['workflow'] = $workflowBundle['workflow'];
             $schema['flowchart_source'] = $workflowBundle['source'];
             $service->schema = $schema;
+
+            // Descriptions summarise the flowchart — set at the row level so
+            // the frontend service cards can show them without unpacking the
+            // schema. Two-language pair mandated by NFR-003.
+            if (isset($workflowBundle['description_ar'])) {
+                $service->description_ar = $workflowBundle['description_ar'];
+            }
+            if (isset($workflowBundle['description_en'])) {
+                $service->description_en = $workflowBundle['description_en'];
+            }
+
             $service->save();
             $updated++;
         }
 
-        $this->command->info("✓ Survey workflows applied to {$updated} services (out of " . count($mappings) . ' mapped).');
+        $this->command->info("✓ Survey workflows + descriptions applied to {$updated} services (out of " . count($mappings) . ' mapped).');
     }
 
     private function upsertSlopeStability(int $orgId): void
@@ -208,11 +219,13 @@ class SurveyWorkflowsSeeder extends Seeder
 
     /* ── Per-service workflows ───────────────────────────────────────── */
 
-    /** @return array{workflow: array<string, mixed>, source: string} */
+    /** @return array{workflow: array<string, mixed>, source: string, description_ar: string, description_en: string} */
     private function materialsProposedWorkflow(): array
     {
         return [
-            'source'   => 'flowcahrt/عقد مواد مقترح.pdf',
+            'source'         => 'flowcahrt/عقد مواد مقترح.pdf',
+            'description_ar' => 'عقد فحص المواد للأبنية المقترحة. يقدم المكتب الهندسي الطلب، ثم يراجعه المدقق الثاني في وحدة استطلاع الموقع. عند الاعتماد يتم دفع المستحقات المالية وضريبة المبيعات، ويصدر النظام الوصولات والنسخة المصدقة. يوجد استكمال إجراء لاحق في المرحلة 4.',
+            'description_en' => 'Materials-testing contract for proposed buildings. The engineering office submits, then the second auditor at the Site Survey Unit reviews. On approval, fees and sales tax are paid; the system issues receipts and a certified copy. A follow-up procedure runs in phase 4.',
             'workflow' => [
                 'stages' => [
                     $this->stageOfficeSubmission(),
@@ -237,11 +250,13 @@ class SurveyWorkflowsSeeder extends Seeder
         ];
     }
 
-    /** @return array{workflow: array<string, mixed>, source: string} */
+    /** @return array{workflow: array<string, mixed>, source: string, description_ar: string, description_en: string} */
     private function materialsExistingWorkflow(): array
     {
         return [
-            'source'   => 'flowcahrt/قائم.drawio.pdf',
+            'source'         => 'flowcahrt/قائم.drawio.pdf',
+            'description_ar' => 'عقد فحص المواد للأبنية القائمة أو الدراسة الإنشائية. يقدم المكتب الهندسي الطلب، يراجعه مدقق فحص التربة الأول، ثم المدقق الثاني الذي يمكنه اعتماد قرار الأول أو تجاوزه. بعد الاعتماد النهائي يتم الدفع الإلكتروني، وإصدار العقد المصدق (PDF) والوصولات.',
+            'description_en' => 'Materials-testing contract for existing buildings or a structural study. The office submits, the first soil auditor reviews, then the second auditor may confirm or override the first. After final approval an electronic payment is taken and the certified contract (PDF) + receipts are issued.',
             'workflow' => [
                 'stages' => [
                     $this->stageOfficeSubmission(),
@@ -266,11 +281,13 @@ class SurveyWorkflowsSeeder extends Seeder
         ];
     }
 
-    /** @return array{workflow: array<string, mixed>, source: string} */
+    /** @return array{workflow: array<string, mixed>, source: string, description_ar: string, description_en: string} */
     private function soilProposedWorkflow(): array
     {
         return [
-            'source'   => 'flowcahrt/تربة مقترح.drawio.pdf',
+            'source'         => 'flowcahrt/تربة مقترح.drawio.pdf',
+            'description_ar' => 'تقارير استطلاع الموقع للأبنية المقترحة. يقدم المكتب الهندسي الطلب، يراجعه مدقق التربة الأول (مدقق خارجي)، ثم المدقق الثاني في وحدة الاستطلاع. المدقق الثاني يمكنه تجاوز قرار المدقق الأول عند الاختلاف. بعد الاعتماد يتم دفع الرسوم والضريبة ثم إصدار التقرير المصدق والوصولات.',
+            'description_en' => 'Site-survey reports for proposed buildings. The office submits, an external first soil auditor reviews, then the second auditor at the Survey Unit can either confirm the first auditor or override the decision. On final approval fees and tax are paid, then the certified report and receipts are issued.',
             'workflow' => [
                 'stages' => [
                     $this->stageOfficeSubmission(),
@@ -295,11 +312,13 @@ class SurveyWorkflowsSeeder extends Seeder
         ];
     }
 
-    /** @return array{workflow: array<string, mixed>, source: string} */
+    /** @return array{workflow: array<string, mixed>, source: string, description_ar: string, description_en: string} */
     private function soilExistingWorkflow(): array
     {
         return [
-            'source'   => 'flowcahrt/تربة قائم.drawio.pdf',
+            'source'         => 'flowcahrt/تربة قائم.drawio.pdf',
+            'description_ar' => 'تقارير استطلاع الموقع للأبنية القائمة. يقدم المكتب الهندسي الطلب، يراجعه مدقق التربة الأول ثم المدقق الثاني في وحدة الاستطلاع مع إمكانية تجاوز قرار الأول. بعد الاعتماد يتم الدفع الإلكتروني وإصدار العقد المصدق والوصولات.',
+            'description_en' => 'Site-survey reports for existing buildings. The office submits, the first soil auditor reviews, then the second auditor at the Survey Unit — with the option to override the first. On approval an electronic payment is taken and the certified contract + receipts are issued.',
             'workflow' => [
                 'stages' => [
                     $this->stageOfficeSubmission(),
@@ -316,11 +335,13 @@ class SurveyWorkflowsSeeder extends Seeder
         ];
     }
 
-    /** @return array{workflow: array<string, mixed>, source: string} */
+    /** @return array{workflow: array<string, mixed>, source: string, description_ar: string, description_en: string} */
     private function excavationSupportDesignWorkflow(): array
     {
         return [
-            'source'   => 'flowcahrt/تصميم تدعيم.drawio.pdf',
+            'source'         => 'flowcahrt/تصميم تدعيم.drawio.pdf',
+            'description_ar' => 'تصميم تدعيم الحفريات مع الإشراف. يقدم المكتب الطلب، يراجعه مدقق التدعيم الخارجي ثم المدقق الثاني في وحدة الاستطلاع. بعد الاعتماد يحدد ما إذا كان الإشراف من نفس مكتب التصميم أم من مكتب آخر. في حال مكاتب منفصلة يتم الدفع الإلكتروني لكل من مكتب التصميم ومكتب الإشراف مع التحقق من كلا الطرفين قبل إصدار التقرير المصدق وعقد الإشراف المصدق والوصولات. يوجد إجراء مالي يعد لاحقاً.',
+            'description_en' => 'Excavation-support design together with supervision. The office submits, an external support auditor and then the second auditor at the Survey Unit review. After approval, the applicant chooses whether supervision comes from the same office or an external one. When separate, both the design office and the supervision office pay electronically and both payments are verified before issuing the certified report, certified supervision contract, and receipts. A later financial step follows.',
             'workflow' => [
                 'stages' => [
                     $this->stageOfficeSubmission(),
@@ -377,11 +398,13 @@ class SurveyWorkflowsSeeder extends Seeder
         ];
     }
 
-    /** @return array{workflow: array<string, mixed>, source: string} */
+    /** @return array{workflow: array<string, mixed>, source: string, description_ar: string, description_en: string} */
     private function excavationSupervisionWorkflow(): array
     {
         return [
-            'source'   => 'flowcahrt/الاشرا على الحفريات.drawio.pdf',
+            'source'         => 'flowcahrt/الاشرا على الحفريات.drawio.pdf',
+            'description_ar' => 'الإشراف على أعمال الحفريات أو أعمال التدعيم. يختار المكتب نوع العقد (إشراف على الحفريات أو إشراف على أعمال التدعيم)، يراجعه المدقق الثاني في وحدة الاستطلاع، ثم يتم الدفع الإلكتروني وإصدار العقد المصدق والوصولات. يوجد إجراء مالي يعد لاحقاً.',
+            'description_en' => 'Supervision of excavation works or excavation-support works. The office chooses the contract type (excavation vs. support-works supervision), the second auditor at the Survey Unit reviews, then an electronic payment is taken and the certified contract and receipts are issued. A later financial step follows.',
             'workflow' => [
                 'stages' => [
                     $this->stageOfficeSubmission(),
@@ -406,11 +429,13 @@ class SurveyWorkflowsSeeder extends Seeder
         ];
     }
 
-    /** @return array{workflow: array<string, mixed>, source: string} */
+    /** @return array{workflow: array<string, mixed>, source: string, description_ar: string, description_en: string} */
     private function visualInspectionWorkflow(): array
     {
         return [
-            'source'   => 'flowcahrt/الكشف الحسي.drawio.pdf',
+            'source'         => 'flowcahrt/الكشف الحسي.drawio.pdf',
+            'description_ar' => 'شهادة الكشف الحسي والكتب الرسمية. يقدم المكتب الطلب، يراجعه المدقق الثاني في وحدة الاستطلاع، ثم يتم الدفع الإلكتروني وإصدار العقد المصدق والوصولات. بعد الإصدار يمكن للمكتب فتح خارطة كشف حسي جديدة لطلب آخر أو إنهاء الإجراء.',
+            'description_en' => 'Visual-inspection certificate and official letters. The office submits, the second auditor at the Survey Unit reviews, then an electronic payment is taken and the certified contract and receipts are issued. After issuance, the office can either open a new visual-inspection map for another request or finalize.',
             'workflow' => [
                 'stages' => [
                     $this->stageOfficeSubmission(),
@@ -433,11 +458,13 @@ class SurveyWorkflowsSeeder extends Seeder
         ];
     }
 
-    /** @return array{workflow: array<string, mixed>, source: string} */
+    /** @return array{workflow: array<string, mixed>, source: string, description_ar: string, description_en: string} */
     private function slopeStabilityWorkflow(): array
     {
         return [
-            'source'   => 'flowcahrt/استقرار المنحدرات.drawio.pdf',
+            'source'         => 'flowcahrt/استقرار المنحدرات.drawio.pdf',
+            'description_ar' => 'تقارير استقرار المنحدرات. يقدم المكتب الطلب، يراجعه المدقق الثاني في وحدة الاستطلاع، ثم يمر عبر صفحة الربط مع الخدمات ذات الصلة قبل الاعتماد النهائي من المدقق الثاني. بعد الاعتماد يتم الدفع الإلكتروني والضريبة ثم إصدار العقد المصدق والوصولات.',
+            'description_en' => 'Slope-stability reports. The office submits, the second auditor at the Survey Unit reviews, then the request passes through a linked-services page before the second auditor gives final approval. After approval, an electronic payment (including tax) is taken and the certified contract + receipts are issued.',
             'workflow' => [
                 'stages' => [
                     $this->stageOfficeSubmission(),

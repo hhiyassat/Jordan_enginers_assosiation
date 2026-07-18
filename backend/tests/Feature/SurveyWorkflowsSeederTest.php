@@ -124,6 +124,71 @@ class SurveyWorkflowsSeederTest extends TestCase
         }
     }
 
+    public function test_every_mapped_service_has_paragraph_length_bilingual_descriptions(): void
+    {
+        foreach (array_column(self::serviceWorkflowShapes(), 0) as $code) {
+            $svc = ServiceDefinition::where('organization_id', $this->org->id)
+                ->where('code', $code)
+                ->first();
+            $this->assertNotNull($svc);
+
+            $ar = (string) $svc->description_ar;
+            $en = (string) $svc->description_en;
+
+            // Paragraph-length — not a stub or blank.
+            $this->assertGreaterThan(100, mb_strlen($ar), "{$code} AR description must be non-trivial");
+            $this->assertGreaterThan(100, mb_strlen($en), "{$code} EN description must be non-trivial");
+        }
+    }
+
+    /**
+     * @return list<array{string, list<string>, list<string>}>
+     * Each row: [service code, AR vocabulary that must appear, EN vocabulary that must appear]
+     */
+    public static function descriptionVocabulary(): array
+    {
+        return [
+            // "المدقق الأول" is sometimes written as "مدقق التربة الأول" or
+            // "مدقق فحص التربة الأول" — assert on "الأول" alone to allow both.
+            'SRV-001 soil proposed'          => ['SRV-001', ['الأول', 'المدقق الثاني', 'تجاوز'], ['first', 'override']],
+            'SRV-002 soil existing'          => ['SRV-002', ['الأول', 'المدقق الثاني'],          ['first', 'second']],
+            'SRV-007 excavation support'     => ['SRV-007', ['التدعيم', 'الإشراف', 'التحقق'],    ['supervision', 'design']],
+            'SRV-008 materials proposed'     => ['SRV-008', ['المدقق الثاني', 'المرحلة 4'],      ['second auditor', 'phase 4']],
+            'SRV-009 materials existing'     => ['SRV-009', ['الأول', 'المدقق الثاني', 'تجاوز'], ['first', 'override']],
+            'SRV-012 excavation supervision' => ['SRV-012', ['الحفريات', 'التدعيم'],             ['excavation', 'support']],
+            'SRV-014 visual inspection'      => ['SRV-014', ['كشف حسي', 'خارطة'],                 ['visual', 'inspection']],
+            'SRV-015 slope stability'        => ['SRV-015', ['استقرار المنحدرات', 'الربط'],       ['slope', 'linked']],
+        ];
+    }
+
+    #[DataProvider('descriptionVocabulary')]
+    public function test_service_description_carries_flowchart_vocabulary(
+        string $code,
+        array $arKeywords,
+        array $enKeywords,
+    ): void {
+        $svc = ServiceDefinition::where('organization_id', $this->org->id)
+            ->where('code', $code)
+            ->first();
+        $this->assertNotNull($svc);
+
+        foreach ($arKeywords as $needle) {
+            $this->assertStringContainsString(
+                $needle,
+                (string) $svc->description_ar,
+                "{$code} AR description must contain '{$needle}'"
+            );
+        }
+        foreach ($enKeywords as $needle) {
+            $haystack = mb_strtolower((string) $svc->description_en);
+            $this->assertStringContainsString(
+                mb_strtolower($needle),
+                $haystack,
+                "{$code} EN description must contain '{$needle}'"
+            );
+        }
+    }
+
     public function test_seeder_is_idempotent(): void
     {
         // Re-run the workflow seeder; nothing should change or duplicate.
