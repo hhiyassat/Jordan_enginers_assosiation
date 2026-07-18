@@ -106,6 +106,29 @@ describe('CategoryServicesView — subcategory grouping', () => {
     expect(sections.length).toBe(2);
   });
 
+  it('shows the parent name once — not in the crumb AND the heading', async () => {
+    // Regression: earlier the breadcrumb crumb and the info-block <h2> both
+    // rendered category.name_ar, so استطلاع الموقع appeared twice at the top
+    // of the page. The breadcrumb now stops at the parent link.
+    mockList.mockResolvedValue({
+      services: [
+        svc({ id: 100, code: 'JEA-SURV', parent_code: null, name_ar: 'استطلاع الموقع', name_en: 'Site Survey' }),
+        svc({ id: 1, code: 'SRV-001', parent_code: 'JEA-SURV', name_ar: 'خدمة أولى' }),
+      ],
+    });
+
+    renderAt('JEA-SURV');
+    await waitFor(() => expect(screen.getByText('خدمة أولى')).toBeInTheDocument());
+
+    // "استطلاع الموقع" appears only in the info-block <h2>, not the breadcrumb.
+    const matches = screen.getAllByText('استطلاع الموقع');
+    expect(matches).toHaveLength(1);
+    expect(matches[0].tagName).toBe('H2');
+
+    // Breadcrumb only carries the ancestor link.
+    expect(screen.getByText('الخدمات الإلكترونية')).toBeInTheDocument();
+  });
+
   it('falls back to a flat grid when no subcategories are present', async () => {
     mockList.mockResolvedValue({
       services: [

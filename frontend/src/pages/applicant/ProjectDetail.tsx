@@ -47,11 +47,12 @@ export function ProjectDetail() {
   return (
     <div className="flex flex-col h-full" dir="rtl">
       <div className="bg-jea-topbar px-6 py-4 shrink-0">
+        {/* Breadcrumb stops at the parent (مشاريعي). The project name is the
+            <h1> below — single source of truth, no duplicate title. */}
         <div className="flex items-center gap-2 text-xs text-white/50 mb-2">
-          <Link to="/services"   className="hover:text-white transition-colors">الخدمات الإلكترونية</Link>
-          <span>/</span>
-          <Link to="/projects"   className="hover:text-white transition-colors">مشاريعي</Link>
-          {project && <><span>/</span><span className="text-white/80">{project.name_ar}</span></>}
+          <Link to="/services" className="hover:text-white transition-colors">الخدمات الإلكترونية</Link>
+          <span aria-hidden="true">/</span>
+          <Link to="/projects" className="hover:text-white transition-colors">مشاريعي</Link>
         </div>
         {project && (
           <div className="flex items-center justify-between flex-wrap gap-2">

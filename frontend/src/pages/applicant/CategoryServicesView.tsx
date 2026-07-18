@@ -67,28 +67,31 @@ export function CategoryServicesView() {
 
   return (
     <div className="flex flex-col h-full" dir="rtl">
+      {/* Compact breadcrumb — only the ancestor link. The current page's
+          name is the <h2> below (single source of truth, no duplication). */}
       <div className="bg-jea-topbar px-6 py-4 shrink-0 flex items-center gap-3">
         <Link
           to="/services"
-          className="flex items-center gap-2 text-white/70 hover:text-white text-sm transition-colors"
+          className="flex items-center gap-2 text-white/70 hover:text-white text-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60 rounded"
+          aria-label="العودة إلى الخدمات الإلكترونية"
         >
-          <ArrowRight size={16} />
-          <span>الخدمات الإلكترونية</span>
+          <ArrowRight size={16} aria-hidden="true" />
+          <span lang="ar">الخدمات الإلكترونية</span>
         </Link>
-        <span className="text-white/30">/</span>
-        <span className="text-white font-bold text-sm">{category?.name_ar ?? categoryCode}</span>
       </div>
 
       <div className="flex-1 overflow-y-auto bg-jea-bg p-6">
         {category && (
-          <div className="flex items-center gap-3 mb-6">
-            <div>
-              <h2 className="text-base font-black text-jea-text">{category.name_ar}</h2>
-              <p className="text-xs text-jea-muted">
-                {category.name_en} · {children.length} خدمة
-              </p>
-            </div>
-          </div>
+          <header className="mb-6">
+            <h2 className="text-base font-black text-jea-text" lang="ar">
+              {category.name_ar}
+            </h2>
+            <p className="text-xs text-jea-muted">
+              <span lang="en" dir="ltr">{category.name_en}</span>
+              <span className="mx-1" aria-hidden="true">·</span>
+              <span lang="ar">{children.length} خدمة</span>
+            </p>
+          </header>
         )}
 
         {loading && <DetailGridSkeleton />}
