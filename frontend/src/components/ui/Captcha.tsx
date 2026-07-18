@@ -74,22 +74,29 @@ export function Captcha({ onChange, resetKey, error }: CaptchaProps) {
       </label>
 
       <div className="flex items-center gap-2" dir="ltr">
-        {/* SVG image */}
-        <div
-          className="rounded-lg border border-jea-border bg-jea-bg overflow-hidden shrink-0"
-          style={{ width: 180, height: 60 }}
-          aria-label="captcha challenge image"
-          role="img"
-          // The endpoint returns SVG as a string. Rendering it via
-          // dangerouslySetInnerHTML is safe here because it's our own
-          // server response (not user content) and the SVG has no
-          // <script>/foreign elements.
-          dangerouslySetInnerHTML={challenge ? { __html: challenge.svg } : undefined}
-        >
-          {!challenge && !loadErr && (
-            <span className="sr-only">Loading…</span>
-          )}
-        </div>
+        {/* SVG image. dangerouslySetInnerHTML on our own server response;
+            SVG carries no <script>/foreign elements. React forbids mixing
+            dangerouslySetInnerHTML with children, so branch on it. */}
+        {challenge ? (
+          <div
+            className="rounded-lg border border-jea-border bg-jea-bg overflow-hidden shrink-0"
+            style={{ width: 180, height: 60 }}
+            aria-label="captcha challenge image"
+            role="img"
+            dangerouslySetInnerHTML={{ __html: challenge.svg }}
+          />
+        ) : (
+          <div
+            className="rounded-lg border border-jea-border bg-jea-bg shrink-0 flex items-center justify-center"
+            style={{ width: 180, height: 60 }}
+            aria-label={loadErr || 'جارٍ تحميل رمز التحقق'}
+            role="img"
+          >
+            <span className="text-[10px] text-jea-muted">
+              {loadErr ? '⚠︎' : '...'}
+            </span>
+          </div>
+        )}
 
         {/* Reload button */}
         <button
