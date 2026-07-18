@@ -5,7 +5,9 @@ namespace Tests\Feature;
 use App\Models\Organization;
 use App\Models\ServiceDefinition;
 use App\Models\User;
+use Database\Seeders\JeaPortalTilesSeeder;
 use Database\Seeders\ServicePlan2026Seeder;
+use Database\Seeders\SurveyWorkflowsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -94,6 +96,77 @@ class ServicePlan2026SeederTest extends TestCase
             $this->assertSame($count, $actual,
                 "Expected {$count} services under {$parent}, got {$actual}");
         }
+    }
+
+    public function test_every_seeded_service_has_bilingual_descriptions(): void
+    {
+        // Full seeding pipeline: tiles → plan → survey workflows. This is the
+        // production combination — SurveyWorkflowsSeeder writes descriptions
+        // for the 8 flowchart-backed SRV services on top of ServicePlan2026.
+        $this->runSilently(new JeaPortalTilesSeeder());
+        $this->runSeeder();
+        $this->runSilently(new SurveyWorkflowsSeeder());
+
+        $missing = ServiceDefinition::where('organization_id', $this->org->id)
+            ->where(function ($q) {
+                $q->whereNull('description_ar')->orWhere('description_ar', '');
+                $q->orWhereNull('description_en')->orWhere('description_en', '');
+            })
+            ->pluck('code')
+            ->all();
+
+        $this->assertSame([], $missing, 'Every seeded service must have a bilingual description');
+    }
+
+    public function test_non_survey_service_descriptions_are_paragraph_length(): void
+    {
+        $this->runSilently(new JeaPortalTilesSeeder());
+        $this->runSeeder();
+
+        // 50 chars is a fair floor for non-survey services (survey services
+        // get flowchart-derived paragraphs > 200 chars from a separate seeder).
+        $tooShort = ServiceDefinition::where('organization_id', $this->org->id)
+            ->where('code', 'not like', 'SRV-%')
+            ->get(['code', 'description_ar', 'description_en'])
+            ->filter(fn($s) =>
+                mb_strlen((string) $s->description_ar) < 50 ||
+                mb_strlen((string) $s->description_en) < 50
+            )
+            ->pluck('code')
+            ->all();
+
+        $this->assertSame([], $tooShort, 'Every non-survey service should have a paragraph description');
+    }
+
+    public function test_tile_descriptions_are_updated_by_this_seeder(): void
+    {
+        // The tile-level services (JEA-CERT, JEA-FIN, ...) are created by
+        // JeaPortalTilesSeeder. ServicePlan2026Seeder must overwrite their
+        // (short) tile-blurb with the paragraph description from its map.
+        $this->runSilently(new JeaPortalTilesSeeder());
+        $this->runSeeder();
+
+        $cert = ServiceDefinition::where('organization_id', $this->org->id)
+            ->where('code', 'JEA-CERT')
+            ->first();
+
+        $this->assertNotNull($cert);
+        $this->assertGreaterThan(100, mb_strlen((string) $cert->description_ar));
+        $this->assertGreaterThan(100, mb_strlen((string) $cert->description_en));
+        // Vocabulary check — the tile description names the specific
+        // certificate types it groups.
+        $this->assertStringContainsString('المطابقة', $cert->description_ar);
+    }
+
+    private function runSilently(\Illuminate\Database\Seeder $seeder): void
+    {
+        $seeder->setContainer($this->app)
+            ->setCommand(new class extends \Illuminate\Console\Command {
+                public function info($string, $verbosity = null): void {}
+                public function error($string, $verbosity = null): void {}
+                public function warn($string, $verbosity = null): void {}
+            })
+            ->run();
     }
 
     public function test_catalog_api_returns_phase_field(): void
