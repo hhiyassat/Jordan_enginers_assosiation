@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { adminApi } from '../../api/client';
 import { DynamicForm } from '../../engine/DynamicForm';
 import type { ServiceSchema } from '../../types';
+import { normalizeSaveError, type ApiError } from './saveErrorHelpers';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -111,6 +112,11 @@ export function NewService() {
   // Save
   const [saving, setSaving]       = useState(false);
   const [saveError, setSaveError] = useState('');
+  // Per-field errors from the backend (dotted keys → human message). Kept
+  // separate from saveError so both a summary and the specific field list
+  // can render together — the top-level "المخطط لا يتوافق مع بنية ESP v2"
+  // is useless without the specific field that broke.
+  const [saveFieldErrors, setSaveFieldErrors] = useState<Record<string, string>>({});
 
   // UI panels
   const [showAudit, setShowAudit]       = useState(false);
@@ -191,6 +197,7 @@ export function NewService() {
 
     setSaving(true);
     setSaveError('');
+    setSaveFieldErrors({});
     const code = saveCode.trim() || parsedSchema.service_code;
     if (!code) {
       setSaveError('كود الخدمة مطلوب — أدخله في الحقل أدناه');
@@ -209,14 +216,9 @@ export function NewService() {
       });
       navigate('/admin/services', { state: { created: code } });
     } catch (err: unknown) {
-      const apiErr = err as Error & { errors?: Record<string, string[]> };
-      const isCodeTaken = apiErr.errors?.code?.[0]?.toLowerCase().includes('taken')
-        || apiErr.errors?.code?.[0]?.toLowerCase().includes('unique')
-        || apiErr.message?.toLowerCase().includes('taken');
-      const msg = isCodeTaken
-        ? `كود الخدمة "${code}" مستخدم مسبقاً — غيّر الكود`
-        : (apiErr.errors?.code?.[0] ?? apiErr.errors?.schema?.[0] ?? apiErr.message);
-      setSaveError(msg);
+      const { summary, fieldErrors } = normalizeSaveError(err as ApiError, code);
+      setSaveError(summary);
+      setSaveFieldErrors(fieldErrors);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } finally {
       setSaving(false);
@@ -388,10 +390,25 @@ export function NewService() {
         </p>
       </div>
 
-      {/* Global save error */}
-      {saveError && (
-        <div className="mb-4 bg-red-50 border border-red-300 rounded-xl p-4 text-red-700 text-sm font-medium">
-          ❌ {saveError}
+      {/* Global save error — top-level message + specific field errors */}
+      {(saveError || Object.keys(saveFieldErrors).length > 0) && (
+        <div
+          role="alert"
+          className="mb-4 bg-red-50 border border-red-300 rounded-xl p-4 text-red-700 text-sm"
+        >
+          {saveError && <p className="font-semibold">❌ {saveError}</p>}
+          {Object.keys(saveFieldErrors).length > 0 && (
+            <ul className="mt-2 space-y-1 list-disc pr-5">
+              {Object.entries(saveFieldErrors).map(([field, msg]) => (
+                <li key={field}>
+                  <code className="text-[11px] text-red-500 bg-red-100 rounded px-1 py-0.5" dir="ltr">
+                    {field}
+                  </code>
+                  <span className="mr-2">{msg}</span>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       )}
 

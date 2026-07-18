@@ -2,6 +2,8 @@
 
 namespace App\Engine;
 
+use App\Engine\StageActions;
+
 /**
  * SchemaStructureValidator — validates that a saved JSON schema conforms to the
  * ESP v2 schema contract before it is persisted as a ServiceDefinition.
@@ -45,7 +47,13 @@ class SchemaStructureValidator
         }
 
         $validRoles = ['staff', 'auditor', 'admin'];
-        $validActions = ['approve', 'reject', 'request_modifications'];
+        // Actions must be ids the platform knows how to render + dispatch.
+        // StageActions::REGISTRY is the single source of truth — reviewer
+        // console, seeders, and the reviewer decide endpoint all consult it.
+        // Keeping this list in sync manually caused a mismatch where the
+        // Hukm generator marked schemas "sahih" that this endpoint then
+        // 422'd because the allowlist was 3 items behind.
+        $validActions = array_keys(StageActions::REGISTRY);
         $stageIds = [];
 
         foreach ($schema['workflow']['stages'] as $i => $stage) {
