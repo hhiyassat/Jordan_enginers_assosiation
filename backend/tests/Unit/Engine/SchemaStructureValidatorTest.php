@@ -166,4 +166,110 @@ class SchemaStructureValidatorTest extends TestCase
         $this->assertIsArray($errors);
         $this->assertArrayHasKey('schema.fee.amount', $errors);
     }
+
+    // ── JORD-3: conditional-field dependency validation ──────────────
+
+    public function test_conditional_field_pointing_to_undefined_target_is_rejected(): void
+    {
+        $schema = $this->baseSchema(['fields' => [
+            [
+                'id' => 'child', 'label_ar' => 'child', 'type' => 'text', 'required' => false,
+                'conditional' => ['field' => 'does_not_exist', 'value' => 'x'],
+            ],
+        ]]);
+        $errors = (new SchemaStructureValidator())->validate($schema);
+        $this->assertIsArray($errors);
+        $this->assertArrayHasKey('schema.fields[0].conditional.field', $errors);
+        $this->assertStringContainsString('does_not_exist', $errors['schema.fields[0].conditional.field']);
+    }
+
+    public function test_conditional_field_can_reference_a_declared_field(): void
+    {
+        $schema = $this->baseSchema(['fields' => [
+            ['id' => 'parent', 'label_ar' => 'parent', 'type' => 'text', 'required' => false],
+            [
+                'id' => 'child', 'label_ar' => 'child', 'type' => 'text', 'required' => false,
+                'conditional' => ['field' => 'parent', 'value' => 'x'],
+            ],
+        ]]);
+        $this->assertNull((new SchemaStructureValidator())->validate($schema));
+    }
+
+    public function test_self_referential_conditional_is_rejected(): void
+    {
+        $schema = $this->baseSchema(['fields' => [
+            [
+                'id' => 'self', 'label_ar' => 'self', 'type' => 'text', 'required' => false,
+                'conditional' => ['field' => 'self', 'value' => 'x'],
+            ],
+        ]]);
+        $errors = (new SchemaStructureValidator())->validate($schema);
+        $this->assertIsArray($errors);
+        $this->assertArrayHasKey('schema.fields[0].conditional.field', $errors);
+    }
+
+    public function test_conditional_without_value_key_is_rejected(): void
+    {
+        $schema = $this->baseSchema(['fields' => [
+            ['id' => 'a', 'label_ar' => 'a', 'type' => 'text', 'required' => false],
+            [
+                'id' => 'b', 'label_ar' => 'b', 'type' => 'text', 'required' => false,
+                'conditional' => ['field' => 'a'], // no 'value'
+            ],
+        ]]);
+        $errors = (new SchemaStructureValidator())->validate($schema);
+        $this->assertArrayHasKey('schema.fields[1].conditional.value', $errors);
+    }
+
+    // ── JORD-8: SLA + fee bounds ─────────────────────────────────────
+
+    public function test_zero_sla_hours_is_rejected(): void
+    {
+        $schema = $this->baseSchema();
+        $schema['workflow']['stages'][0]['sla_hours'] = 0;
+        $errors = (new SchemaStructureValidator())->validate($schema);
+        $this->assertArrayHasKey('schema.workflow.stages[0].sla_hours', $errors);
+    }
+
+    public function test_sla_hours_above_one_year_is_rejected(): void
+    {
+        $schema = $this->baseSchema();
+        $schema['workflow']['stages'][0]['sla_hours'] = 24 * 366; // > 1 year
+        $errors = (new SchemaStructureValidator())->validate($schema);
+        $this->assertArrayHasKey('schema.workflow.stages[0].sla_hours', $errors);
+    }
+
+    public function test_negative_fixed_fee_amount_is_rejected(): void
+    {
+        $schema = $this->baseSchema(['fee' => ['type' => 'fixed', 'amount' => -100]]);
+        $errors = (new SchemaStructureValidator())->validate($schema);
+        $this->assertArrayHasKey('schema.fee.amount', $errors);
+        $this->assertStringContainsString('سالبة', $errors['schema.fee.amount']);
+    }
+
+    public function test_absurdly_large_fixed_fee_is_rejected(): void
+    {
+        $schema = $this->baseSchema(['fee' => ['type' => 'fixed', 'amount' => 1e12]]);
+        $errors = (new SchemaStructureValidator())->validate($schema);
+        $this->assertArrayHasKey('schema.fee.amount', $errors);
+    }
+
+    public function test_negative_tier_amount_is_rejected(): void
+    {
+        $schema = $this->baseSchema(['fee' => [
+            'type' => 'tiered', 'field' => 'cat', 'default' => 100,
+            'tiers' => ['a' => 50, 'b' => -20],
+        ]]);
+        $errors = (new SchemaStructureValidator())->validate($schema);
+        $this->assertArrayHasKey('schema.fee.tiers.b', $errors);
+    }
+
+    public function test_negative_formula_base_is_rejected(): void
+    {
+        $schema = $this->baseSchema(['fee' => [
+            'type' => 'formula', 'base' => -1, 'rate' => 10, 'field' => 'qty',
+        ]]);
+        $errors = (new SchemaStructureValidator())->validate($schema);
+        $this->assertArrayHasKey('schema.fee.base', $errors);
+    }
 }

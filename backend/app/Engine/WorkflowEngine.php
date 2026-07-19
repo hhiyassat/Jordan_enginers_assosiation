@@ -82,7 +82,7 @@ class WorkflowEngine
     {
         // B-8: Blocker check — must be editable
         if (! $app->isEditable()) {
-            abort(422, 'Application cannot be submitted in its current state.');
+            throw new Exceptions\InvalidStateException('لا يمكن تقديم الطلب في وضعه الحالي.');
         }
 
         // Applicant-owned stages (e.g. 'office_submission') are the
@@ -146,12 +146,11 @@ class WorkflowEngine
         if ($stage && isset($stage['role'])) {
             if (! $actor->hasRole($stage['role'])) {
                 $stageLabel = $stage['label_ar'] ?? $app->current_stage;
-                abort(response()->json([
-                    'error'   => 'wrong_role_for_stage',
-                    'message' => "هذه المرحلة (\"{$stageLabel}\") مخصصة لدور: {$stage['role']}. لا يمكنك استلام الطلب.",
-                    'stage_role_required' => $stage['role'],
-                    'stage_id'            => $app->current_stage,
-                ], 403));
+                throw new Exceptions\RoleMismatchException(
+                    "هذه المرحلة (\"{$stageLabel}\") مخصصة لدور: {$stage['role']}. لا يمكنك استلام الطلب.",
+                    stageId:      $app->current_stage,
+                    requiredRole: $stage['role'],
+                );
             }
         }
 
@@ -166,15 +165,15 @@ class WorkflowEngine
             // return a clean 409 so the reviewer console can retry.
             $locked = Application::lockForUpdate()->find($app->id);
             if ($locked === null) {
-                abort(409, 'الطلب لم يعد موجوداً.');
+                throw new Exceptions\ConflictException('الطلب لم يعد موجوداً.');
             }
 
             if ($locked->status !== Application::STATUS_SUBMITTED) {
-                abort(409, 'Application is no longer available for claiming.');
+                throw new Exceptions\ConflictException('الطلب لم يعد متاحاً للاستلام.');
             }
 
             if ($locked->assigned_reviewer_id !== null) {
-                abort(409, 'Application has already been claimed by another reviewer.');
+                throw new Exceptions\ConflictException('الطلب مستلم بالفعل من قبل مراجع آخر.');
             }
 
             $this->transitionTo($locked, Application::STATUS_UNDER_REVIEW);
@@ -226,17 +225,20 @@ class WorkflowEngine
     ): ApplicationReview {
         // B-6: Must be under review and claimed by this actor
         if ($app->status !== Application::STATUS_UNDER_REVIEW) {
-            abort(422, 'Application is not under review.');
+            throw new Exceptions\InvalidStateException('الطلب ليس قيد المراجعة.');
         }
 
         if ($app->assigned_reviewer_id !== $actor->id) {
-            abort(403, 'You are not the assigned reviewer for this application.');
+            throw new Exceptions\RoleMismatchException(
+                'أنت لست المراجع المسند لهذا الطلب.',
+                stageId: $app->current_stage,
+            );
         }
 
         // B-5: Validate decision is an allowed transition (global list)
         $allowedDecisions = self::ALLOWED_TRANSITIONS[Application::STATUS_UNDER_REVIEW] ?? [];
         if (! in_array($decision, $allowedDecisions)) {
-            abort(422, "Decision '{$decision}' is not valid for current status.");
+            throw new Exceptions\InvalidStateException("القرار '{$decision}' غير صالح للحالة الحالية.");
         }
 
         // B-5 (schema layer): validate against the stage's declared actions array.
@@ -257,13 +259,15 @@ class WorkflowEngine
             }
             if (! in_array($decision, array_unique($allowedBySchema))) {
                 $stageName = $stage['label_ar'] ?? $app->current_stage;
-                abort(422, "القرار '{$decision}' غير مسموح به في مرحلة '{$stageName}'.");
+                throw new Exceptions\InvalidStateException(
+                    "القرار '{$decision}' غير مسموح به في مرحلة '{$stageName}'."
+                );
             }
         }
 
         // B-4: Notes required for non-approve decisions
         if ($decision !== 'approved' && empty($notes)) {
-            abort(422, 'Notes are required when rejecting or requesting modifications.');
+            throw new Exceptions\InvalidStateException('الملاحظات مطلوبة عند طلب التعديل أو الرفض.');
         }
 
         $prevStatus = $app->status;
@@ -340,7 +344,7 @@ class WorkflowEngine
     public function confirmPayment(Application $app, User $actor, string $paymentReference): Application
     {
         if ($app->status !== Application::STATUS_APPROVED) {
-            abort(422, 'Payment can only be confirmed for approved applications.');
+            throw new Exceptions\InvalidStateException('تأكيد الدفع مسموح فقط للطلبات الموافق عليها.');
         }
 
         DB::transaction(function () use ($app, $actor, $paymentReference) {
@@ -383,11 +387,11 @@ class WorkflowEngine
     {
         // B-6: Both approval and payment required
         if ($app->status !== Application::STATUS_APPROVED) {
-            abort(422, 'Certificate can only be issued for approved applications.');
+            throw new Exceptions\InvalidStateException('لا يمكن إصدار الشهادة إلا للطلبات الموافق عليها.');
         }
 
         if (! $app->isFeePaid()) {
-            abort(422, 'Payment must be confirmed before issuing a certificate.');
+            throw new Exceptions\InvalidStateException('يجب تأكيد الدفع قبل إصدار الشهادة.');
         }
 
         $certConfig = $this->service->getCertificateConfig();
@@ -461,7 +465,7 @@ class WorkflowEngine
         $allowed = self::ALLOWED_TRANSITIONS[$app->status] ?? [];
 
         if (! in_array($newStatus, $allowed)) {
-            abort(422, sprintf(
+            throw new Exceptions\InvalidStateException(sprintf(
                 'Invalid transition: %s → %s. Allowed: [%s].',
                 $app->status,
                 $newStatus,
@@ -483,13 +487,57 @@ class WorkflowEngine
         return null;
     }
 
+    /**
+     * Certificate-number allocation (JORD-2).
+     *
+     * Prior implementation was Certificate::count() + 1 — a classic
+     * read-modify-write race. Two concurrent issueCertificate calls both
+     * saw N, both formatted N+1, and one insert died on the unique index
+     * (rolling back the whole issue transaction). Under load that
+     * surfaced as sporadic 500s at the end of the review flow.
+     *
+     * Now: allocate the serial through certificate_counters with a
+     * SELECT ... FOR UPDATE lock. Two concurrent calls serialize on the
+     * (organization_id, year) row and each gets a distinct serial. This
+     * method is only called from issueCertificate() which already runs
+     * inside DB::transaction — the FOR UPDATE hint therefore takes
+     * effect on drivers that respect it (MySQL/PostgreSQL); SQLite
+     * serializes writes at the file lock, which is why the race never
+     * fires in the test suite even before the fix.
+     */
     private function generateCertificateNumber(Application $app): string
     {
-        $count = Certificate::where('organization_id', $app->organization_id)->count() + 1;
+        $year   = (int) now()->format('Y');
+        $orgId  = (int) $app->organization_id;
+        $serial = $this->allocateCertificateSerial($orgId, $year);
+
         return sprintf('CERT-%s-%s-%05d',
             strtoupper($this->service->code),
-            now()->format('Y'),
-            $count,
+            $year,
+            $serial,
         );
+    }
+
+    private function allocateCertificateSerial(int $orgId, int $year): int
+    {
+        // firstOrCreate is safe here because we're inside a transaction:
+        // if two writers race, one gets a unique-key violation and the
+        // outer transaction retries via Laravel's built-in retry logic
+        // for serialization errors.
+        \App\Models\CertificateCounter::firstOrCreate(
+            ['organization_id' => $orgId, 'year' => $year],
+            ['next_serial' => 1],
+        );
+
+        $row = \App\Models\CertificateCounter::where('organization_id', $orgId)
+            ->where('year', $year)
+            ->lockForUpdate()
+            ->first();
+
+        $serial = $row->next_serial;
+        $row->next_serial = $serial + 1;
+        $row->save();
+
+        return $serial;
     }
 }

@@ -61,12 +61,16 @@ class WorkflowClaimNullLockTest extends TestCase
 
         $engine = new WorkflowEngine($service);
 
-        $this->expectException(\Symfony\Component\HttpKernel\Exception\HttpException::class);
+        // JORD-5: the engine now throws typed domain exceptions instead
+        // of aborting with HTTP status codes. HTTP callers still see 409
+        // via the exception's render() method; direct callers (this
+        // test, artisan commands) catch by class.
+        $this->expectException(\App\Engine\Exceptions\ConflictException::class);
         try {
             $engine->claim($app, $auditor);
-        } catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) {
-            $this->assertSame(409, $e->getStatusCode(),
-                'Deleted-row claim must be a 409, not a 500 from null dereference');
+        } catch (\App\Engine\Exceptions\ConflictException $e) {
+            $this->assertSame(409, $e->httpStatus(),
+                'Deleted-row claim must map to HTTP 409, not 500');
             $this->assertStringContainsString('الطلب', $e->getMessage());
             throw $e;
         }
