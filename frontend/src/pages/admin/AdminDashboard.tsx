@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { adminApi } from '../../api/client';
-import { useAuth } from '../../App';
+import { useAuth } from '../../auth/AuthContext';
 
 interface Stats {
   total_applications: number;

@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { navItemsForRole, canReachAdmin, canReachReviewer } from './App';
+import { navItemsForRole } from './navItems';
+import { canReachAdmin, canReachReviewer } from '../auth/guards';
 
 /**
  * Pins the per-role sidebar visibility. Regression that motivated this

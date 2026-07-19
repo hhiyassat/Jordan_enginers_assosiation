@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authApi } from '../../api/client';
-import { useAuth } from '../../App';
+import { useAuth } from '../../auth/AuthContext';
 
 /**
  * ChangeCredentials — landing page for users whose account still carries the

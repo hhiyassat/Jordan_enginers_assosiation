@@ -16,7 +16,7 @@ vi.mock('../../api/client', () => ({
   },
 }));
 
-vi.mock('../../App', () => ({
+vi.mock('../../auth/AuthContext', () => ({
   useAuth: () => ({ user: mockUser, logout: mockLogout, token: 'x', login: vi.fn() }),
 }));
 

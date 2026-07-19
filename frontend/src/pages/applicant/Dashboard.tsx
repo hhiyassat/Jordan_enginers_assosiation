@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import { applicationsApi, projectsApi, type OfficeQuota } from '../../api/client';
 import type { Application, Project } from '../../types';
-import { useAuth } from '../../App';
+import { useAuth } from '../../auth/AuthContext';
 import { PageHero } from '../../components/ui/PageHero';
 import { QuotaCard } from '../../components/ui/QuotaCard';
 

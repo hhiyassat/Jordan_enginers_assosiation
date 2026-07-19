@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
-import { AuthContext, RequireGuest } from './App';
-import type { User } from './types';
+import { AuthContext } from './AuthContext';
+import { RequireGuest } from './guards';
+import type { User } from '../types';
 
 /**
  * JORD-42 regression: an authenticated user hitting /login must be

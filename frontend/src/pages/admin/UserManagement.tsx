@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Trash2, Edit3, UserPlus, X } from 'lucide-react';
 import { userManagementApi } from '../../api/client';
 import type { User } from '../../types';
-import { useAuth } from '../../App';
+import { useAuth } from '../../auth/AuthContext';
 
 /**
  * UserManagement — superuser-only page for managing user accounts.

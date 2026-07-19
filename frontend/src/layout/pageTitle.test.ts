@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { pageTitleKeyFor } from './App';
+import { pageTitleKeyFor } from './pageTitle';
 
 /**
  * JORD-5 / JORD-38: pageTitleKeyFor moved from returning { ar, en }
