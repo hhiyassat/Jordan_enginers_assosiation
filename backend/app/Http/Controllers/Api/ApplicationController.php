@@ -127,7 +127,17 @@ class ApplicationController extends Controller
             return response()->json(['message' => 'يمكن تعديل الطلبات في مرحلة المسودة أو طلب التعديل فقط.'], 422);
         }
 
-        $data = $request->validate(['data' => ['required', 'array']]);
+        // `present`, not `required` — same reasoning as StoreApplicationRequest:
+        // an empty {} is a legitimate draft state, per-field enforcement runs
+        // in SchemaValidator on POST /submit. Explicit Arabic message so the
+        // Apply banner isn't in English on the frontend.
+        $data = $request->validate(
+            ['data' => ['present', 'array']],
+            [
+                'data.present' => 'حقل بيانات الطلب مفقود من الطلب.',
+                'data.array'   => 'بيانات الطلب يجب أن تكون كائناً.',
+            ]
+        );
         $fee  = (new FeeCalculator($app->serviceDefinition))->calculate($data['data']);
 
         $app->update(['data' => $data['data'], 'fee_amount' => $fee]);

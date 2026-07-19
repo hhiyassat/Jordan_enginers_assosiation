@@ -104,6 +104,37 @@ class ApplicationProjectLinkTest extends TestCase
           ->assertJsonValidationErrors(['data']);
     }
 
+    public function test_update_accepts_empty_data_on_a_draft_with_arabic_message_on_missing(): void
+    {
+        // Sister regression for the update path — previously PUT
+        // /applications/{id} used inline `required, array` which flashed
+        // Laravel's default English "The data field is required" through
+        // the Apply banner. Empty {} should succeed; a truly missing data
+        // key should 422 with the Arabic message set explicitly.
+        $app = Application::create([
+            'reference_number'      => 'A-TEST-02',
+            'organization_id'       => $this->org->id,
+            'service_definition_id' => $this->service->id,
+            'project_id'            => $this->project->id,
+            'applicant_id'          => $this->applicant->id,
+            'status'                => Application::STATUS_DRAFT,
+            'data'                  => [],
+            'fee_amount'            => 0,
+            'payment_status'        => 'waived',
+        ]);
+        Sanctum::actingAs($this->applicant);
+
+        // Empty object — should pass.
+        $this->putJson("/api/v1/applications/{$app->id}", ['data' => (object) []])->assertOk();
+
+        // Truly missing key — 422 with Arabic message.
+        $res = $this->putJson("/api/v1/applications/{$app->id}", []);
+        $res->assertStatus(422)
+            ->assertJsonValidationErrors(['data']);
+        $this->assertStringNotContainsString('The data field is required', json_encode($res->json()),
+            'The Apply banner reads this message directly — must never be raw English.');
+    }
+
     public function test_store_omitting_project_id_leaves_it_null(): void
     {
         Sanctum::actingAs($this->applicant);
