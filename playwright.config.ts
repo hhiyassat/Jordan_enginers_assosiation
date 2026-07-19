@@ -50,9 +50,13 @@ export default defineConfig({
   webServer: [
     {
       command: 'cd backend && APP_ENV=testing CAPTCHA_ENABLED=false php artisan serve --port=8002 --host=127.0.0.1',
-      url: 'http://127.0.0.1:8002/api/v1/captcha',
+      // /up is Laravel's built-in health route (see bootstrap/app.php).
+      // Do NOT use /api/v1/captcha here — it's rate-limited at 30/min,
+      // and Playwright's poll-until-200 loop would burn through the
+      // bucket in ~30 seconds and never see a 2xx again.
+      url: 'http://127.0.0.1:8002/up',
       reuseExistingServer: !process.env.CI,
-      timeout: 30_000,
+      timeout: 60_000,
       stdout: 'pipe',
       stderr: 'pipe',
     },
