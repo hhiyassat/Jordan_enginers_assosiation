@@ -54,4 +54,46 @@ describe('AdminDashboard — user management affordances', () => {
     expect(screen.queryByText('إدارة المستخدمين')).toBeNull();
     expect(screen.queryByText('المستخدمون')).toBeNull();
   });
+
+  // ── Coverage extension: stat cards + always-visible quick actions ─
+
+  it('renders every stat card with values wired to the API response', async () => {
+    mockUser = { id: 1, name: 'admin', email: 'admin@t.esp', role: 'admin', organization_id: 1, can_manage_users: true };
+    renderPage();
+    await waitFor(() => expect(screen.getByText('إجراءات سريعة')).toBeInTheDocument());
+
+    // Every label + count from the mocked dashboard response should be
+    // rendered — regression if a stat gets accidentally dropped.
+    for (const label of ['إجمالي الطلبات', 'في انتظار المراجعة', 'موافق عليها اليوم', 'الشهادات الصادرة', 'الخدمات النشطة']) {
+      expect(screen.getByText(label)).toBeInTheDocument();
+    }
+    // Values render in Arabic-Indic digits via toLocaleString('ar'),
+    // so assert on presence of the localized numbers.
+    expect(screen.getByText(new Intl.NumberFormat('ar').format(56))).toBeInTheDocument();
+  });
+
+  it('always shows the review-queue and services quick actions regardless of role', async () => {
+    // These two are role-agnostic. Only user-management is gated.
+    mockUser = { id: 2, name: 'staff', email: 'staff@t.esp', role: 'staff', organization_id: 1, can_manage_users: false };
+    renderPage();
+    await waitFor(() => expect(screen.getByText('إجراءات سريعة')).toBeInTheDocument());
+
+    expect(screen.getByRole('link', { name: /قائمة المراجعة/ })).toHaveAttribute('href', '/review/queue');
+    expect(screen.getByRole('link', { name: /إدارة الخدمات/ })).toHaveAttribute('href', '/admin/services');
+  });
+
+  it('links the audit-log quick action to /admin/audit-logs', async () => {
+    mockUser = { id: 1, name: 'admin', email: 'admin@t.esp', role: 'admin', organization_id: 1, can_manage_users: true };
+    renderPage();
+    await waitFor(() => expect(screen.getByText('سجل العمليات')).toBeInTheDocument());
+    expect(screen.getByRole('link', { name: /سجل العمليات/ })).toHaveAttribute('href', '/admin/audit-logs');
+  });
+
+  it('surfaces the API error when the dashboard endpoint fails', async () => {
+    mockDashboard.mockReset();
+    mockDashboard.mockRejectedValue(new Error('dashboard down'));
+    mockUser = { id: 1, name: 'admin', email: 'admin@t.esp', role: 'admin', organization_id: 1, can_manage_users: true };
+    renderPage();
+    await waitFor(() => expect(screen.getByText(/dashboard down/)).toBeInTheDocument());
+  });
 });
