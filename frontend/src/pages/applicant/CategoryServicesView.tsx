@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { ArrowRight, Plus, Clock, Edit3 } from 'lucide-react';
 import { servicesApi } from '../../api/client';
 import type { ServiceDefinition } from '../../types';
@@ -27,15 +28,12 @@ function groupBySubcategory(services: ServiceDefinition[]): Array<{
   return Array.from(groups.values());
 }
 
-// Turn sla_hours (integer) into a human-readable string in Arabic.
-// > 24h → days; < 24 → hours; null → "—".
-function formatSla(hours?: number | null): string {
+// Turn sla_hours into a language-aware human string. Rendered via i18n
+// so plural / unit follow the active language automatically.
+function formatSla(t: (key: string, opts?: Record<string, unknown>) => string, hours?: number | null): string {
   if (hours == null) return '—';
-  if (hours >= 24) {
-    const days = Math.round(hours / 24);
-    return `${days} أيام`;
-  }
-  return `${hours} ساعة`;
+  if (hours >= 24) return t('category.slaDays', { count: Math.round(hours / 24) });
+  return t('category.slaHours', { count: hours });
 }
 
 function formatFee(fee: ServiceDefinition['base_fee'], currency: string): string {
@@ -48,6 +46,9 @@ function formatFee(fee: ServiceDefinition['base_fee'], currency: string): string
 export function CategoryServicesView() {
   const { categoryCode } = useParams<{ categoryCode: string }>();
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
+  const isRtl = i18n.language.startsWith('ar');
+  const isArabic = isRtl;
   const [all, setAll]         = useState<ServiceDefinition[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState('');
@@ -66,32 +67,28 @@ export function CategoryServicesView() {
   // exists — otherwise we get a redundant empty header before every card.
   const useGroupedLayout = groups.some(g => g.ar !== '');
 
+  const categoryTitle = category ? (isArabic ? (category.name_ar || category.name_en) : (category.name_en || category.name_ar)) : '';
+
   return (
-    <div className="flex flex-col h-full" dir="rtl">
+    <div className="flex flex-col h-full" dir={isRtl ? 'rtl' : 'ltr'}>
       {/* Compact breadcrumb — only the ancestor link. The current page's
           name is the <h2> below (single source of truth, no duplication). */}
       <div className="bg-jea-topbar px-6 py-4 shrink-0 flex items-center gap-3">
         <Link
           to="/services"
           className="flex items-center gap-2 text-white/70 hover:text-white text-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60 rounded"
-          aria-label="العودة إلى الخدمات الإلكترونية"
+          aria-label={t('category.backToServices')}
         >
-          <ArrowRight size={16} aria-hidden="true" />
-          <span lang="ar">الخدمات الإلكترونية</span>
+          <ArrowRight size={16} aria-hidden="true" className={isRtl ? '' : 'rotate-180'} />
+          <span>{t('category.backToServices')}</span>
         </Link>
       </div>
 
       <div className="flex-1 overflow-y-auto bg-jea-bg p-6">
         {category && (
           <header className="mb-6">
-            <h2 className="text-base font-black text-jea-text" lang="ar">
-              {category.name_ar}
-            </h2>
-            <p className="text-xs text-jea-muted">
-              <span lang="en" dir="ltr">{category.name_en}</span>
-              <span className="mx-1" aria-hidden="true">·</span>
-              <span lang="ar">{children.length} خدمة</span>
-            </p>
+            <h2 className="text-base font-black text-jea-text">{categoryTitle}</h2>
+            <p className="text-xs text-jea-muted">{t('category.count', { count: children.length })}</p>
           </header>
         )}
 
@@ -105,8 +102,7 @@ export function CategoryServicesView() {
 
         {!loading && !error && children.length === 0 && (
           <div className="rounded-xl border border-jea-border bg-white p-16 text-center text-jea-muted max-w-5xl">
-            <p className="text-sm font-bold text-jea-text">لا توجد خدمات ضمن هذه الفئة</p>
-            <p className="text-xs mt-1">No services in this category yet</p>
+            <p className="text-sm font-bold text-jea-text">{t('category.empty')}</p>
           </div>
         )}
 
@@ -125,27 +121,23 @@ export function CategoryServicesView() {
 
         {!loading && !error && useGroupedLayout && groups.map(g => {
           const groupId = `subcat-${g.ar || 'general'}`;
-          // Suppress the header when this subcategory's name matches the
-          // parent category name — the whole page is already labelled by
-          // it, so a repeated <h3> just duplicates the hero/breadcrumb.
+          const groupLabel = isArabic ? (g.ar || g.en) : (g.en || g.ar);
           const isDuplicateOfParent = !!category && g.ar === category.name_ar;
-          const showHeader = !!g.ar && !isDuplicateOfParent;
+          const showHeader = !!groupLabel && !isDuplicateOfParent;
           return (
             <section
               key={g.ar || 'general'}
               aria-labelledby={showHeader ? groupId : undefined}
-              aria-label={showHeader ? undefined : (g.ar || undefined)}
+              aria-label={showHeader ? undefined : (groupLabel || undefined)}
               className="mb-8 max-w-5xl"
             >
               {showHeader && (
                 <header className="flex items-baseline justify-between gap-3 mb-3 border-b border-jea-border pb-2">
-                  <h3 id={groupId} className="text-base font-black text-jea-text" lang="ar">
-                    {g.ar}
+                  <h3 id={groupId} className="text-base font-black text-jea-text">
+                    {groupLabel}
                   </h3>
                   <div className="flex items-center gap-2 text-xs text-jea-muted">
-                    {g.en && <span lang="en" dir="ltr">{g.en}</span>}
-                    <span aria-hidden="true">·</span>
-                    <span lang="ar">{g.services.length} خدمة</span>
+                    {t('category.count', { count: g.services.length })}
                   </div>
                 </header>
               )}
@@ -174,8 +166,11 @@ function DetailServiceCard({
   onOpen: () => void;
   onOpenVariant?: (variantKey: string) => void;
 }) {
+  const { t, i18n } = useTranslation();
+  const isArabic = i18n.language.startsWith('ar');
   const active = true; // API only returns active services
   const hasModificationVariant = (service.variant_keys ?? []).includes('modification');
+  const name = isArabic ? (service.name_ar || service.name_en) : (service.name_en || service.name_ar);
 
   return (
     <div
@@ -189,22 +184,21 @@ function DetailServiceCard({
       <div className="p-4 flex-1 flex flex-col gap-3">
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
-            <h3 className="text-sm font-bold text-jea-text leading-snug">{service.name_ar}</h3>
-            <p className="text-[10px] text-jea-muted mt-0.5">{service.name_en}</p>
+            <h3 className="text-sm font-bold text-jea-text leading-snug">{name}</h3>
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
             <PhaseBadge phase={service.phase} variant="pill" />
             <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-jea-accent text-jea-primary">
-              متاح
+              {t('category.available')}
             </span>
           </div>
         </div>
 
         <div className="grid grid-cols-3 gap-2 text-center">
           {[
-            { label: 'الرمز',  val: service.code },
-            { label: 'الرسوم', val: formatFee(service.base_fee, service.currency) },
-            { label: 'المدة',  val: formatSla(service.sla_hours) },
+            { label: t('category.fieldCode'), val: service.code },
+            { label: t('category.fieldFee'),  val: formatFee(service.base_fee, service.currency) },
+            { label: t('category.fieldSla'),  val: formatSla(t, service.sla_hours) },
           ].map(item => (
             <div key={item.label} className="bg-jea-bg rounded-lg px-2 py-1.5">
               <div className="text-[9px] text-jea-muted">{item.label}</div>
@@ -213,13 +207,9 @@ function DetailServiceCard({
           ))}
         </div>
 
-        {/* Path summary — how many stages the office owns vs the reviewer.
-            Rendered per card so applicants can see the shape of each
-            service's flow before clicking in. */}
         <RolePathBadge stages={service.schema?.workflow?.stages ?? []} className="mt-1" />
 
-
-        <div className={`flex gap-2 ${hasModificationVariant ? '' : ''}`}>
+        <div className="flex gap-2">
           <button
             onClick={onOpen}
             disabled={!active}
@@ -229,17 +219,17 @@ function DetailServiceCard({
                 : 'bg-gray-100 text-gray-400 cursor-not-allowed'
             }`}
           >
-            {active ? (<><Plus size={11} />تقديم طلب</>) : (<><Clock size={11} />قريباً</>)}
+            {active ? (<><Plus size={11} />{t('category.cta')}</>) : (<><Clock size={11} />{t('category.ctaSoon')}</>)}
           </button>
           {hasModificationVariant && onOpenVariant && active && (
             <button
               onClick={() => onOpenVariant('modification')}
-              aria-label="تعديل عقد سابق · Modify existing contract"
-              title="تعديل عقد سابق · Modify existing contract"
+              aria-label={t('category.modifyAria')}
+              title={t('category.modifyAria')}
               className="py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1 transition-all duration-150 bg-white border border-jea-border text-jea-primary hover:bg-jea-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-jea-primary/40"
             >
               <Edit3 size={11} aria-hidden="true" />
-              <span lang="ar">تعديل</span>
+              <span>{t('category.modifyLabel')}</span>
             </button>
           )}
         </div>

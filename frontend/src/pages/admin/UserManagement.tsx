@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Trash2, Edit3, UserPlus, X } from 'lucide-react';
 import { userManagementApi } from '../../api/client';
 import type { User } from '../../types';
@@ -12,13 +13,15 @@ import { useAuth } from '../../auth/AuthContext';
  * that with an inline hint pointing at the CLI command.
  */
 
-type RoleOption = { value: User['role']; label_ar: string };
+// Role tier config — labels come from i18n at render time so the role
+// column follows the active language.
+type RoleOption = { value: User['role'] };
 const ROLES: RoleOption[] = [
-  { value: 'applicant', label_ar: 'مقدّم طلب' },
-  { value: 'staff',     label_ar: 'موظف مراجعة' },
-  { value: 'auditor',   label_ar: 'مدقق قانوني' },
-  { value: 'admin',     label_ar: 'مدير' },
-  { value: 'superuser', label_ar: 'مستخدم أعلى' },
+  { value: 'applicant' },
+  { value: 'staff' },
+  { value: 'auditor' },
+  { value: 'admin' },
+  { value: 'superuser' },
 ];
 
 // Mirrors backend User::canManageRole(). Admin can pick from the lower tiers;
@@ -33,6 +36,8 @@ function rolesAssignableBy(actor: User | null): RoleOption[] {
 
 export function UserManagement() {
   const { user: actor } = useAuth();
+  const { t, i18n } = useTranslation();
+  const isRtl = i18n.language.startsWith('ar');
   const [users, setUsers]     = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState('');
@@ -50,10 +55,10 @@ export function UserManagement() {
   useEffect(() => { reload(); }, []);
 
   const handleDelete = async (u: User) => {
-    if (!window.confirm(`حذف المستخدم ${u.email}؟`)) return;
+    if (!window.confirm(t('userManagement.deleteConfirm', { email: u.email }))) return;
     try {
       await userManagementApi.destroy(u.id);
-      setBanner({ type: 'ok', text: `تم حذف ${u.email}` });
+      setBanner({ type: 'ok', text: t('userManagement.deletedBanner', { email: u.email }) });
       reload();
     } catch (e) {
       setBanner({ type: 'err', text: (e as Error).message });
@@ -61,20 +66,18 @@ export function UserManagement() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8" dir="rtl">
+    <div className="max-w-5xl mx-auto px-4 py-8" dir={isRtl ? 'rtl' : 'ltr'}>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">إدارة المستخدمين</h1>
-          <p className="text-gray-500 text-sm mt-1">
-            User Management · إضافة وتعديل وحذف حسابات المستخدمين في المؤسسة
-          </p>
+          <h1 className="text-2xl font-bold text-gray-900">{t('userManagement.title')}</h1>
+          <p className="text-gray-500 text-sm mt-1">{t('userManagement.subtitle')}</p>
         </div>
         <button
           onClick={() => setEditing('new')}
           className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold text-sm hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
         >
           <UserPlus size={16} aria-hidden="true" />
-          إضافة مستخدم
+          {t('userManagement.addUser')}
         </button>
       </div>
 
@@ -87,19 +90,19 @@ export function UserManagement() {
         </div>
       )}
 
-      {loading && <p className="text-sm text-gray-500">جارٍ التحميل…</p>}
+      {loading && <p className="text-sm text-gray-500">{t('loading')}…</p>}
       {error && <p className="text-sm text-red-600">{error}</p>}
 
       {!loading && !error && (
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-right">
+            <thead className={`bg-gray-50 ${isRtl ? 'text-right' : 'text-left'}`}>
               <tr>
-                <th className="px-4 py-2 font-semibold">الاسم</th>
-                <th className="px-4 py-2 font-semibold">البريد</th>
-                <th className="px-4 py-2 font-semibold">الدور</th>
-                <th className="px-4 py-2 font-semibold">الحالة</th>
-                <th className="px-4 py-2 font-semibold w-24">إجراءات</th>
+                <th className="px-4 py-2 font-semibold">{t('userManagement.columns.name')}</th>
+                <th className="px-4 py-2 font-semibold">{t('userManagement.columns.email')}</th>
+                <th className="px-4 py-2 font-semibold">{t('userManagement.columns.role')}</th>
+                <th className="px-4 py-2 font-semibold">{t('userManagement.columns.status')}</th>
+                <th className="px-4 py-2 font-semibold w-24">{t('userManagement.columns.actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -107,28 +110,28 @@ export function UserManagement() {
                 <tr key={u.id} className="border-t border-gray-100">
                   <td className="px-4 py-2">{u.name}</td>
                   <td className="px-4 py-2" dir="ltr">{u.email}</td>
-                  <td className="px-4 py-2">{ROLES.find(r => r.value === u.role)?.label_ar ?? u.role}</td>
+                  <td className="px-4 py-2">{t(`userManagement.roles.${u.role}`, { defaultValue: u.role })}</td>
                   <td className="px-4 py-2">
                     <span className={`text-xs px-2 py-0.5 rounded-full ${u.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                      {u.is_active ? 'نشط' : 'موقوف'}
+                      {u.is_active ? t('userManagement.statusActive') : t('userManagement.statusSuspended')}
                     </span>
                     {u.must_change_password && (
                       <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">
-                        بحاجة لتغيير كلمة المرور
+                        {t('userManagement.needsPasswordChange')}
                       </span>
                     )}
                   </td>
                   <td className="px-4 py-2 space-x-1 space-x-reverse">
                     <button
                       onClick={() => setEditing(u)}
-                      aria-label={`تعديل ${u.email}`}
+                      aria-label={t('userManagement.editAria', { email: u.email })}
                       className="inline-flex items-center justify-center w-8 h-8 rounded hover:bg-gray-100 text-gray-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
                     >
                       <Edit3 size={14} aria-hidden="true" />
                     </button>
                     <button
                       onClick={() => handleDelete(u)}
-                      aria-label={`حذف ${u.email}`}
+                      aria-label={t('userManagement.deleteAria', { email: u.email })}
                       className="inline-flex items-center justify-center w-8 h-8 rounded hover:bg-red-50 text-red-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
                     >
                       <Trash2 size={14} aria-hidden="true" />
@@ -146,7 +149,7 @@ export function UserManagement() {
           user={editing === 'new' ? null : editing}
           assignableRoles={rolesAssignableBy(actor)}
           onClose={() => setEditing(null)}
-          onSaved={() => { setEditing(null); reload(); setBanner({ type: 'ok', text: 'تم الحفظ' }); }}
+          onSaved={() => { setEditing(null); reload(); setBanner({ type: 'ok', text: t('userManagement.savedBanner') }); }}
         />
       )}
     </div>
@@ -159,6 +162,8 @@ function UserEditor({ user, assignableRoles, onClose, onSaved }: {
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const { t, i18n } = useTranslation();
+  const isRtl = i18n.language.startsWith('ar');
   const isNew = !user;
   const defaultRole: User['role'] = user?.role
     ?? (assignableRoles[0]?.value ?? 'staff');
@@ -190,7 +195,7 @@ function UserEditor({ user, assignableRoles, onClose, onSaved }: {
       const apiErr = e as Error & { errors?: Record<string, string | string[]> };
       const firstField = apiErr.errors ? Object.values(apiErr.errors)[0] : undefined;
       const firstMsg   = Array.isArray(firstField) ? firstField[0] : (firstField ?? apiErr.message);
-      setErr(firstMsg ?? 'حدث خطأ');
+      setErr(firstMsg ?? t('userManagement.genericError'));
     } finally {
       setSaving(false);
     }
@@ -202,10 +207,12 @@ function UserEditor({ user, assignableRoles, onClose, onSaved }: {
       role="dialog"
       aria-modal="true"
     >
-      <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-lg w-full max-w-md p-5" dir="rtl">
+      <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-lg w-full max-w-md p-5" dir={isRtl ? 'rtl' : 'ltr'}>
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-bold">{isNew ? 'إضافة مستخدم' : `تعديل ${user?.email}`}</h2>
-          <button type="button" onClick={onClose} aria-label="إغلاق">
+          <h2 className="text-lg font-bold">
+            {isNew ? t('userManagement.editorTitle') : t('userManagement.editorTitleEdit', { email: user?.email })}
+          </h2>
+          <button type="button" onClick={onClose} aria-label={t('userManagement.closeAria')}>
             <X size={18} aria-hidden="true" />
           </button>
         </div>
@@ -213,28 +220,30 @@ function UserEditor({ user, assignableRoles, onClose, onSaved }: {
         {err && <div className="mb-3 text-sm bg-red-50 text-red-700 border border-red-200 rounded p-2" role="alert">{err}</div>}
 
         <label className="block mb-3">
-          <span className="text-sm font-semibold text-gray-700">الاسم</span>
+          <span className="text-sm font-semibold text-gray-700">{t('userManagement.form.name')}</span>
           <input value={name} onChange={e => setName(e.target.value)} required className="mt-1 w-full border rounded px-3 py-2 text-sm" />
         </label>
         <label className="block mb-3">
-          <span className="text-sm font-semibold text-gray-700">البريد</span>
+          <span className="text-sm font-semibold text-gray-700">{t('userManagement.form.email')}</span>
           <input type="email" value={email} onChange={e => setEmail(e.target.value)} required dir="ltr" className="mt-1 w-full border rounded px-3 py-2 text-sm" />
         </label>
         <label className="block mb-3">
-          <span className="text-sm font-semibold text-gray-700">الدور</span>
+          <span className="text-sm font-semibold text-gray-700">{t('userManagement.form.role')}</span>
           <select value={role} onChange={e => setRole(e.target.value as User['role'])} className="mt-1 w-full border rounded px-3 py-2 text-sm">
-            {assignableRoles.map(r => <option key={r.value} value={r.value}>{r.label_ar}</option>)}
+            {assignableRoles.map(r => (
+              <option key={r.value} value={r.value}>{t(`userManagement.roles.${r.value}`)}</option>
+            ))}
           </select>
         </label>
         {!isNew && (
           <label className="flex items-center gap-2 mb-3 text-sm">
             <input type="checkbox" checked={isActive} onChange={e => setIsActive(e.target.checked)} />
-            حساب نشط
+            {t('userManagement.form.active')}
           </label>
         )}
         <label className="block mb-4">
           <span className="text-sm font-semibold text-gray-700">
-            {isNew ? 'كلمة المرور المؤقتة' : 'كلمة مرور جديدة (اختياري)'}
+            {isNew ? t('userManagement.form.passwordNew') : t('userManagement.form.passwordEdit')}
           </span>
           <input
             type="password"
@@ -246,7 +255,7 @@ function UserEditor({ user, assignableRoles, onClose, onSaved }: {
             autoComplete="new-password"
           />
           <span className="text-xs text-gray-500 mt-1 block">
-            8 أحرف على الأقل — سيُطلب من المستخدم تغييرها عند أول تسجيل دخول.
+            {t('userManagement.form.passwordHint')}
           </span>
         </label>
 
@@ -256,10 +265,10 @@ function UserEditor({ user, assignableRoles, onClose, onSaved }: {
             disabled={saving}
             className="flex-1 py-2 rounded bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 disabled:opacity-50"
           >
-            {saving ? 'جاري الحفظ…' : 'حفظ'}
+            {saving ? t('common.saving') : t('common.save')}
           </button>
           <button type="button" onClick={onClose} className="px-4 py-2 rounded border text-sm">
-            إلغاء
+            {t('common.cancel')}
           </button>
         </div>
       </form>

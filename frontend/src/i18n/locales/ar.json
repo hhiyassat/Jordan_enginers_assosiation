@@ -167,6 +167,155 @@
       "multiTenant": "متعدد المستأجرين"
     }
   },
+  "category": {
+    "backToServices": "الخدمات الإلكترونية",
+    "count": "{{count}} خدمة",
+    "empty": "لا توجد خدمات ضمن هذه الفئة",
+    "available": "متاح",
+    "fieldCode": "الرمز",
+    "fieldFee": "الرسوم",
+    "fieldSla": "المدة",
+    "slaHours": "{{count}} ساعة",
+    "slaDays": "{{count}} أيام",
+    "cta": "تقديم طلب",
+    "ctaSoon": "قريباً",
+    "modifyLabel": "تعديل",
+    "modifyAria": "تعديل عقد سابق"
+  },
+  "projects": {
+    "title": "مشاريعي",
+    "add": "إضافة مشروع",
+    "addTitle": "إضافة مشروع جديد",
+    "empty": "لا توجد مشاريع بعد",
+    "emptyCta": "أضف مشروعك الأول باستخدام زر «إضافة مشروع»",
+    "listAria": "قائمة المشاريع",
+    "openAria": "فتح مشروع {{name}}",
+    "requestNo": "طلب رقم",
+    "form": {
+      "nameAr": "اسم المشروع",
+      "namePlaceholderAr": "مثال: مبنى سكني في عمان",
+      "nameEn": "الاسم بالإنجليزية",
+      "namePlaceholderEn": "e.g. Amman Residential",
+      "city": "المدينة",
+      "cityPlaceholder": "عمان",
+      "area": "المساحة (م²)",
+      "areaPlaceholder": "120",
+      "type": "نوع المشروع",
+      "engineer": "المهندس المسؤول",
+      "loadingEngineers": "جارٍ التحميل...",
+      "noEngineers": "لا يوجد مهندسون مسجلون",
+      "yearSuffix": "م² سنوي",
+      "requiredName": "يرجى إدخال اسم المشروع",
+      "requiredEngineer": "يرجى اختيار المهندس المسؤول",
+      "saveError": "خطأ أثناء الحفظ",
+      "save": "حفظ المشروع"
+    },
+    "typeOptions": {
+      "residential": "سكني",
+      "commercial": "تجاري",
+      "industrial": "صناعي",
+      "government": "حكومي",
+      "mixed": "مختلط"
+    },
+    "statusFilter": {
+      "active": "نشط",
+      "pending": "قيد المراجعة",
+      "archived": "مؤرشف"
+    }
+  },
+  "projectDetail": {
+    "contract": "العقد",
+    "request": "طلب",
+    "type": "النوع"
+  },
+  "reviewQueue": {
+    "title": "قائمة المراجعة",
+    "subtitle": "{{count}} طلب في انتظار المراجعة",
+    "empty": "لا توجد طلبات معلقة",
+    "slaBreached": "تجاوز الموعد",
+    "slaUrgent": "عاجل",
+    "deadline": "الموعد النهائي: {{when}}",
+    "yourReview": "قيد مراجعتك",
+    "review": "مراجعة"
+  },
+  "adminServices": {
+    "title": "إدارة الخدمات",
+    "count": "{{count}} خدمة",
+    "newService": "خدمة جديدة بالذكاء الاصطناعي",
+    "createdBanner": "تم إنشاء الخدمة {{name}} بنجاح",
+    "savedBanner": "تم حفظ تعديلات الخدمة {{name}}",
+    "empty": "لا توجد خدمات بعد",
+    "createFirst": "أنشئ أول خدمة",
+    "status": {
+      "active": "نشطة",
+      "draft": "مسودة",
+      "inactive": "معطلة"
+    },
+    "locked": "مقفلة",
+    "lockedTitle": "الخدمة مقفلة للتعديل — افتح القفل للمتابعة",
+    "unlock": "فتح القفل",
+    "lock": "إقفال",
+    "unlockTitle": "فتح القفل للسماح بالتعديل",
+    "lockTitle": "إقفال الخدمة لمنع التعديل",
+    "unlockAria": "فتح قفل {{code}}",
+    "lockAria": "إقفال {{code}}",
+    "edit": "تعديل",
+    "activate": "تفعيل",
+    "deactivate": "تعطيل"
+  },
+  "userManagement": {
+    "title": "إدارة المستخدمين",
+    "subtitle": "إضافة وتعديل وحذف حسابات المستخدمين في المؤسسة",
+    "addUser": "إضافة مستخدم",
+    "columns": {
+      "name": "الاسم",
+      "email": "البريد",
+      "role": "الدور",
+      "status": "الحالة",
+      "actions": "إجراءات"
+    },
+    "statusActive": "نشط",
+    "statusSuspended": "موقوف",
+    "needsPasswordChange": "بحاجة لتغيير كلمة المرور",
+    "editAria": "تعديل {{email}}",
+    "deleteAria": "حذف {{email}}",
+    "deleteConfirm": "حذف المستخدم {{email}}؟",
+    "deletedBanner": "تم حذف {{email}}",
+    "savedBanner": "تم الحفظ",
+    "editorTitle": "إضافة مستخدم",
+    "editorTitleEdit": "تعديل {{email}}",
+    "closeAria": "إغلاق",
+    "form": {
+      "name": "الاسم",
+      "email": "البريد",
+      "role": "الدور",
+      "active": "حساب نشط",
+      "passwordNew": "كلمة المرور المؤقتة",
+      "passwordEdit": "كلمة مرور جديدة (اختياري)",
+      "passwordHint": "8 أحرف على الأقل — سيُطلب من المستخدم تغييرها عند أول تسجيل دخول."
+    },
+    "roles": {
+      "applicant": "مقدّم طلب",
+      "staff": "موظف مراجعة",
+      "auditor": "مدقق قانوني",
+      "admin": "مدير",
+      "superuser": "مستخدم أعلى"
+    },
+    "genericError": "حدث خطأ"
+  },
+  "integration": {
+    "title": "دورات التكامل مع Nashmi",
+    "count": "{{count}} دورة",
+    "endpointsTitle": "نقاط التكامل",
+    "empty": "لا توجد دورات تكامل بعد",
+    "emptyHint": "ترسل Nashmi متطلباتها إلى",
+    "status": {
+      "requirements_received": "متطلبات واردة",
+      "code_done": "الكود جاهز",
+      "feedback_received": "ملاحظات واردة",
+      "closed": "مغلق"
+    }
+  },
   "changeCredentials": {
     "title": "تحديث بيانات الدخول",
     "subtitleSuperuser": "يرجى اختيار البريد وكلمة المرور الدائمين — لن يمكن تعديلهما لاحقاً إلا من سطر الأوامر.",

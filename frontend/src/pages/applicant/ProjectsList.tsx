@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { ArrowLeft, ArrowRight, Plus, Building2, MapPin } from 'lucide-react';
 import { engineersApi, projectsApi, type OfficeQuota } from '../../api/client';
 import type { Engineer, Project } from '../../types';
@@ -10,6 +11,8 @@ import { TextField, FormField } from '../../components/ui/FormField';
 import { QuotaCard } from '../../components/ui/QuotaCard';
 
 export function ProjectsList() {
+  const { t, i18n } = useTranslation();
+  const isRtl = i18n.language.startsWith('ar');
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState('');
@@ -40,22 +43,21 @@ export function ProjectsList() {
   useEffect(reload, []);
 
   return (
-    <div className="flex flex-col h-full" dir="rtl">
+    <div className="flex flex-col h-full" dir={isRtl ? 'rtl' : 'ltr'}>
       <PageHero
-        titleAr="مشاريعي"
-        titleEn="My Projects"
+        titleAr={t('projects.title')}
+        titleEn={t('projects.title')}
         breadcrumb={
           <nav aria-label="breadcrumb" className="flex items-center gap-3 text-xs">
             <Link
               to="/services"
               className="flex items-center gap-1.5 text-white/60 hover:text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60 rounded"
             >
-              <ArrowRight size={14} aria-hidden="true" />
-              <span lang="ar">الخدمات الإلكترونية</span>
-              <span className="sr-only" lang="en">E-Services</span>
+              <ArrowRight size={14} aria-hidden="true" className={isRtl ? '' : 'rotate-180'} />
+              <span>{t('category.backToServices')}</span>
             </Link>
             <span className="text-white/30" aria-hidden="true">/</span>
-            <span className="text-white font-bold" lang="ar">مشاريعي</span>
+            <span className="text-white font-bold">{t('projects.title')}</span>
           </nav>
         }
         actions={
@@ -64,7 +66,7 @@ export function ProjectsList() {
             onClick={() => setShowAdd(true)}
             icon={<Plus size={15} />}
           >
-            <span lang="ar">إضافة مشروع</span> · <span lang="en" dir="ltr">Add Project</span>
+            {t('projects.add')}
           </Button>
         }
       />
@@ -73,15 +75,15 @@ export function ProjectsList() {
         <QuotaCard
           facet={quota?.totals ?? null}
           year={quota?.year}
-          titleAr="إجمالي رصيد المكتب"
-          titleEn="Office annual m² total"
+          titleAr={t('dashboard.officeQuotaTotal')}
+          titleEn={t('dashboard.officeQuotaTotal')}
           loading={quotaLoading}
           error={quotaError}
           onRetry={loadQuota}
         />
 
         {loading && (
-          <div className="flex flex-col gap-4 max-w-3xl" aria-busy="true" aria-label="جارٍ التحميل">
+          <div className="flex flex-col gap-4 max-w-3xl" aria-busy="true" aria-label={t('loading')}>
             {[1, 2, 3].map(i => (
               <div key={i} className="h-24 bg-white rounded-2xl border border-jea-border animate-pulse" />
             ))}
@@ -96,14 +98,13 @@ export function ProjectsList() {
 
         {!loading && !error && projects.length === 0 && (
           <div className="rounded-xl border border-jea-border bg-white p-16 text-center text-jea-muted max-w-3xl">
-            <p className="text-sm font-bold text-jea-text" lang="ar">لا توجد مشاريع بعد</p>
-            <p className="text-xs mt-1" lang="ar">أضف مشروعك الأول باستخدام زر «إضافة مشروع»</p>
-            <p className="text-xs mt-1" lang="en" dir="ltr">No projects yet. Add your first project using the "Add Project" button above.</p>
+            <p className="text-sm font-bold text-jea-text">{t('projects.empty')}</p>
+            <p className="text-xs mt-1">{t('projects.emptyCta')}</p>
           </div>
         )}
 
         {!loading && !error && projects.length > 0 && (
-          <ul className="flex flex-col gap-4 max-w-3xl" aria-label="قائمة المشاريع">
+          <ul className="flex flex-col gap-4 max-w-3xl" aria-label={t('projects.listAria')}>
             {projects.map(p => (
               <li key={p.id}>
                 <ProjectCard project={p} onOpen={() => navigate(`/projects/${p.id}`)} />
@@ -123,18 +124,21 @@ export function ProjectsList() {
 }
 
 function ProjectCard({ project, onOpen }: { project: Project; onOpen: () => void }) {
+  const { t, i18n } = useTranslation();
+  const isArabic = i18n.language.startsWith('ar');
+  const projectName = isArabic ? (project.name_ar || project.name_en) : (project.name_en || project.name_ar);
   const statusPill =
     project.status === 'active'
-      ? { ar: 'نشط',           en: 'Active',        cls: 'bg-emerald-100 text-emerald-700 border-emerald-200' }
+      ? { label: t('projects.statusFilter.active'),   cls: 'bg-emerald-100 text-emerald-700 border-emerald-200' }
       : project.status === 'pending'
-      ? { ar: 'قيد المراجعة',  en: 'Under review',  cls: 'bg-jea-accent text-jea-primary border-jea-border' }
-      : { ar: 'مؤرشف',         en: 'Archived',      cls: 'bg-gray-100 text-gray-500 border-gray-200' };
+      ? { label: t('projects.statusFilter.pending'),  cls: 'bg-jea-accent text-jea-primary border-jea-border' }
+      : { label: t('projects.statusFilter.archived'), cls: 'bg-gray-100 text-gray-500 border-gray-200' };
 
   return (
     <button
       onClick={onOpen}
-      aria-label={`فتح مشروع ${project.name_ar}`}
-      className="w-full bg-white rounded-2xl border border-jea-border shadow-sm hover:shadow-md hover:border-jea-primary/40 hover:-translate-y-0.5 transition-all duration-200 text-right overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-jea-primary/40"
+      aria-label={t('projects.openAria', { name: projectName })}
+      className={`w-full bg-white rounded-2xl border border-jea-border shadow-sm hover:shadow-md hover:border-jea-primary/40 hover:-translate-y-0.5 transition-all duration-200 ${isArabic ? 'text-right' : 'text-left'} overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-jea-primary/40`}
     >
       <div className="h-1 bg-jea-primary" aria-hidden="true" />
       <div className="p-5 flex items-center gap-4">
@@ -143,38 +147,33 @@ function ProjectCard({ project, onOpen }: { project: Project; onOpen: () => void
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="text-base font-black text-jea-text" lang="ar">{project.name_ar}</h3>
+            <h3 className="text-base font-black text-jea-text">{projectName}</h3>
             <span
               className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${statusPill.cls}`}
-              aria-label={`الحالة: ${statusPill.ar}`}
+              aria-label={statusPill.label}
             >
-              <span lang="ar">{statusPill.ar}</span>
+              {statusPill.label}
             </span>
           </div>
-          {project.name_en && (
-            <p className="text-xs text-jea-muted mt-0.5" lang="en" dir="ltr">{project.name_en}</p>
-          )}
           <div className="flex items-center gap-3 mt-2 flex-wrap text-[11px] text-jea-muted">
             {project.city && (
               <span className="flex items-center gap-1">
                 <MapPin size={11} aria-hidden="true" />
-                <span lang="ar">{project.city}</span>
+                <span>{project.city}</span>
               </span>
             )}
-            {project.area_m2 != null && (
-              <span>{project.area_m2} م²</span>
-            )}
+            {project.area_m2 != null && <span>{project.area_m2} m²</span>}
             {project.type && (
-              <span className="bg-jea-accent text-jea-primary px-2 py-0.5 rounded-full font-semibold" lang="ar">
+              <span className="bg-jea-accent text-jea-primary px-2 py-0.5 rounded-full font-semibold">
                 {project.type}
               </span>
             )}
             {project.request_no && (
-              <span><span lang="ar">طلب رقم</span> {project.request_no}</span>
+              <span>{t('projects.requestNo')} {project.request_no}</span>
             )}
           </div>
         </div>
-        <ArrowLeft size={18} className="text-jea-muted shrink-0" aria-hidden="true" />
+        <ArrowLeft size={18} className={`text-jea-muted shrink-0 ${isArabic ? '' : 'rotate-180'}`} aria-hidden="true" />
       </div>
     </button>
   );
@@ -187,6 +186,7 @@ function AddProjectModal({
   onClose: () => void;
   onCreated: () => void;
 }) {
+  const { t } = useTranslation();
   const [name_ar, setNameAr]     = useState('');
   const [name_en, setNameEn]     = useState('');
   const [type,    setType]       = useState('سكني');
@@ -217,8 +217,8 @@ function AddProjectModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    if (!name_ar.trim()) { setError('يرجى إدخال اسم المشروع'); return; }
-    if (!engineerId)     { setError('يرجى اختيار المهندس المسؤول'); return; }
+    if (!name_ar.trim()) { setError(t('projects.form.requiredName')); return; }
+    if (!engineerId)     { setError(t('projects.form.requiredEngineer')); return; }
     setSaving(true);
     try {
       await projectsApi.create({
@@ -231,7 +231,7 @@ function AddProjectModal({
       });
       onCreated();
     } catch (err: unknown) {
-      setError((err as Error).message || 'خطأ أثناء الحفظ');
+      setError((err as Error).message || t('projects.form.saveError'));
     } finally {
       setSaving(false);
     }
@@ -241,54 +241,54 @@ function AddProjectModal({
     <Modal
       open={open}
       onClose={onClose}
-      titleAr="إضافة مشروع جديد"
-      titleEn="Add New Project"
+      titleAr={t('projects.addTitle')}
+      titleEn={t('projects.addTitle')}
       footer={
         <>
           <Button variant="ghost" onClick={onClose}>
-            <span lang="ar">إلغاء</span> · <span lang="en" dir="ltr">Cancel</span>
+            {t('common.cancel')}
           </Button>
           <Button type="submit" form="add-project-form" loading={saving}>
-            <span lang="ar">حفظ المشروع</span> · <span lang="en" dir="ltr">Save</span>
+            {t('projects.form.save')}
           </Button>
         </>
       }
     >
       <form id="add-project-form" onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
         <TextField
-          label="اسم المشروع"
-          labelEn="Project name"
+          label={t('projects.form.nameAr')}
+          labelEn={t('projects.form.nameAr')}
           value={name_ar}
           onChange={setNameAr}
-          placeholder="مثال: مبنى سكني في عمان"
+          placeholder={t('projects.form.namePlaceholderAr')}
           required
         />
         <TextField
-          label="الاسم بالإنجليزية"
-          labelEn="Name (English)"
+          label={t('projects.form.nameEn')}
+          labelEn={t('projects.form.nameEn')}
           value={name_en}
           onChange={setNameEn}
-          placeholder="e.g. Amman Residential"
+          placeholder={t('projects.form.namePlaceholderEn')}
         />
         <div className="grid grid-cols-2 gap-4">
           <TextField
-            label="المدينة"
-            labelEn="City"
+            label={t('projects.form.city')}
+            labelEn={t('projects.form.city')}
             value={city}
             onChange={setCity}
-            placeholder="عمان"
+            placeholder={t('projects.form.cityPlaceholder')}
           />
           <TextField
-            label="المساحة (م²)"
-            labelEn="Area (m²)"
+            label={t('projects.form.area')}
+            labelEn={t('projects.form.area')}
             value={area_m2}
             onChange={setArea}
             type="number"
-            placeholder="120"
+            placeholder={t('projects.form.areaPlaceholder')}
           />
         </div>
 
-        <FormField label="نوع المشروع" labelEn="Project type">
+        <FormField label={t('projects.form.type')} labelEn={t('projects.form.type')}>
           {props => (
             <select
               {...props}
@@ -296,16 +296,16 @@ function AddProjectModal({
               onChange={e => setType(e.target.value)}
               className="w-full border border-jea-border rounded-lg px-3 py-2.5 text-sm outline-none focus:border-jea-primary focus:ring-2 focus:ring-jea-primary/20 bg-white"
             >
-              <option>سكني</option>
-              <option>تجاري</option>
-              <option>صناعي</option>
-              <option>حكومي</option>
-              <option>مختلط</option>
+              <option value="سكني">{t('projects.typeOptions.residential')}</option>
+              <option value="تجاري">{t('projects.typeOptions.commercial')}</option>
+              <option value="صناعي">{t('projects.typeOptions.industrial')}</option>
+              <option value="حكومي">{t('projects.typeOptions.government')}</option>
+              <option value="مختلط">{t('projects.typeOptions.mixed')}</option>
             </select>
           )}
         </FormField>
 
-        <FormField label="المهندس المسؤول" labelEn="Assigned engineer" required>
+        <FormField label={t('projects.form.engineer')} labelEn={t('projects.form.engineer')} required>
           {props => (
             <select
               {...props}
@@ -314,14 +314,14 @@ function AddProjectModal({
               disabled={engLoading || engineers.length === 0}
               className="w-full border border-jea-border rounded-lg px-3 py-2.5 text-sm outline-none focus:border-jea-primary focus:ring-2 focus:ring-jea-primary/20 bg-white disabled:opacity-60"
             >
-              {engLoading && <option value="">جارٍ التحميل...</option>}
+              {engLoading && <option value="">{t('projects.form.loadingEngineers')}</option>}
               {!engLoading && engineers.length === 0 && (
-                <option value="">لا يوجد مهندسون مسجلون</option>
+                <option value="">{t('projects.form.noEngineers')}</option>
               )}
               {engineers.map(e => (
                 <option key={e.id} value={e.id}>
                   {e.name_ar} · {e.membership_number}
-                  {e.annual_quota_m2 != null && ` (${e.annual_quota_m2} م² سنوي)`}
+                  {e.annual_quota_m2 != null && ` (${e.annual_quota_m2} ${t('projects.form.yearSuffix')})`}
                 </option>
               ))}
             </select>

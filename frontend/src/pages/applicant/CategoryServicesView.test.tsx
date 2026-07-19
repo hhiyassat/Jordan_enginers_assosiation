@@ -51,12 +51,13 @@ describe('CategoryServicesView — subcategory grouping', () => {
     renderAt('PARENT');
     await waitFor(() => expect(screen.getByText('المجموعة الأولى', { selector: 'h3' })).toBeInTheDocument());
 
+    // After the i18n retrofit each header renders in the active language
+    // ONLY, not both side by side (JORD-6/7/13/16). English subcategory
+    // labels appear when the language switcher flips to en; that's covered
+    // by the language-flip regression on Dashboard.
     expect(screen.getByText('المجموعة الأولى',  { selector: 'h3' })).toBeInTheDocument();
     expect(screen.getByText('المجموعة الثانية', { selector: 'h3' })).toBeInTheDocument();
     expect(screen.getByText('المجموعة الثالثة', { selector: 'h3' })).toBeInTheDocument();
-
-    expect(screen.getByText('Group One')).toBeInTheDocument();
-    expect(screen.getByText('Group Two')).toBeInTheDocument();
 
     const sections = document.querySelectorAll('section[aria-labelledby]');
     expect(sections.length).toBe(3);

@@ -167,6 +167,155 @@
       "multiTenant": "Multi-tenant"
     }
   },
+  "category": {
+    "backToServices": "E-Services",
+    "count": "{{count}} services",
+    "empty": "No services in this category yet",
+    "available": "Available",
+    "fieldCode": "Code",
+    "fieldFee": "Fee",
+    "fieldSla": "SLA",
+    "slaHours": "{{count}} h",
+    "slaDays": "{{count}} d",
+    "cta": "Apply",
+    "ctaSoon": "Coming soon",
+    "modifyLabel": "Modify",
+    "modifyAria": "Modify existing contract"
+  },
+  "projects": {
+    "title": "My Projects",
+    "add": "Add Project",
+    "addTitle": "Add New Project",
+    "empty": "No projects yet",
+    "emptyCta": "Add your first project using the \"Add Project\" button above.",
+    "listAria": "Projects list",
+    "openAria": "Open project {{name}}",
+    "requestNo": "Request #",
+    "form": {
+      "nameAr": "Project name (Arabic)",
+      "namePlaceholderAr": "e.g. Residential Building in Amman",
+      "nameEn": "Name (English)",
+      "namePlaceholderEn": "e.g. Amman Residential",
+      "city": "City",
+      "cityPlaceholder": "Amman",
+      "area": "Area (m²)",
+      "areaPlaceholder": "120",
+      "type": "Project type",
+      "engineer": "Assigned engineer",
+      "loadingEngineers": "Loading…",
+      "noEngineers": "No engineers registered",
+      "yearSuffix": "m² per year",
+      "requiredName": "Please enter a project name",
+      "requiredEngineer": "Please pick an assigned engineer",
+      "saveError": "Save failed",
+      "save": "Save project"
+    },
+    "typeOptions": {
+      "residential": "Residential",
+      "commercial": "Commercial",
+      "industrial": "Industrial",
+      "government": "Government",
+      "mixed": "Mixed"
+    },
+    "statusFilter": {
+      "active": "Active",
+      "pending": "Pending",
+      "archived": "Archived"
+    }
+  },
+  "projectDetail": {
+    "contract": "Contract",
+    "request": "Request",
+    "type": "Type"
+  },
+  "reviewQueue": {
+    "title": "Review queue",
+    "subtitle": "{{count}} applications awaiting review",
+    "empty": "No pending applications",
+    "slaBreached": "SLA breached",
+    "slaUrgent": "Urgent",
+    "deadline": "Deadline: {{when}}",
+    "yourReview": "Your review",
+    "review": "Review"
+  },
+  "adminServices": {
+    "title": "Services",
+    "count": "{{count}} services",
+    "newService": "New AI-generated service",
+    "createdBanner": "Service {{name}} created successfully",
+    "savedBanner": "Service {{name}} saved",
+    "empty": "No services yet",
+    "createFirst": "Create the first one",
+    "status": {
+      "active": "Active",
+      "draft": "Draft",
+      "inactive": "Inactive"
+    },
+    "locked": "Locked",
+    "lockedTitle": "Service is locked for edits — unlock to continue",
+    "unlock": "Unlock",
+    "lock": "Lock",
+    "unlockTitle": "Unlock to allow edits",
+    "lockTitle": "Lock the service to prevent edits",
+    "unlockAria": "Unlock {{code}}",
+    "lockAria": "Lock {{code}}",
+    "edit": "Edit",
+    "activate": "Activate",
+    "deactivate": "Deactivate"
+  },
+  "userManagement": {
+    "title": "User management",
+    "subtitle": "Create, edit, and delete user accounts in the organization",
+    "addUser": "Add user",
+    "columns": {
+      "name": "Name",
+      "email": "Email",
+      "role": "Role",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "statusActive": "Active",
+    "statusSuspended": "Suspended",
+    "needsPasswordChange": "Needs password change",
+    "editAria": "Edit {{email}}",
+    "deleteAria": "Delete {{email}}",
+    "deleteConfirm": "Delete user {{email}}?",
+    "deletedBanner": "Deleted {{email}}",
+    "savedBanner": "Saved",
+    "editorTitle": "Add user",
+    "editorTitleEdit": "Edit {{email}}",
+    "closeAria": "Close",
+    "form": {
+      "name": "Name",
+      "email": "Email",
+      "role": "Role",
+      "active": "Active account",
+      "passwordNew": "Temporary password",
+      "passwordEdit": "New password (optional)",
+      "passwordHint": "At least 8 characters — the user will be asked to change it on first login."
+    },
+    "roles": {
+      "applicant": "Applicant",
+      "staff": "Review staff",
+      "auditor": "Legal auditor",
+      "admin": "Admin",
+      "superuser": "Superuser"
+    },
+    "genericError": "Something went wrong"
+  },
+  "integration": {
+    "title": "Nashmi integration cycles",
+    "count": "{{count}} cycles",
+    "endpointsTitle": "Endpoints",
+    "empty": "No integration cycles yet",
+    "emptyHint": "Nashmi posts requirements to",
+    "status": {
+      "requirements_received": "Requirements received",
+      "code_done": "Code done",
+      "feedback_received": "Feedback received",
+      "closed": "Closed"
+    }
+  },
   "changeCredentials": {
     "title": "Update sign-in details",
     "subtitleSuperuser": "Pick a permanent email + password. These can only be changed later from the command line.",
