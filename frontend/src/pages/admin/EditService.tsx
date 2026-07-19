@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Lock, Unlock } from 'lucide-react';
 import { adminApi } from '../../api/client';
 import { DynamicForm } from '../../engine/DynamicForm';
+import { DocumentPreviewCard } from '../../engine/DocumentPreviewCard';
 import type { ServiceDefinition, ServiceSchema } from '../../types';
 
 type Tab = 'schema' | 'preview' | 'ai';
@@ -326,20 +327,12 @@ export function EditService() {
           {(parsedSchema.documents?.length ?? 0) > 0 && (
             <div className="bg-white rounded-xl border border-gray-200 p-5">
               <h3 className="text-sm font-semibold text-gray-800 mb-3">المستندات المطلوبة</h3>
-              <div className="space-y-2">
+              <p className="text-xs text-gray-500 mb-3">
+                هذه هي واجهة رفع المستندات كما ستظهر للمتقدم في خطوة "المستندات". الرفع معطّل هنا لأنّه محرّر ومعاينة فقط.
+              </p>
+              <div className="space-y-3">
                 {parsedSchema.documents.map(doc => (
-                  <div key={doc.id} className="flex items-center justify-between text-sm">
-                    <div>
-                      <span className="font-medium text-gray-700">{doc.label_ar}</span>
-                      {doc.conditional && <span className="text-xs text-orange-500 mr-2">(شرطي)</span>}
-                    </div>
-                    <div className="flex gap-2 items-center">
-                      <span className="text-xs text-gray-400">{doc.accept.join(', ')} · {doc.max_size_mb}MB</span>
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${doc.required ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-500'}`}>
-                        {doc.required ? 'مطلوب' : 'اختياري'}
-                      </span>
-                    </div>
-                  </div>
+                  <DocumentPreviewCard key={doc.id} doc={doc} />
                 ))}
               </div>
             </div>
