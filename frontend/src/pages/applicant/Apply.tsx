@@ -6,6 +6,7 @@ import { DocumentUploader } from '../../engine/DocumentUploader';
 import type { Application, Project, ServiceDefinition, SchemaWorkflowStage } from '../../types';
 import { WorkflowStepper } from '../../components/ui/WorkflowStepper';
 import { ProjectContextHeader } from './ProjectContextHeader';
+import { normalizeApplyError, labelForOtherKey, type ApiError } from './applyErrorHelpers';
 
 /**
  * Map an Application.status to the corresponding stage_id in the
@@ -72,6 +73,12 @@ export function Apply() {
   const [application, setApplication] = useState<Application | null>(null);
   const [formData, setFormData]       = useState<Record<string, unknown>>({});
   const [errors, setErrors]           = useState<Record<string, string>>({});
+  // Errors that don't map to a schema field/document — project_id,
+  // service_code, top-level FormRequest failures. Rendered in the banner
+  // so the applicant sees exactly what went wrong instead of just a
+  // generic "review the highlighted fields".
+  const [otherErrors, setOtherErrors] = useState<Record<string, string>>({});
+  const [errorSummary, setErrorSummary] = useState<string>('');
   const [step, setStep]               = useState<Step>('form');
   const [loading, setLoading]         = useState(true);
   const [saving, setSaving]           = useState(false);
@@ -97,13 +104,21 @@ export function Apply() {
 
   const handleFieldChange = (field: string, value: unknown) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    // Clear error for this field as user corrects it
+    // Clear error for this field as user corrects it. Also clear any
+    // banner-level otherErrors so the applicant isn't stuck reading a
+    // stale summary after they've started fixing things.
     setErrors(prev => { const next = { ...prev }; delete next[field]; return next; });
+    setOtherErrors({});
+    setErrorSummary('');
   };
 
   const handleSaveDraft = async () => {
     if (!service) return;
     setSaving(true);
+    // Fresh save clears any previous error state.
+    setErrors({});
+    setOtherErrors({});
+    setErrorSummary('');
     try {
       if (application) {
         const r = await applicationsApi.update(application.id, formData);
@@ -116,8 +131,10 @@ export function Apply() {
       }
       setStep('documents');
     } catch (err: unknown) {
-      const e = err as { errors?: Record<string, string> };
-      if (e.errors) setErrors(e.errors);
+      const { summary, fieldErrors, otherErrors } = normalizeApplyError(err as ApiError, service.schema);
+      setErrors(fieldErrors);
+      setOtherErrors(otherErrors);
+      setErrorSummary(summary);
     } finally {
       setSaving(false);
     }
@@ -142,10 +159,16 @@ export function Apply() {
       await applicationsApi.submit(application.id);
       navigate('/my-applications', { state: { submitted: true } });
     } catch (err: unknown) {
-      const e = err as { errors?: Record<string, string>; message?: string };
-      if (e.errors) {
-        // EDA-10: Correctable Defect — return to form step, show field errors inline
-        setErrors(e.errors);
+      const apiErr = err as ApiError;
+      const { summary, fieldErrors, otherErrors } = normalizeApplyError(apiErr, service?.schema);
+      const hasFieldErrors = Object.keys(fieldErrors).length > 0;
+      const hasOtherErrors = Object.keys(otherErrors).length > 0;
+
+      if (hasFieldErrors || hasOtherErrors) {
+        // EDA-10: Correctable Defect — return to form step, show inline + banner
+        setErrors(fieldErrors);
+        setOtherErrors(otherErrors);
+        setErrorSummary(summary);
         setStep('form');
         // Announce error to screen readers (WCAG 2.1 AA)
         setTimeout(() => {
@@ -153,7 +176,7 @@ export function Apply() {
           firstError?.focus();
         }, 100);
       } else {
-        alert((e as Error).message || 'حدث خطأ أثناء التقديم. يرجى المحاولة مرة أخرى.');
+        alert(summary || 'حدث خطأ أثناء التقديم. يرجى المحاولة مرة أخرى.');
       }
     } finally {
       setSubmitting(false);
@@ -218,16 +241,30 @@ export function Apply() {
         </div>
       )}
 
-      {/* EDA-10 error banner — shown when returning from submission failure */}
-      {Object.keys(errors).length > 0 && step === 'form' && (
+      {/* EDA-10 error banner — headline summary + explicit list of the
+          non-schema errors (project_id, service_code, ...). Schema field
+          errors are inlined by DynamicForm; we don't repeat them here. */}
+      {(Object.keys(errors).length > 0 || Object.keys(otherErrors).length > 0) && step === 'form' && (
         <div
           role="alert"
           className="mb-6 bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-700"
         >
-          <p className="font-semibold">يوجد أخطاء في البيانات — يرجى مراجعة الحقول المحددة</p>
-          <p className="mt-1 text-red-500 text-xs">
-            تم حفظ طلبك. بعد تصحيح الأخطاء يمكنك المتابعة.
-          </p>
+          <p className="font-semibold">{errorSummary || 'يوجد أخطاء في البيانات — يرجى مراجعة الحقول المحددة'}</p>
+          {Object.keys(otherErrors).length > 0 && (
+            <ul className="mt-2 space-y-1 list-disc pr-5 text-xs">
+              {Object.entries(otherErrors).map(([key, msg]) => (
+                <li key={key}>
+                  <span className="font-semibold">{labelForOtherKey(key)}:</span>
+                  <span className="mr-1">{msg}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+          {application && (
+            <p className="mt-2 text-red-500 text-xs">
+              تم حفظ طلبك كمسودة. بعد تصحيح الأخطاء يمكنك المتابعة.
+            </p>
+          )}
         </div>
       )}
 
