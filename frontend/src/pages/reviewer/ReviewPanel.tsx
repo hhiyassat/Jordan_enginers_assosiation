@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { applicationsApi, reviewApi, type StageAction } from '../../api/client';
 import { DynamicForm } from '../../engine/DynamicForm';
 import type { Application } from '../../types';
@@ -31,23 +32,25 @@ const VARIANT_STYLES: Record<StageAction['variant'], { active: string; idle: str
   },
 };
 
-function notesLabelFor(action: StageAction | null): { label: string; placeholder: string } {
-  if (!action) return { label: 'ملاحظات', placeholder: '' };
+function notesLabelFor(
+  action: StageAction | null,
+  isArabic: boolean,
+  t: (key: string) => string,
+): { label: string; placeholder: string } {
+  if (!action) return { label: t('reviewPanel.notesLabel'), placeholder: '' };
+  const actionLabel = isArabic ? (action.label_ar || action.label_en) : (action.label_en || action.label_ar);
   if (!action.requires_notes) {
-    return { label: `ملاحظات (اختياري) — ${action.label_ar}`, placeholder: 'أضف ملاحظة اختيارية...' };
+    return { label: `${t('reviewPanel.notesLabel')} — ${actionLabel}`, placeholder: t('reviewPanel.notesPlaceholder') };
   }
-  if (action.id === 'reject') {
-    return { label: 'سبب الرفض *', placeholder: 'اذكر سبب الرفض بوضوح — سيظهر هذا للمتقدم...' };
-  }
-  if (action.id === 'request_modifications') {
-    return { label: 'وصف التعديلات المطلوبة *', placeholder: 'اذكر بالتفصيل ما يجب تعديله — سيظهر هذا للمتقدم...' };
-  }
-  return { label: `${action.label_ar} — سبب مطلوب *`, placeholder: 'اذكر السبب...' };
+  return { label: `${actionLabel} *`, placeholder: t('reviewPanel.notesPlaceholder') };
 }
 
 export function ReviewPanel() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
+  const isRtl = i18n.language.startsWith('ar');
+  const isArabic = isRtl;
 
   const [app, setApp]                       = useState<Application | null>(null);
   const [availableActions, setAvailableActions] = useState<StageAction[]>([]);
@@ -99,7 +102,7 @@ export function ReviewPanel() {
 
     // Backend also enforces notes-required; front-end guard for UX only.
     if (selectedAction.requires_notes && !notes.trim()) {
-      setNotesError('هذا الحقل مطلوب — يجب ذكر السبب وفق منهجية عقراتك');
+      setNotesError(t('reviewPanel.notesRequired'));
       return;
     }
 
@@ -130,7 +133,7 @@ export function ReviewPanel() {
     try {
       const r = await reviewApi.issueCertificate(app.id);
       setApp(r.application);
-      alert(`✅ تم إصدار الشهادة رقم: ${r.certificate.certificate_number}`);
+      alert(`✅ ${r.certificate.certificate_number}`);
     } catch (err: unknown) {
       setPageError((err as Error).message);
     }
@@ -143,27 +146,30 @@ export function ReviewPanel() {
   );
 
   const schema     = app.service_definition?.schema;
-  // Fix: was assigned_to_id (wrong) — backend column is assigned_reviewer_id
   const isClaimed  = !!app.assigned_reviewer_id;
 
-  // Resolve current_stage ID → Arabic label from schema workflow stages
-  const stageLabel = schema?.workflow?.stages?.find(s => s.id === app.current_stage)?.label_ar
-    ?? app.current_stage;
+  // Resolve current_stage ID → language-aware label from schema workflow stages
+  const currentStage = schema?.workflow?.stages?.find(s => s.id === app.current_stage);
+  const stageLabel = currentStage
+    ? (isArabic ? (currentStage.label_ar || currentStage.label_en) : (currentStage.label_en || currentStage.label_ar))
+    : app.current_stage;
 
-  const notesUiCopy = notesLabelFor(selectedAction);
+  const serviceName = schema
+    ? (isArabic ? (schema.name_ar || schema.name_en) : (schema.name_en || schema.name_ar))
+    : (isArabic ? (app.service_definition?.name_ar || app.service_definition?.name_en) : (app.service_definition?.name_en || app.service_definition?.name_ar));
+
+  const notesUiCopy = notesLabelFor(selectedAction, isArabic, t);
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8" dir="rtl">
+    <div className="max-w-4xl mx-auto px-4 py-8" dir={isRtl ? 'rtl' : 'ltr'}>
 
       {/* Header */}
       <div className="flex items-start justify-between mb-8 gap-4">
         <div>
           <button onClick={() => navigate(-1)} className="text-sm text-gray-400 hover:text-gray-600 mb-2">
-            → رجوع للقائمة
+            {t('reviewPanel.backToQueue')}
           </button>
-          <h1 className="text-xl font-bold text-gray-900">
-            {schema?.name_ar ?? app.service_definition?.name_ar}
-          </h1>
+          <h1 className="text-xl font-bold text-gray-900">{serviceName}</h1>
           <p className="font-mono text-xs text-gray-400 mt-1">{app.reference_number}</p>
         </div>
 
@@ -181,13 +187,13 @@ export function ReviewPanel() {
               disabled={claiming}
               className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50 font-medium"
             >
-              {claiming ? 'جارٍ...' : '🔒 استلام الطلب'}
+              {claiming ? t('reviewPanel.actionLoading') : `🔒 ${t('reviewPanel.claim')}`}
             </button>
           )}
 
           {isClaimed && app.status === 'under_review' && (
             <span className="text-xs px-3 py-1.5 rounded-full bg-orange-100 text-orange-700 font-medium">
-              🔒 قيد مراجعتك
+              🔒 {t('reviewPanel.yourReview')}
             </span>
           )}
         </div>
@@ -216,7 +222,7 @@ export function ReviewPanel() {
           {(app.documents?.length ?? 0) > 0 && (
             <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
               <div className="bg-navy px-6 py-3">
-                <h3 className="text-white font-semibold text-sm">المستندات المرفوعة</h3>
+                <h3 className="text-white font-semibold text-sm">{t('reviewPanel.documentsSection')}</h3>
               </div>
               <div className="p-5 space-y-3">
                 {app.documents?.map(doc => (
@@ -243,30 +249,32 @@ export function ReviewPanel() {
           {/* Previous reviews log */}
           {(app.reviews?.length ?? 0) > 0 && (
             <div className="bg-white rounded-xl border border-gray-200 p-5">
-              <h3 className="font-semibold text-gray-800 text-sm mb-4">سجل المراجعات</h3>
+              <h3 className="font-semibold text-gray-800 text-sm mb-4">{t('reviewPanel.reviewSection')}</h3>
               <div className="space-y-3">
-                {app.reviews?.map(r => (
-                  <div key={r.id} className="text-xs border-t border-gray-100 pt-3 first:border-t-0 first:pt-0">
-                    <div className="flex justify-between">
-                      <span className="font-medium text-gray-700">{r.stage}</span>
-                      <span className={`px-1.5 py-0.5 rounded ${
-                        r.decision === 'approved'                ? 'bg-green-100 text-green-700' :
-                        r.decision === 'rejected'                ? 'bg-red-100 text-red-700' :
-                        r.decision === 'modifications_requested' ? 'bg-orange-100 text-orange-700' :
-                        'bg-gray-100 text-gray-600'
-                      }`}>{
-                        r.decision === 'approved'                ? 'موافقة' :
-                        r.decision === 'rejected'                ? 'مرفوض' :
-                        r.decision === 'modifications_requested' ? 'طلب تعديل' :
-                        r.decision
-                      }</span>
+                {app.reviews?.map(r => {
+                  const decisionKey = r.decision === 'approved' ? 'approved'
+                    : r.decision === 'rejected' ? 'rejected'
+                    : r.decision === 'modifications_requested' ? 'modifications_requested'
+                    : null;
+                  const decisionLabel = decisionKey ? t(`status.${decisionKey}`) : r.decision;
+                  return (
+                    <div key={r.id} className="text-xs border-t border-gray-100 pt-3 first:border-t-0 first:pt-0">
+                      <div className="flex justify-between">
+                        <span className="font-medium text-gray-700">{r.stage}</span>
+                        <span className={`px-1.5 py-0.5 rounded ${
+                          r.decision === 'approved'                ? 'bg-green-100 text-green-700' :
+                          r.decision === 'rejected'                ? 'bg-red-100 text-red-700' :
+                          r.decision === 'modifications_requested' ? 'bg-orange-100 text-orange-700' :
+                          'bg-gray-100 text-gray-600'
+                        }`}>{decisionLabel}</span>
+                      </div>
+                      {r.notes && (
+                        <p className="text-gray-600 mt-1.5 bg-gray-50 rounded p-1.5">{r.notes}</p>
+                      )}
+                      <p className="text-gray-400 mt-1">{r.reviewer?.name}</p>
                     </div>
-                    {r.notes && (
-                      <p className="text-gray-600 mt-1.5 bg-gray-50 rounded p-1.5">{r.notes}</p>
-                    )}
-                    <p className="text-gray-400 mt-1">{r.reviewer?.name}</p>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
@@ -274,12 +282,12 @@ export function ReviewPanel() {
           {/* Issue certificate (post-approval) */}
           {app.status === 'approved' && (
             <div className="bg-green-50 border border-green-200 rounded-xl p-5">
-              <p className="text-green-700 font-medium text-sm mb-3">✅ الطلب موافق عليه</p>
+              <p className="text-green-700 font-medium text-sm mb-3">✅ {t('status.approved')}</p>
               <button
                 onClick={handleIssueCert}
                 className="w-full py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium"
               >
-                إصدار الشهادة
+                {t('status.certificate_issued')}
               </button>
             </div>
           )}
@@ -287,12 +295,12 @@ export function ReviewPanel() {
           {/* Terminal state badges */}
           {app.status === 'rejected' && (
             <div className="bg-red-50 border border-red-200 rounded-xl p-5 text-center text-sm text-red-700">
-              ❌ هذا الطلب مرفوض
+              ❌ {t('status.rejected')}
             </div>
           )}
           {app.status === 'certificate_issued' && (
             <div className="bg-teal-50 border border-teal-200 rounded-xl p-5 text-center text-sm text-teal-700">
-              🏆 تم إصدار الشهادة
+              🏆 {t('status.certificate_issued')}
             </div>
           )}
 
@@ -304,35 +312,32 @@ export function ReviewPanel() {
               empty state instead of the wrong buttons. */}
           {isClaimed && app.status === 'under_review' && (
             <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
-              <h3 className="font-semibold text-gray-800 text-sm">
-                قرار المراجعة
-                <span className="text-gray-400 font-normal text-xs mx-1" dir="ltr">· Review decision</span>
-              </h3>
+              <h3 className="font-semibold text-gray-800 text-sm">{t('reviewPanel.reviewSection')}</h3>
 
               {decisionActions.length === 0 && (
                 <div role="status" className="text-xs text-gray-500 bg-gray-50 rounded-lg px-3 py-2">
-                  لا توجد إجراءات متاحة في هذه المرحلة — يرجى مراجعة الإعداد.
+                  {t('reviewPanel.actionError')}
                 </div>
               )}
 
               {decisionActions.length > 0 && (
                 <>
-                  <div className="space-y-2" role="group" aria-label="خيارات القرار">
+                  <div className="space-y-2" role="group" aria-label={t('reviewPanel.reviewSection')}>
                     {decisionActions.map(action => {
                       const cls = VARIANT_STYLES[action.variant];
                       const isSelected = selectedActionId === action.id;
+                      const actionLabel = isArabic ? (action.label_ar || action.label_en) : (action.label_en || action.label_ar);
                       return (
                         <button
                           key={action.id}
                           type="button"
                           onClick={() => { setSelectedActionId(action.id); setNotesError(''); setNotes(''); }}
                           aria-pressed={isSelected}
-                          className={`w-full text-right px-4 py-3 rounded-lg border-2 text-sm font-medium transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-jea-primary/40 ${
+                          className={`w-full ${isRtl ? 'text-right' : 'text-left'} px-4 py-3 rounded-lg border-2 text-sm font-medium transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-jea-primary/40 ${
                             isSelected ? cls.active : cls.idle
                           }`}
                         >
-                          <span lang="ar">{action.label_ar}</span>
-                          <span className="text-gray-400 font-normal text-xs mx-1" lang="en" dir="ltr">· {action.label_en}</span>
+                          {actionLabel}
                         </button>
                       );
                     })}
@@ -343,7 +348,7 @@ export function ReviewPanel() {
                       <label className="block text-xs font-medium text-gray-700 mb-1.5">
                         {notesUiCopy.label}
                         {selectedAction.requires_notes && (
-                          <span className="text-red-500 mr-1 text-xs">— مطلوب وفق منهجية عقراتك</span>
+                          <span className="text-red-500 mx-1 text-xs">*</span>
                         )}
                       </label>
                       <textarea
@@ -368,7 +373,7 @@ export function ReviewPanel() {
                     disabled={!selectedAction || deciding}
                     className="w-full py-2.5 bg-jea-topbar text-white rounded-lg hover:bg-jea-hover disabled:opacity-50 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-jea-primary/40"
                   >
-                    {deciding ? 'جارٍ الحفظ...' : 'تأكيد القرار · Confirm decision'}
+                    {deciding ? t('reviewPanel.actionLoading') : t('reviewPanel.confirmYes')}
                   </button>
                 </>
               )}
@@ -378,8 +383,8 @@ export function ReviewPanel() {
           {/* Prompt to claim if submitted and unclaimed */}
           {app.status === 'submitted' && !isClaimed && (
             <div className="bg-blue-50 border border-blue-200 rounded-xl p-5 text-center text-sm text-blue-700">
-              <p className="font-medium mb-1">الطلب ينتظر مراجعاً</p>
-              <p className="text-xs text-blue-500">اضغط "استلام الطلب" لبدء المراجعة</p>
+              <p className="font-medium mb-1">{t('reviewQueue.review')}</p>
+              <p className="text-xs text-blue-500">{t('reviewPanel.claimBanner')}</p>
             </div>
           )}
         </div>

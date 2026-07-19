@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { applicationsApi, projectsApi, servicesApi } from '../../api/client';
 import { DynamicForm } from '../../engine/DynamicForm';
 import { DocumentUploader } from '../../engine/DocumentUploader';
@@ -64,6 +65,9 @@ export function Apply() {
   const { serviceCode } = useParams<{ serviceCode: string }>();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
+  const isRtl = i18n.language.startsWith('ar');
+  const isArabic = isRtl;
   const variantKey = searchParams.get('variant');
   const projectIdParam = searchParams.get('project_id');
   const projectId = projectIdParam ? Number(projectIdParam) : null;
@@ -176,7 +180,7 @@ export function Apply() {
           firstError?.focus();
         }, 100);
       } else {
-        alert(summary || 'حدث خطأ أثناء التقديم. يرجى المحاولة مرة أخرى.');
+        alert(summary || t('apply.submitError'));
       }
     } finally {
       setSubmitting(false);
@@ -185,20 +189,18 @@ export function Apply() {
 
   if (loading || !service || !service.schema) {
     return (
-      <div className="flex items-center justify-center h-64" role="status" aria-label="جارٍ التحميل">
+      <div className="flex items-center justify-center h-64" role="status" aria-label={t('loading')}>
         <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full" />
       </div>
     );
   }
 
-  // Narrows `schema` to non-null for the rest of the render. The `!service.schema`
-  // check above is a soft guard: services in draft state can technically ship
-  // without a schema, but reaching Apply for one is a bug — bail out cleanly.
   const schema = service.schema;
+  const schemaName = isArabic ? (schema.name_ar || schema.name_en) : (schema.name_en || schema.name_ar);
   const steps: { id: Step; label: string }[] = [
-    { id: 'form',      label: 'البيانات' },
-    { id: 'documents', label: 'المستندات' },
-    { id: 'review',    label: 'المراجعة' },
+    { id: 'form',      label: t('apply.steps.form') },
+    { id: 'documents', label: t('apply.steps.documents') },
+    { id: 'review',    label: t('apply.steps.review') },
   ];
   const currentStepIndex = steps.findIndex(s => s.id === step);
 
@@ -216,19 +218,19 @@ export function Apply() {
       ?? [];
   const currentStageId = stageIdForApplication(workflowStages, application);
   const activeVariant = variantKey ? workflow?.variants?.[variantKey] : undefined;
+  const variantLabel = activeVariant ? (isArabic ? (activeVariant.label_ar || activeVariant.label_en) : (activeVariant.label_en || activeVariant.label_ar)) : '';
+  const workflowTitle = activeVariant ? t('apply.workflowTitleVariant', { variant: variantLabel }) : t('apply.workflowTitle');
 
   return (
-    <main className="max-w-3xl mx-auto px-4 py-8" dir="rtl">
+    <main className="max-w-3xl mx-auto px-4 py-8" dir={isRtl ? 'rtl' : 'ltr'}>
       {/* Header */}
       <header className="mb-8">
         <p className="text-sm text-gray-400 mb-1">
-          {activeVariant
-            ? <span lang="ar">{activeVariant.label_ar} · <span lang="en" dir="ltr">{activeVariant.label_en}</span></span>
-            : 'تقديم طلب جديد'}
+          {activeVariant ? variantLabel : t('apply.newApplication')}
         </p>
-        <h1 className="text-2xl font-bold text-gray-900">{schema.name_ar}</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{schemaName}</h1>
         {application && (
-          <p className="text-sm text-blue-600 mt-1 font-mono" aria-label="رقم الطلب">
+          <p className="text-sm text-blue-600 mt-1 font-mono" aria-label={t('apply.referenceAria')}>
             {application.reference_number}
           </p>
         )}
@@ -241,10 +243,8 @@ export function Apply() {
           <WorkflowStepper
             stages={workflowStages}
             currentStageId={currentStageId}
-            titleAr={activeVariant ? `${activeVariant.label_ar} · مسار الطلب` : 'مسار الطلب'}
-            titleEn={activeVariant ? `${activeVariant.label_en} · Workflow` : 'Application workflow'}
-            /* Apply page is applicant-side — dim reviewer-owned stages so
-               the office sees THEIR path highlighted against the fuller flow. */
+            titleAr={workflowTitle}
+            titleEn={workflowTitle}
             dimForRole="office"
           />
         </div>
@@ -258,27 +258,27 @@ export function Apply() {
           role="alert"
           className="mb-6 bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-700"
         >
-          <p className="font-semibold">{errorSummary || 'يوجد أخطاء في البيانات — يرجى مراجعة الحقول المحددة'}</p>
+          <p className="font-semibold">{errorSummary || t('apply.errorHeading')}</p>
           {Object.keys(otherErrors).length > 0 && (
-            <ul className="mt-2 space-y-1 list-disc pr-5 text-xs">
+            <ul className={`mt-2 space-y-1 list-disc ${isRtl ? 'pr-5' : 'pl-5'} text-xs`}>
               {Object.entries(otherErrors).map(([key, msg]) => (
                 <li key={key}>
                   <span className="font-semibold">{labelForOtherKey(key)}:</span>
-                  <span className="mr-1">{msg}</span>
+                  <span className="mx-1">{msg}</span>
                 </li>
               ))}
             </ul>
           )}
           {application && (
             <p className="mt-2 text-red-500 text-xs">
-              تم حفظ طلبك كمسودة. بعد تصحيح الأخطاء يمكنك المتابعة.
+              {t('apply.errorDraftSaved')}
             </p>
           )}
         </div>
       )}
 
       {/* Step indicator */}
-      <nav aria-label="خطوات التقديم" className="mb-8 flex items-center gap-0">
+      <nav aria-label={t('apply.stepIndicatorAria')} className="mb-8 flex items-center gap-0">
         {steps.map((s, i) => (
           <React.Fragment key={s.id}>
             <div
@@ -317,7 +317,7 @@ export function Apply() {
               onClick={() => navigate('/services')}
               className="px-5 py-2.5 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm"
             >
-              إلغاء
+              {t('apply.cancel')}
             </button>
             <button
               type="button"
@@ -326,7 +326,7 @@ export function Apply() {
               aria-busy={saving}
               className="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm font-medium"
             >
-              {saving ? 'جارٍ الحفظ...' : 'التالي: المستندات ←'}
+              {saving ? t('apply.savingDraft') : t('apply.nextDocuments')}
             </button>
           </div>
         </section>
@@ -336,8 +336,8 @@ export function Apply() {
       {step === 'documents' && application && (
         <section aria-labelledby="step-docs-title" className="space-y-6">
           <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 text-sm text-blue-700">
-            <p className="font-medium mb-1">المستندات المطلوبة</p>
-            <p className="text-blue-500">يرجى رفع جميع المستندات الإلزامية قبل تقديم الطلب</p>
+            <p className="font-medium mb-1">{t('apply.docsHeading')}</p>
+            <p className="text-blue-500">{t('apply.docsHint')}</p>
           </div>
           <DocumentUploader
             documents={schema.documents}
@@ -348,11 +348,11 @@ export function Apply() {
           <div className="flex justify-between pt-4">
             <button type="button" onClick={() => setStep('form')}
               className="px-5 py-2.5 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm">
-              → رجوع
+              {t('apply.back')}
             </button>
             <button type="button" onClick={() => setStep('review')}
               className="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium">
-              التالي: المراجعة ←
+              {t('apply.nextReview')}
             </button>
           </div>
         </section>
@@ -363,14 +363,14 @@ export function Apply() {
         <section aria-labelledby="step-review-title" className="space-y-6">
           <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
             <div className="bg-slate-800 px-6 py-3">
-              <h2 id="step-review-title" className="text-white font-semibold text-sm">ملخص الطلب</h2>
+              <h2 id="step-review-title" className="text-white font-semibold text-sm">{t('apply.summaryHeading')}</h2>
             </div>
             <dl className="p-6 space-y-3">
               {[
-                { label: 'رقم الطلب',         value: application.reference_number, mono: true },
-                { label: 'الخدمة',             value: schema.name_ar },
-                { label: 'الرسوم',             value: `${application.fee_amount} ${service.currency}`, blue: true },
-                { label: 'المستندات المرفوعة', value: String(application.documents?.length ?? 0) },
+                { label: t('apply.summaryReference'), value: application.reference_number, mono: true },
+                { label: t('apply.summaryService'),   value: schemaName },
+                { label: t('apply.summaryFee'),       value: `${application.fee_amount} ${service.currency}`, blue: true },
+                { label: t('apply.summaryDocs'),      value: String(application.documents?.length ?? 0) },
               ].map(row => (
                 <div key={row.label} className="flex justify-between text-sm">
                   <dt className="text-gray-500">{row.label}</dt>
@@ -383,14 +383,14 @@ export function Apply() {
           </div>
 
           <div role="note" className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-700">
-            <p className="font-medium">تأكيد التقديم</p>
-            <p className="mt-1 text-amber-600">بعد التقديم، لن تتمكن من تعديل البيانات إلا بعد طلب التعديل من الجهة المختصة.</p>
+            <p className="font-medium">{t('apply.confirmHeading')}</p>
+            <p className="mt-1 text-amber-600">{t('apply.confirmBody')}</p>
           </div>
 
           <div className="flex justify-between pt-4">
             <button type="button" onClick={() => setStep('documents')}
               className="px-5 py-2.5 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm">
-              → رجوع
+              {t('apply.back')}
             </button>
             <button
               type="button"
@@ -399,7 +399,7 @@ export function Apply() {
               aria-busy={submitting}
               className="px-6 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 text-sm font-medium"
             >
-              {submitting ? 'جارٍ التقديم...' : '✓ تقديم الطلب'}
+              {submitting ? t('apply.submitting') : `✓ ${t('apply.submit')}`}
             </button>
           </div>
         </section>

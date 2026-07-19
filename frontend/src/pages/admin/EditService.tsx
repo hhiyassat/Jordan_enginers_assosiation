@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Lock, Unlock } from 'lucide-react';
 import { adminApi } from '../../api/client';
 import { DynamicForm } from '../../engine/DynamicForm';
@@ -28,6 +29,9 @@ const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
 export function EditService() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
+  const isRtl = i18n.language.startsWith('ar');
+  const isArabic = isRtl;
 
   const [service, setService]       = useState<ServiceDefinition | null>(null);
   const [loading, setLoading]       = useState(true);
@@ -181,27 +185,29 @@ export function EditService() {
   );
 
   if (!service) return (
-    <div className="p-8 text-center text-red-600">خدمة غير موجودة</div>
+    <div className="p-8 text-center text-red-600">{t('editService.notFound')}</div>
   );
 
   const status = service.status ?? 'draft';
-  const st = STATUS_CONFIG[status] ?? { label: status, color: 'bg-gray-100 text-gray-600' };
+  const statusLabel = t(`adminServices.status.${status}`, { defaultValue: status });
+  const statusColor = STATUS_CONFIG[status]?.color ?? 'bg-gray-100 text-gray-600';
+  const serviceName = isArabic ? (service.name_ar || service.name_en) : (service.name_en || service.name_ar);
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8" dir="rtl">
+    <div className="max-w-5xl mx-auto px-4 py-8" dir={isRtl ? 'rtl' : 'ltr'}>
 
       {/* Header */}
       <div className="mb-6">
         <button onClick={() => navigate('/admin/services')} className="text-sm text-gray-400 hover:text-gray-600 mb-2">
-          → رجوع لقائمة الخدمات
+          {t('editService.backToServices')}
         </button>
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">{service.name_ar}</h1>
+            <h1 className="text-2xl font-bold text-gray-900">{serviceName}</h1>
             <div className="flex items-center gap-3 mt-1">
               <span className="font-mono text-xs text-gray-400">{service.code}</span>
-              <span className={`text-xs px-2.5 py-0.5 rounded-full font-medium ${st.color}`}>
-                {st.label}
+              <span className={`text-xs px-2.5 py-0.5 rounded-full font-medium ${statusColor}`}>
+                {statusLabel}
               </span>
             </div>
           </div>

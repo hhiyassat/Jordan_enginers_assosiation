@@ -1,17 +1,21 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { integrationApi, type IntegrationCycle } from '../../api/client';
 
-const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
-  requirements_received: { label: 'متطلبات واردة', color: 'bg-blue-100 text-blue-700' },
-  code_done:             { label: 'الكود جاهز',    color: 'bg-orange-100 text-orange-700' },
-  feedback_received:     { label: 'ملاحظات واردة', color: 'bg-yellow-100 text-yellow-700' },
-  closed:                { label: 'مغلق',          color: 'bg-green-100 text-green-700' },
+const STATUS_COLOR: Record<string, string> = {
+  requirements_received: 'bg-blue-100 text-blue-700',
+  code_done:             'bg-orange-100 text-orange-700',
+  feedback_received:     'bg-yellow-100 text-yellow-700',
+  closed:                'bg-green-100 text-green-700',
 };
 
 export function IntegrationCycleDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
+  const isRtl = i18n.language.startsWith('ar');
+  const dateLocale = isRtl ? 'ar-EG' : 'en-JO';
 
   const [cycle, setCycle]     = useState<IntegrationCycle | null>(null);
   const [loading, setLoading] = useState(true);
@@ -48,7 +52,7 @@ export function IntegrationCycleDetail() {
         db_tables:      tables.split(',').map(s => s.trim()).filter(Boolean),
         notes:          notesText || undefined,
       });
-      setNotifySuccess(`✅ تم إشعار Nashmi — ${result.message}`);
+      setNotifySuccess(`✅ ${t('integrationDetail.notified')} — ${result.message}`);
       // Refresh cycle
       integrationApi.cycle(cycle.id).then(r => setCycle(r.data));
     } catch (e: unknown) {
@@ -64,23 +68,24 @@ export function IntegrationCycleDetail() {
     </div>
   );
 
-  const st = STATUS_CONFIG[cycle.status] ?? { label: cycle.status, color: 'bg-gray-100 text-gray-600' };
+  const statusLabel = t(`integration.status.${cycle.status}`, { defaultValue: cycle.status });
+  const statusColor = STATUS_COLOR[cycle.status] ?? 'bg-gray-100 text-gray-600';
   const canNotify = cycle.status === 'requirements_received' || cycle.status === 'feedback_received';
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8" dir="rtl">
+    <div className="max-w-4xl mx-auto px-4 py-8" dir={isRtl ? 'rtl' : 'ltr'}>
       {/* Header */}
       <div className="mb-8">
         <button onClick={() => navigate('/admin/integration')} className="text-sm text-gray-400 hover:text-gray-600 mb-2">
-          → رجوع للقائمة
+          {t('integrationDetail.backToList')}
         </button>
         <div className="flex items-start justify-between gap-4">
           <div>
             <h1 className="text-xl font-bold text-gray-900">{cycle.service_name}</h1>
             <p className="font-mono text-xs text-gray-400 mt-1">{cycle.cycle_ref}</p>
           </div>
-          <span className={`text-xs px-3 py-1.5 rounded-full font-medium ${st.color}`}>
-            {st.label}
+          <span className={`text-xs px-3 py-1.5 rounded-full font-medium ${statusColor}`}>
+            {statusLabel}
           </span>
         </div>
       </div>
@@ -193,10 +198,10 @@ export function IntegrationCycleDetail() {
         <div className="space-y-4">
           {canNotify ? (
             <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
-              <h3 className="font-semibold text-gray-800 text-sm">إشعار Nashmi: الكود جاهز</h3>
+              <h3 className="font-semibold text-gray-800 text-sm">{t('integrationDetail.notifyDone')}</h3>
 
               <div>
-                <label className="block text-xs text-gray-500 mb-1">فرع Git</label>
+                <label className="block text-xs text-gray-500 mb-1">{t('integrationDetail.gitBranch')}</label>
                 <input
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
                   value={gitBranch}
@@ -206,7 +211,7 @@ export function IntegrationCycleDetail() {
               </div>
 
               <div>
-                <label className="block text-xs text-gray-500 mb-1">Commit Hash</label>
+                <label className="block text-xs text-gray-500 mb-1">{t('integrationDetail.gitCommit')}</label>
                 <input
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono"
                   value={gitCommit}
@@ -216,7 +221,7 @@ export function IntegrationCycleDetail() {
               </div>
 
               <div>
-                <label className="block text-xs text-gray-500 mb-1">نقاط API (سطر لكل نقطة)</label>
+                <label className="block text-xs text-gray-500 mb-1">{t('integrationDetail.apiEndpoints')}</label>
                 <textarea
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono"
                   rows={3}
@@ -227,7 +232,7 @@ export function IntegrationCycleDetail() {
               </div>
 
               <div>
-                <label className="block text-xs text-gray-500 mb-1">صفحات الواجهة (سطر لكل صفحة)</label>
+                <label className="block text-xs text-gray-500 mb-1">{t('integrationDetail.frontendPages')}</label>
                 <textarea
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
                   rows={3}
@@ -238,7 +243,7 @@ export function IntegrationCycleDetail() {
               </div>
 
               <div>
-                <label className="block text-xs text-gray-500 mb-1">جداول قاعدة البيانات (فاصلة)</label>
+                <label className="block text-xs text-gray-500 mb-1">{t('integrationDetail.dbTables')}</label>
                 <input
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono"
                   value={tables}
@@ -248,13 +253,13 @@ export function IntegrationCycleDetail() {
               </div>
 
               <div>
-                <label className="block text-xs text-gray-500 mb-1">ملاحظات</label>
+                <label className="block text-xs text-gray-500 mb-1">{t('integrationDetail.notesLabel')}</label>
                 <textarea
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
                   rows={3}
                   value={notesText}
                   onChange={e => setNotesText(e.target.value)}
-                  placeholder="أضف ملاحظات للمراجعين..."
+                  placeholder=""
                 />
               </div>
 
@@ -270,17 +275,13 @@ export function IntegrationCycleDetail() {
                 disabled={notifying}
                 className="w-full py-2.5 bg-navy text-white rounded-lg hover:bg-blue-800 disabled:opacity-50 text-sm font-medium"
               >
-                {notifying ? 'جارٍ الإرسال...' : '📤 أرسل إشعار لـ Nashmi'}
+                {notifying ? t('integrationDetail.notifying') : `📤 ${t('integrationDetail.notifyDone')}`}
               </button>
             </div>
           ) : (
             <div className="bg-gray-50 rounded-xl border border-gray-200 p-5 text-center text-sm text-gray-500">
-              {cycle.status === 'code_done' && (
-                <p>⏳ في انتظار ملاحظات Nashmi</p>
-              )}
-              {cycle.status === 'closed' && (
-                <p>✅ الدورة مكتملة ومغلقة</p>
-              )}
+              {cycle.status === 'code_done' && <p>⏳ {t('integration.status.code_done')}</p>}
+              {cycle.status === 'closed' && <p>✅ {t('integration.status.closed')}</p>}
             </div>
           )}
 
@@ -297,8 +298,8 @@ export function IntegrationCycleDetail() {
               </div>
             )}
             <div className="flex justify-between">
-              <span>تاريخ الإنشاء:</span>
-              <span>{new Date(cycle.created_at).toLocaleDateString('ar-EG')}</span>
+              <span>—</span>
+              <span>{new Date(cycle.created_at).toLocaleDateString(dateLocale)}</span>
             </div>
           </div>
         </div>

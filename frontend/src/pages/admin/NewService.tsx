@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { adminApi } from '../../api/client';
 import { DynamicForm } from '../../engine/DynamicForm';
 import { DocumentPreviewCard } from '../../engine/DocumentPreviewCard';
@@ -79,6 +80,8 @@ const VERDICT_CONFIG: Record<Verdict, { color: string; bg: string; border: strin
 
 export function NewService() {
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
+  const isRtl = i18n.language.startsWith('ar');
 
   // Input mode
   const [inputMode, setInputMode]     = useState<InputMode>('text');
@@ -378,17 +381,15 @@ export function NewService() {
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8" dir="rtl">
+    <div className="max-w-5xl mx-auto px-4 py-8" dir={isRtl ? 'rtl' : 'ltr'}>
 
       {/* Header */}
       <div className="mb-6">
         <button onClick={() => navigate('/admin/services')} className="text-sm text-gray-400 hover:text-gray-600 mb-2">
-          → رجوع لقائمة الخدمات
+          {t('editService.backToServices')}
         </button>
-        <h1 className="text-2xl font-bold text-gray-900">إضافة خدمة جديدة</h1>
-        <p className="text-gray-500 text-sm mt-1">
-          أدخل وصف الخدمة أو نص SRS — سيُولِّد الذكاء الاصطناعي مخططاً كاملاً مع تتبع كل عنصر لمصدره في SRS
-        </p>
+        <h1 className="text-2xl font-bold text-gray-900">{t('newService.title')}</h1>
+        <p className="text-gray-500 text-sm mt-1">{t('newService.subtitle')}</p>
       </div>
 
       {/* Global save error — top-level message + specific field errors */}

@@ -78,22 +78,28 @@ describe('IntegrationCycleDetail — lifecycle + notify-done', () => {
   it('shows the notify-code-done form when status permits', async () => {
     mockCycle.mockResolvedValue({ data: cycle({ status: 'requirements_received' }) });
     renderAt(42);
-    await waitFor(() => expect(screen.getByText('إشعار Nashmi: الكود جاهز')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('إعلام بإكمال الكود')).toBeInTheDocument());
 
-    expect(screen.getByRole('button', { name: /أرسل إشعار لـ Nashmi/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /إعلام بإكمال الكود/ })).toBeInTheDocument();
   });
 
   it('hides the notify form and shows a waiting hint when status=code_done', async () => {
     mockCycle.mockResolvedValue({ data: cycle({ status: 'code_done' }) });
     renderAt(42);
-    await waitFor(() => expect(screen.getByText(/في انتظار ملاحظات Nashmi/)).toBeInTheDocument());
-    expect(screen.queryByRole('button', { name: /أرسل إشعار/ })).toBeNull();
+    // Old wording "في انتظار ملاحظات Nashmi" collapsed to the shared status
+    // label — code_done → "الكود جاهز". The badge at the top ALSO shows this
+    // string; the hint hides the notify button so we assert on that state.
+    await waitFor(() => expect(screen.getAllByText(/الكود جاهز/).length).toBeGreaterThan(0));
+    expect(screen.queryByRole('button', { name: /إعلام بإكمال/ })).toBeNull();
   });
 
   it('shows a "closed" completion hint when status=closed', async () => {
     mockCycle.mockResolvedValue({ data: cycle({ status: 'closed' }) });
     renderAt(42);
-    await waitFor(() => expect(screen.getByText(/الدورة مكتملة ومغلقة/)).toBeInTheDocument());
+    // Old wording "الدورة مكتملة ومغلقة" collapsed to the shared status
+    // label — closed → "مغلق" (also in the top badge; assert presence,
+    // not uniqueness).
+    await waitFor(() => expect(screen.getAllByText(/مغلق/).length).toBeGreaterThan(0));
   });
 
   it('parses multi-line inputs and posts the payload when notifying Nashmi', async () => {
@@ -101,7 +107,7 @@ describe('IntegrationCycleDetail — lifecycle + notify-done', () => {
     mockNotifyCodeDone.mockResolvedValue({ message: 'ok' });
     // Second call after notify triggers a refresh — we resolve that too.
     renderAt(42);
-    await waitFor(() => expect(screen.getByText('إشعار Nashmi: الكود جاهز')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('إعلام بإكمال الكود')).toBeInTheDocument());
 
     await userEvent.type(screen.getByPlaceholderText('abc123f'), 'deadbeef');
     // userEvent.type reads {…} as keyboard modifier syntax; use a raw
@@ -110,7 +116,7 @@ describe('IntegrationCycleDetail — lifecycle + notify-done', () => {
     await userEvent.type(screen.getByPlaceholderText(/POST \/api\/v1\/services/), 'POST /api/v1/services\nGET /api/v1/services/foo');
     await userEvent.type(screen.getByPlaceholderText(/ServiceList/), 'ServiceList\nApply');
     await userEvent.type(screen.getByPlaceholderText(/applications, documents/), 'applications, reviews');
-    await userEvent.click(screen.getByRole('button', { name: /أرسل إشعار لـ Nashmi/ }));
+    await userEvent.click(screen.getByRole('button', { name: /إعلام بإكمال الكود/ }));
 
     await waitFor(() => expect(mockNotifyCodeDone).toHaveBeenCalledTimes(1));
     const [id, payload] = mockNotifyCodeDone.mock.calls[0];
@@ -128,15 +134,18 @@ describe('IntegrationCycleDetail — lifecycle + notify-done', () => {
     mockCycle.mockResolvedValue({ data: cycle() });
     mockNotifyCodeDone.mockRejectedValue(new Error('502 nashmi timeout'));
     renderAt(42);
-    await waitFor(() => expect(screen.getByRole('button', { name: /أرسل إشعار/ })).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole('button', { name: /إعلام بإكمال/ })).toBeInTheDocument());
 
-    await userEvent.click(screen.getByRole('button', { name: /أرسل إشعار/ }));
+    await userEvent.click(screen.getByRole('button', { name: /إعلام بإكمال/ }));
     await waitFor(() => expect(screen.getByText(/502 nashmi timeout/)).toBeInTheDocument());
   });
 
   it('renders the requirements meta as pretty JSON', async () => {
     mockCycle.mockResolvedValue({ data: cycle({ requirements_meta: { title: 'BL v1', complexity: 3 } }) });
     renderAt(42);
+    // "بيانات المتطلبات" heading was tied to the un-i18n'd panel and
+    // still remains hardcoded (deep power-user internal section
+    // deliberately deferred to a follow-up).
     await waitFor(() => expect(screen.getByText('بيانات المتطلبات')).toBeInTheDocument());
     // JSON.stringify puts every key on its own line at 2-space indent.
     const pre = document.querySelector('pre')!;
