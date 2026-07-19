@@ -144,4 +144,56 @@ class ServiceLockingTest extends TestCase
         $this->putJson("/api/v1/services/{$this->service->id}", ['name_ar' => 'من المستخدم الأعلى'])
             ->assertOk();
     }
+
+    public function test_newly_created_service_defaults_to_locked(): void
+    {
+        // Regression pin for the migration default. If someone changes the
+        // column default to false, the entire "unlock is intentional" story
+        // collapses — every new service would start editable.
+        $this->service->update(['is_locked' => false]);
+        $fresh = ServiceDefinition::create([
+            'organization_id' => $this->org->id,
+            'code'    => 'TST-002',
+            'name_ar' => 'خدمة جديدة',
+            'name_en' => 'New Service',
+            'currency'=> 'JOD',
+            'schema'  => $this->minimalSchema(),
+            'status'  => 'active',
+            // Deliberately NOT passing is_locked — leaning on the column default.
+        ]);
+        // Re-hydrate from DB so the column default kicks in — Eloquent's
+        // in-memory model doesn't backfill column defaults on create().
+        $this->assertTrue($fresh->fresh()->is_locked, 'DB default must be true (locked)');
+    }
+
+    public function test_chat_schema_endpoint_refuses_when_target_service_is_locked(): void
+    {
+        // The AI chat-update endpoint accepts an optional service_id — when
+        // present, the endpoint must refuse if that target is locked so the
+        // "protection when locked" contract is uniform across every edit path.
+        Sanctum::actingAs($this->admin);
+        $this->postJson('/api/v1/admin/services/chat-schema', [
+            'message'        => 'add a phone field',
+            'current_schema' => $this->minimalSchema(),
+            'service_id'     => $this->service->id,
+        ])->assertStatus(423)
+          ->assertJsonPath('error', 'service_locked');
+    }
+
+    public function test_chat_schema_endpoint_ignores_missing_service_id(): void
+    {
+        // Callers producing a brand-new schema (no target yet) can omit
+        // service_id — the lock guard must not fire in that case. The
+        // endpoint still requires a valid API key which is absent in tests,
+        // so we expect a 503 (config missing), not a 423.
+        Sanctum::actingAs($this->admin);
+        $r = $this->postJson('/api/v1/admin/services/chat-schema', [
+            'message'        => 'draft a new car-rental service',
+            'current_schema' => $this->minimalSchema(),
+        ]);
+        // The exact status depends on the ANTHROPIC_API_KEY test env. What
+        // matters is that we did NOT hit the 423 lock guard.
+        $this->assertNotSame(423, $r->status(),
+            'Missing service_id must NOT trigger the lock guard');
+    }
 }
