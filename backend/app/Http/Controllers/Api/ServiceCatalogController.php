@@ -45,12 +45,16 @@ class ServiceCatalogController extends Controller
 
     public function updateStatus(Request $request, int $id): JsonResponse
     {
-        if (! $request->user()->isAdmin()) {
-            abort(403, 'المسؤولون فقط يمكنهم تغيير حالة الخدمة.');
+        if (! $request->user()->canEditServices()) {
+            abort(403, 'المسؤولون والمستخدم الأعلى فقط يمكنهم تغيير حالة الخدمة.');
         }
 
         $service = ServiceDefinition::where('organization_id', $request->user()->organization_id)
             ->findOrFail($id);
+
+        if ($service->isLocked()) {
+            return $this->lockedResponse($service);
+        }
 
         $data = $request->validate([
             'status' => ['required', 'in:active,inactive,draft'],
@@ -59,6 +63,49 @@ class ServiceCatalogController extends Controller
         $service->update(['status' => $data['status']]);
 
         return response()->json(['service' => $service]);
+    }
+
+    /**
+     * Flip is_locked=false so subsequent update / updateStatus / chat-schema
+     * calls are accepted. Kept as its own endpoint (rather than an
+     * `is_locked` field on update()) so an admin cannot ACCIDENTALLY unlock
+     * as a side-effect of a normal edit — unlocking is always an explicit
+     * intentional call.
+     */
+    public function unlock(Request $request, int $id): JsonResponse
+    {
+        if (! $request->user()->canEditServices()) {
+            abort(403, 'المسؤولون والمستخدم الأعلى فقط يمكنهم فتح قفل الخدمة.');
+        }
+        $service = ServiceDefinition::where('organization_id', $request->user()->organization_id)
+            ->findOrFail($id);
+        $service->update(['is_locked' => false]);
+        return response()->json(['service' => $service, 'message' => 'تم فتح قفل الخدمة — يمكن الآن تعديل تفاصيلها.']);
+    }
+
+    public function lock(Request $request, int $id): JsonResponse
+    {
+        if (! $request->user()->canEditServices()) {
+            abort(403, 'المسؤولون والمستخدم الأعلى فقط يمكنهم إقفال الخدمة.');
+        }
+        $service = ServiceDefinition::where('organization_id', $request->user()->organization_id)
+            ->findOrFail($id);
+        $service->update(['is_locked' => true]);
+        return response()->json(['service' => $service, 'message' => 'تم إقفال الخدمة — أصبحت للقراءة فقط.']);
+    }
+
+    /**
+     * Standard 423 (Locked) response for every mutation that hits a locked
+     * service. Consistent shape so the frontend can render a single banner
+     * regardless of which endpoint refused the write.
+     */
+    private function lockedResponse(ServiceDefinition $service): JsonResponse
+    {
+        return response()->json([
+            'error'   => 'service_locked',
+            'message' => 'الخدمة مقفلة للتعديل — يجب فتح قفلها أولاً من قبل مسؤول.',
+            'service_code' => $service->code,
+        ], 423);
     }
 
     // ── Public catalog (active only) ──────────────────────────────────
@@ -104,8 +151,8 @@ class ServiceCatalogController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        if (! $request->user()->isAdmin()) {
-            abort(403, 'المسؤولون فقط يمكنهم إنشاء خدمات جديدة.');
+        if (! $request->user()->canEditServices()) {
+            abort(403, 'المسؤولون والمستخدم الأعلى فقط يمكنهم إنشاء خدمات جديدة.');
         }
 
         $data = $request->validate([
@@ -141,12 +188,16 @@ class ServiceCatalogController extends Controller
 
     public function update(Request $request, int $id): JsonResponse
     {
-        if (! $request->user()->isAdmin()) {
-            abort(403, 'المسؤولون فقط يمكنهم تعديل الخدمات.');
+        if (! $request->user()->canEditServices()) {
+            abort(403, 'المسؤولون والمستخدم الأعلى فقط يمكنهم تعديل الخدمات.');
         }
 
         $service = ServiceDefinition::where('organization_id', $request->user()->organization_id)
             ->findOrFail($id);
+
+        if ($service->isLocked()) {
+            return $this->lockedResponse($service);
+        }
 
         $data = $request->validate([
             'name_ar'        => ['sometimes', 'string', 'max:255'],

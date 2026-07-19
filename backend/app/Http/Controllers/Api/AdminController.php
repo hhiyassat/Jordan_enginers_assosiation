@@ -26,8 +26,11 @@ class AdminController extends Controller
 {
     private function requireAdmin(Request $request): void
     {
-        if (! $request->user()->isAdmin()) {
-            abort(403, 'المسؤولون فقط يمكنهم الوصول لهذه الوظيفة.');
+        // Both admin and superuser are "admin-tier" for the endpoints on
+        // this controller — the tier-only distinction lives in
+        // UserManagementController.
+        if (! $request->user()->canEditServices()) {
+            abort(403, 'المسؤولون والمستخدم الأعلى فقط يمكنهم الوصول لهذه الوظيفة.');
         }
     }
 
@@ -912,7 +915,23 @@ PROMPT;
         $data = $request->validate([
             'message'        => ['required', 'string', 'min:3', 'max:2000'],
             'current_schema' => ['required', 'array'],
+            // Optional: when supplied, the endpoint refuses if the target
+            // service is locked. Callers that produce a completely new
+            // schema (no target yet) can omit this.
+            'service_id'     => ['sometimes', 'integer'],
         ]);
+
+        if (isset($data['service_id'])) {
+            $target = ServiceDefinition::where('organization_id', $request->user()->organization_id)
+                ->find($data['service_id']);
+            if ($target && $target->isLocked()) {
+                return response()->json([
+                    'error'   => 'service_locked',
+                    'message' => 'الخدمة مقفلة للتعديل — يجب فتح قفلها أولاً من قبل مسؤول.',
+                    'service_code' => $target->code,
+                ], 423);
+            }
+        }
 
         $apiKey = config('services.anthropic.api_key');
         $model  = config('services.anthropic.model', 'claude-opus-4-8');

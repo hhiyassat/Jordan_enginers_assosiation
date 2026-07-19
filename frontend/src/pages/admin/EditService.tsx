@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { Lock, Unlock } from 'lucide-react';
 import { adminApi } from '../../api/client';
 import { DynamicForm } from '../../engine/DynamicForm';
 import type { ServiceDefinition, ServiceSchema } from '../../types';
@@ -193,6 +194,33 @@ export function EditService() {
         </div>
       )}
 
+      {/* Lock banner — every save endpoint refuses with 423 while is_locked
+          is true, so surface the state prominently and offer inline unlock. */}
+      {service.is_locked && (
+        <div
+          className="mb-4 bg-amber-50 border border-amber-300 rounded-xl p-4 flex items-center justify-between gap-3"
+          role="status"
+        >
+          <div className="flex items-center gap-2 text-sm text-amber-900">
+            <Lock size={16} aria-hidden="true" />
+            <span>الخدمة مقفلة للتعديل. افتح القفل للسماح بحفظ التغييرات.</span>
+          </div>
+          <button
+            onClick={async () => {
+              try {
+                const r = await adminApi.unlockService(service.id);
+                setService(prev => prev ? { ...prev, is_locked: r.service.is_locked } : prev);
+              } catch (e) {
+                setSaveError((e as Error).message);
+              }
+            }}
+            className="inline-flex items-center gap-1 px-3 py-1.5 text-xs bg-amber-600 text-white rounded-lg hover:bg-amber-700 font-semibold"
+          >
+            <Unlock size={12} aria-hidden="true" /> فتح القفل
+          </button>
+        </div>
+      )}
+
       {/* Tabs */}
       <div className="flex border-b border-gray-200 mb-6 gap-1">
         {([
@@ -244,7 +272,7 @@ export function EditService() {
           <div className="flex gap-3 pt-2">
             <button
               onClick={() => handleSave()}
-              disabled={saving || !!jsonError || !parsedSchema}
+              disabled={saving || !!jsonError || !parsedSchema || service.is_locked}
               className="px-5 py-2.5 border-2 border-navy text-navy rounded-xl hover:bg-blue-50 disabled:opacity-50 text-sm font-medium"
             >
               {saving ? 'جارٍ الحفظ...' : '💾 حفظ التعديلات'}
@@ -252,7 +280,7 @@ export function EditService() {
             {service.status !== 'active' && (
               <button
                 onClick={() => handleSave('active')}
-                disabled={saving || !!jsonError || !parsedSchema}
+                disabled={saving || !!jsonError || !parsedSchema || service.is_locked}
                 className="px-5 py-2.5 bg-green-600 text-white rounded-xl hover:bg-green-700 disabled:opacity-50 text-sm font-medium"
               >
                 {saving ? 'جارٍ...' : '🚀 حفظ وتفعيل'}
@@ -321,11 +349,11 @@ export function EditService() {
             <button onClick={() => setTab('schema')} className="px-5 py-2.5 border border-gray-300 text-gray-600 rounded-xl hover:bg-gray-50 text-sm font-medium">
               ← تعديل المخطط
             </button>
-            <button onClick={() => handleSave()} disabled={saving} className="px-5 py-2.5 border-2 border-navy text-navy rounded-xl hover:bg-blue-50 disabled:opacity-50 text-sm font-medium">
+            <button onClick={() => handleSave()} disabled={saving || service.is_locked} className="px-5 py-2.5 border-2 border-navy text-navy rounded-xl hover:bg-blue-50 disabled:opacity-50 text-sm font-medium">
               {saving ? 'جارٍ الحفظ...' : '💾 حفظ التعديلات'}
             </button>
             {service.status !== 'active' && (
-              <button onClick={() => handleSave('active')} disabled={saving} className="px-5 py-2.5 bg-green-600 text-white rounded-xl hover:bg-green-700 disabled:opacity-50 text-sm font-medium">
+              <button onClick={() => handleSave('active')} disabled={saving || service.is_locked} className="px-5 py-2.5 bg-green-600 text-white rounded-xl hover:bg-green-700 disabled:opacity-50 text-sm font-medium">
                 {saving ? 'جارٍ...' : '🚀 حفظ وتفعيل'}
               </button>
             )}
@@ -469,11 +497,11 @@ export function EditService() {
             <button onClick={() => setTab('schema')} className="px-5 py-2.5 border border-gray-300 text-gray-600 rounded-xl hover:bg-gray-50 text-sm font-medium">
               ← مراجعة المخطط
             </button>
-            <button onClick={() => handleSave()} disabled={saving || !!jsonError || !parsedSchema} className="px-5 py-2.5 border-2 border-navy text-navy rounded-xl hover:bg-blue-50 disabled:opacity-50 text-sm font-medium">
+            <button onClick={() => handleSave()} disabled={saving || !!jsonError || !parsedSchema || service.is_locked} className="px-5 py-2.5 border-2 border-navy text-navy rounded-xl hover:bg-blue-50 disabled:opacity-50 text-sm font-medium">
               {saving ? 'جارٍ الحفظ...' : '💾 حفظ التعديلات'}
             </button>
             {service.status !== 'active' && (
-              <button onClick={() => handleSave('active')} disabled={saving} className="px-5 py-2.5 bg-green-600 text-white rounded-xl hover:bg-green-700 disabled:opacity-50 text-sm font-medium">
+              <button onClick={() => handleSave('active')} disabled={saving || service.is_locked} className="px-5 py-2.5 bg-green-600 text-white rounded-xl hover:bg-green-700 disabled:opacity-50 text-sm font-medium">
                 🚀 حفظ وتفعيل
               </button>
             )}

@@ -23,7 +23,7 @@ class ServiceDefinition extends Model
         'subcategory_ar', 'subcategory_en',
         'name_ar', 'name_en',
         'description_ar', 'description_en', 'currency', 'base_fee', 'sla_hours',
-        'schema', 'status', 'phase',
+        'schema', 'status', 'phase', 'is_locked',
     ];
 
     protected $casts = [
@@ -31,7 +31,19 @@ class ServiceDefinition extends Model
         'base_fee'  => 'decimal:2',
         'sla_hours' => 'integer',
         'phase'     => 'integer',
+        'is_locked' => 'boolean',
     ];
+
+    /**
+     * A locked service refuses every API-layer mutation (update, status
+     * toggle, chat-schema). Only an admin or superuser may unlock it, and
+     * the intended flow is: unlock → make the edit → re-lock. Seeders
+     * bypass this because they hit Eloquent directly, not the API.
+     */
+    public function isLocked(): bool
+    {
+        return (bool) $this->is_locked;
+    }
 
     // ── Relationships ─────────────────────────────────────────────────
     // organization() provided by BelongsToOrganization trait

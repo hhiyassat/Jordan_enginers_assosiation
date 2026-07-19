@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { Lock, Unlock } from 'lucide-react';
 import { adminApi } from '../../api/client';
 import type { ServiceDefinition } from '../../types';
 
@@ -44,6 +45,20 @@ export function ServicesList() {
     try {
       await adminApi.updateServiceStatus(service.id, 'inactive');
       setServices(prev => prev.map(s => s.id === service.id ? { ...s, status: 'inactive' } : s));
+    } catch (e: unknown) {
+      setError((e as Error).message);
+    } finally {
+      setActivating(null);
+    }
+  };
+
+  const handleToggleLock = async (service: ServiceDefinition) => {
+    setActivating(service.id);
+    try {
+      const r = service.is_locked
+        ? await adminApi.unlockService(service.id)
+        : await adminApi.lockService(service.id);
+      setServices(prev => prev.map(s => s.id === service.id ? { ...s, is_locked: r.service.is_locked } : s));
     } catch (e: unknown) {
       setError((e as Error).message);
     } finally {
@@ -117,16 +132,47 @@ export function ServicesList() {
                       <span className={`text-xs px-2.5 py-0.5 rounded-full font-medium ${st.color}`}>
                         {st.label}
                       </span>
+                      {service.is_locked && (
+                        <span
+                          className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-medium"
+                          title="الخدمة مقفلة للتعديل — افتح القفل للمتابعة"
+                        >
+                          <Lock size={11} aria-hidden="true" /> مقفلة
+                        </span>
+                      )}
                     </div>
                     <p className="font-semibold text-gray-900 mt-1.5">{service.name_ar}</p>
                     <p className="text-sm text-gray-400">{service.name_en}</p>
                   </div>
 
                   <div className="flex items-center gap-2 flex-shrink-0">
+                    {/* Lock / unlock */}
+                    <button
+                      onClick={() => handleToggleLock(service)}
+                      disabled={isLoading}
+                      aria-label={service.is_locked ? `فتح قفل ${service.code}` : `إقفال ${service.code}`}
+                      title={service.is_locked ? 'فتح القفل للسماح بالتعديل' : 'إقفال الخدمة لمنع التعديل'}
+                      className={`inline-flex items-center gap-1 px-3 py-1.5 text-xs rounded-lg font-medium disabled:opacity-50 ${
+                        service.is_locked
+                          ? 'border border-amber-300 text-amber-700 hover:bg-amber-50'
+                          : 'border border-blue-300 text-blue-700 hover:bg-blue-50'
+                      }`}
+                    >
+                      {service.is_locked
+                        ? (<><Unlock size={12} aria-hidden="true" /> فتح القفل</>)
+                        : (<><Lock size={12} aria-hidden="true" /> إقفال</>)}
+                    </button>
+
                     {/* Edit */}
                     <Link
                       to={`/admin/services/${service.id}/edit`}
-                      className="px-3 py-1.5 text-xs border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 font-medium"
+                      aria-disabled={service.is_locked}
+                      onClick={e => { if (service.is_locked) e.preventDefault(); }}
+                      className={`px-3 py-1.5 text-xs border rounded-lg font-medium ${
+                        service.is_locked
+                          ? 'border-gray-200 text-gray-300 cursor-not-allowed'
+                          : 'border-gray-300 text-gray-600 hover:bg-gray-50'
+                      }`}
                     >
                       تعديل
                     </Link>
