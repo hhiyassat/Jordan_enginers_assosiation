@@ -14,7 +14,9 @@ interface ChatMessage {
   explanation?: string;
   changes?: string[];
   updatedSchema?: Record<string, unknown>;
-  applied?: boolean;
+  applied?: boolean;   // schema replaced in local buffer
+  saved?: boolean;     // PUT /services/{id} completed successfully
+  savedError?: string; // last save-side error to display inline
 }
 
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
@@ -140,6 +142,36 @@ export function EditService() {
   const applyChange = (msgIndex: number, updatedSchema: Record<string, unknown>) => {
     handleSchemaChange(JSON.stringify(updatedSchema, null, 2));
     setMessages(prev => prev.map((m, i) => i === msgIndex ? { ...m, applied: true } : m));
+  };
+
+  /**
+   * Apply + save in one click from the AI panel. Users kept forgetting
+   * to hit the Save button after "تطبيق التغييرات على المخطط", so the
+   * schema stayed in the local buffer and the applicant flow never saw
+   * the new documents/fields. This wraps applyChange + adminApi.updateService
+   * and stays on the page so the admin can keep chatting.
+   */
+  const applyAndSaveChange = async (msgIndex: number, updatedSchema: Record<string, unknown>) => {
+    if (!service) return;
+    // Local apply first — the schema editor + preview update immediately.
+    handleSchemaChange(JSON.stringify(updatedSchema, null, 2));
+    setMessages(prev => prev.map((m, i) => i === msgIndex ? { ...m, applied: true, savedError: undefined } : m));
+
+    try {
+      const r = await adminApi.updateService(service.id, {
+        name_ar: (updatedSchema as Record<string, string>).name_ar ?? service.name_ar,
+        name_en: (updatedSchema as Record<string, string>).name_en ?? service.name_en,
+        schema:  updatedSchema,
+      });
+      // Refresh the local service so is_locked, updated_at, etc. reflect DB truth.
+      setService(r.service);
+      setMessages(prev => prev.map((m, i) => i === msgIndex ? { ...m, saved: true } : m));
+    } catch (err) {
+      const apiErr = err as Error & { errors?: Record<string, string | string[]> };
+      const firstFieldError = apiErr.errors ? Object.values(apiErr.errors)[0] : undefined;
+      const firstMsg = Array.isArray(firstFieldError) ? firstFieldError[0] : (firstFieldError ?? apiErr.message);
+      setMessages(prev => prev.map((m, i) => i === msgIndex ? { ...m, savedError: firstMsg ?? 'حدث خطأ أثناء الحفظ' } : m));
+    }
   };
 
   if (loading) return (
@@ -412,24 +444,49 @@ export function EditService() {
                       </ul>
                     )}
                     {msg.updatedSchema && (
-                      <button
-                        onClick={() => applyChange(i, msg.updatedSchema!)}
-                        disabled={msg.applied}
-                        className={`w-full py-2.5 rounded-xl text-sm font-semibold transition-colors ${
-                          msg.applied
-                            ? 'bg-green-100 text-green-700 cursor-default'
-                            : 'bg-purple-700 text-white hover:bg-purple-800'
-                        }`}
-                      >
-                        {msg.applied
-                          ? '✅ تم تطبيق التغييرات على المخطط'
-                          : '⚡ تطبيق التغييرات على المخطط'}
-                      </button>
-                    )}
-                    {msg.applied && (
-                      <p className="text-xs text-green-600 text-center">
-                        اضغط <strong>تبويب المخطط JSON</strong> لمراجعة التغييرات ثم احفظ
-                      </p>
+                      <div className="space-y-2">
+                        {/* Primary path — apply + persist in one click.
+                            Users forgot the "then click Save" step when
+                            these were two separate buttons across two tabs. */}
+                        <button
+                          onClick={() => applyAndSaveChange(i, msg.updatedSchema!)}
+                          disabled={msg.saved || service.is_locked}
+                          className={`w-full py-2.5 rounded-xl text-sm font-semibold transition-colors ${
+                            msg.saved
+                              ? 'bg-green-100 text-green-700 cursor-default'
+                              : service.is_locked
+                                ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                                : 'bg-purple-700 text-white hover:bg-purple-800'
+                          }`}
+                        >
+                          {msg.saved
+                            ? '✅ تم التطبيق والحفظ في قاعدة البيانات'
+                            : service.is_locked
+                              ? '🔒 الخدمة مقفلة — افتح القفل أولاً'
+                              : '⚡ تطبيق التغييرات وحفظها'}
+                        </button>
+                        {/* Escape hatch — apply to the local buffer only
+                            so the admin can inspect / hand-edit the JSON
+                            before persisting. */}
+                        {!msg.applied && !msg.saved && (
+                          <button
+                            onClick={() => applyChange(i, msg.updatedSchema!)}
+                            className="w-full py-2 rounded-xl text-xs text-purple-700 border border-purple-200 hover:bg-purple-50"
+                          >
+                            تطبيق محلي فقط (للمراجعة قبل الحفظ)
+                          </button>
+                        )}
+                        {msg.applied && !msg.saved && !msg.savedError && (
+                          <p className="text-[11px] text-gray-500 text-center">
+                            التغييرات في المحرر — راجع تبويب المخطط JSON ثم احفظ.
+                          </p>
+                        )}
+                        {msg.savedError && (
+                          <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg p-2" role="alert">
+                            ❌ {msg.savedError}
+                          </p>
+                        )}
+                      </div>
                     )}
                   </div>
                 )}
