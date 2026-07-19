@@ -28,7 +28,7 @@ export default defineConfig({
   reporter: process.env.CI ? [['github'], ['list']] : 'list',
 
   use: {
-    baseURL: 'http://127.0.0.1:5173',
+    baseURL: 'http://localhost:5173',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
@@ -49,20 +49,24 @@ export default defineConfig({
   // the migrate:fresh --seed once. Each server gets ~30s to come up.
   webServer: [
     {
-      command: 'cd backend && APP_ENV=testing CAPTCHA_ENABLED=false php artisan serve --port=8002 --host=127.0.0.1',
+      // Bind Laravel to localhost (the default) so Vite's proxy target
+      // http://localhost:8002 resolves cleanly. Explicitly pinning to
+      // 127.0.0.1 broke on IPv6-preferring hosts (GitHub runners resolve
+      // `localhost` to ::1 first; --host=127.0.0.1 would bind IPv4 only).
+      command: 'cd backend && APP_ENV=testing CAPTCHA_ENABLED=false php artisan serve --port=8002',
       // /up is Laravel's built-in health route (see bootstrap/app.php).
       // Do NOT use /api/v1/captcha here — it's rate-limited at 30/min,
       // and Playwright's poll-until-200 loop would burn through the
       // bucket in ~30 seconds and never see a 2xx again.
-      url: 'http://127.0.0.1:8002/up',
+      url: 'http://localhost:8002/up',
       reuseExistingServer: !process.env.CI,
       timeout: 60_000,
       stdout: 'pipe',
       stderr: 'pipe',
     },
     {
-      command: 'cd frontend && npm run dev -- --host 127.0.0.1 --port 5173',
-      url: 'http://127.0.0.1:5173',
+      command: 'cd frontend && npm run dev -- --port 5173',
+      url: 'http://localhost:5173',
       reuseExistingServer: !process.env.CI,
       timeout: 60_000,
       stdout: 'pipe',

@@ -10,7 +10,7 @@ import { test, expect } from '@playwright/test';
  * CAPTCHA_ENABLED=false in the web-server env skips the SVG challenge.
  */
 
-const BASE = 'http://127.0.0.1:5173';
+const BASE = 'http://localhost:5173';
 
 async function login(page, email: string, password: string) {
   await page.goto(BASE + '/login');
