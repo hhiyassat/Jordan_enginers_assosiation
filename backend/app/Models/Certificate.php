@@ -10,6 +10,17 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 /**
  * DATA-005: qr_token is SHA-256 HMAC-signed.
  * BR-006: Certificate only exists after full workflow approval.
+ *
+ * @property int                            $id
+ * @property string                         $certificate_number
+ * @property string                         $qr_token
+ * @property string                         $status
+ * @property array<string, mixed>|null      $cert_data
+ * @property \Illuminate\Support\Carbon|null $issued_date
+ * @property \Illuminate\Support\Carbon|null $expiry_date
+ * @property Application|null               $application
+ * @property User|null                      $issuedTo
+ * @property User|null                      $issuedBy
  */
 class Certificate extends Model
 {

@@ -79,12 +79,6 @@ parameters:
 			path: app/Engine/WorkflowEngine.php
 
 		-
-			message: '#^Offset ''approved''\|''certificate_issued''\|''draft''\|''modifications…''\|''rejected''\|''submitted''\|''under_review'' on array\{draft\: array\{''submitted''\}, submitted\: array\{''under_review''\}, under_review\: array\{''approved'', ''rejected'', ''modifications…''\}, modifications_requested\: array\{''submitted''\}, approved\: array\{''certificate_issued''\}, rejected\: array\{\}, certificate_issued\: array\{\}\} on left side of \?\? always exists and is not nullable\.$#'
-			identifier: nullCoalesce.offset
-			count: 1
-			path: app/Engine/WorkflowEngine.php
-
-		-
 			message: '#^Offset ''under_review'' on array\{draft\: array\{''submitted''\}, submitted\: array\{''under_review''\}, under_review\: array\{''approved'', ''rejected'', ''modifications…''\}, modifications_requested\: array\{''submitted''\}, approved\: array\{''certificate_issued''\}, rejected\: array\{\}, certificate_issued\: array\{\}\} on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
 			count: 1
@@ -167,42 +161,6 @@ parameters:
 			identifier: argument.templateType
 			count: 3
 			path: app/Http/Controllers/Api/AdminController.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/Api/ApplicationController.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$serviceDefinition\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/Api/ApplicationController.php
-
-		-
-			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:getStage\(\)\.$#'
-			identifier: method.notFound
-			count: 2
-			path: app/Http/Controllers/Api/ApplicationController.php
-
-		-
-			message: '#^Parameter \#1 \$service of class App\\Engine\\FeeCalculator constructor expects App\\Models\\ServiceDefinition, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
-			identifier: argument.type
-			count: 1
-			path: app/Http/Controllers/Api/ApplicationController.php
-
-		-
-			message: '#^Parameter \#1 \$service of class App\\Engine\\SchemaValidator constructor expects App\\Models\\ServiceDefinition, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
-			identifier: argument.type
-			count: 2
-			path: app/Http/Controllers/Api/ApplicationController.php
-
-		-
-			message: '#^Parameter \#1 \$service of class App\\Engine\\WorkflowEngine constructor expects App\\Models\\ServiceDefinition, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
-			identifier: argument.type
-			count: 5
-			path: app/Http/Controllers/Api/ApplicationController.php
 
 		-
 			message: '#^Method App\\Http\\Controllers\\Api\\AuthController\:\:userPayload\(\) return type has no value type specified in iterable type array\.$#'

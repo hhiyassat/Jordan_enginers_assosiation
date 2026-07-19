@@ -58,6 +58,11 @@ Route::prefix('v1')->group(function () {
     // FR-013: Public certificate verification
     Route::get('certificates/verify/{certNumber}', [ApplicationController::class, 'verifyCertificate']);
 
+    // PDF download — public but token-gated. Applicants get a signed
+    // URL from the application-detail endpoint; third parties get the
+    // token from the QR image on the printed certificate.
+    Route::get('certificates/{certNumber}/pdf', [ApplicationController::class, 'downloadCertificatePdf']);
+
 });
 
 // ── Authenticated routes ────────────────────────────────────────────

@@ -39,10 +39,15 @@ class ApplicationController extends Controller
         // a follow-up round-trip per row. The `schema` column is JSON — the
         // frontend picks off workflow.stages[] — so the size cost is small
         // for a typical catalog.
+        //
+        // Certificate select includes `qr_token` so the frontend can build
+        // the signed PDF download URL inline (see MyApplications row).
+        // The token is only exposed to the applicant themselves — the
+        // applicant-scoped where-clause below is what makes that safe.
         $query = Application::forOrganization($request->user()->organization_id)
             ->with([
                 'serviceDefinition:id,code,name_ar,name_en,schema',
-                'certificate:id,application_id,certificate_number,status',
+                'certificate:id,application_id,certificate_number,qr_token,status',
             ])
             ->orderByDesc('created_at');
 
@@ -51,7 +56,15 @@ class ApplicationController extends Controller
             $query->where('applicant_id', $request->user()->id);
         }
 
-        return response()->json(['applications' => $query->get()]);
+        $applications = $query->get()->map(function ($app) {
+            $arr = $app->toArray();
+            $arr['certificate_pdf_url'] = $app->certificate
+                ? url("/api/v1/certificates/{$app->certificate->certificate_number}/pdf?token={$app->certificate->qr_token}")
+                : null;
+            return $arr;
+        });
+
+        return response()->json(['applications' => $applications]);
     }
 
     // ── Show single application ───────────────────────────────────────
@@ -69,9 +82,20 @@ class ApplicationController extends Controller
             ? \App\Engine\StageActions::forApplication($app, $service, $request->user()?->role)
             : [];
 
+        // Attach a signed PDF download URL when the certificate exists.
+        // The token stays on the server → we return it in the URL so the
+        // applicant's browser can navigate directly to download without
+        // needing a session. Anyone with the URL can download — same
+        // security posture as the QR on the printed certificate.
+        $certificatePdfUrl = null;
+        if ($app->certificate) {
+            $certificatePdfUrl = url("/api/v1/certificates/{$app->certificate->certificate_number}/pdf?token={$app->certificate->qr_token}");
+        }
+
         return response()->json([
-            'application'       => $app,
-            'available_actions' => $available,
+            'application'         => $app,
+            'available_actions'   => $available,
+            'certificate_pdf_url' => $certificatePdfUrl,
         ]);
     }
 
@@ -380,6 +404,98 @@ class ApplicationController extends Controller
             'issued_date'        => $cert->issued_date,
             'expiry_date'        => $cert->expiry_date,
             'status'             => $cert->status,
+        ]);
+    }
+
+    /**
+     * GET /api/v1/certificates/{certNumber}/pdf?token=<qr_token>
+     *
+     * Public. Streams the certificate PDF when the caller presents the
+     * exact HMAC qr_token that was recorded when the certificate was
+     * issued (SHA-256 over the cert number, keyed by APP_KEY —
+     * DATA-005). No account or session required, so applicants can
+     * download by clicking a signed URL and third parties can verify by
+     * scanning the printed QR.
+     *
+     * Security notes:
+     *   • hash_equals() (not ===) so timing analysis can't leak the token.
+     *   • Certificate lookup is by number only; the token check runs
+     *     even if the record is missing so the response time for
+     *     unknown/known certs matches.
+     *   • Revoked certs (status !== 'active') return 410 Gone instead of
+     *     silently rendering — the QR is meant to represent a live seal.
+     */
+    public function downloadCertificatePdf(Request $request, string $certNumber): \Illuminate\Http\Response
+    {
+        $token = (string) $request->query('token', '');
+        // Constant-time compare against a dummy string when the row is
+        // missing so response timing doesn't leak existence.
+        $cert = Certificate::with([
+            'application.serviceDefinition:id,name_ar,name_en',
+            'issuedTo:id,name',
+        ])->where('certificate_number', $certNumber)->first();
+
+        // Timing-safe compare against a fixed-length dummy when the row
+        // is missing, so response time is identical for unknown vs known
+        // cert numbers.
+        $expected = $cert === null ? str_repeat('0', 64) : $cert->qr_token;
+        if (! hash_equals($expected, $token) || $cert === null) {
+            abort(404, 'الشهادة غير موجودة أو رمز التحقق غير صحيح.');
+        }
+        if ($cert->status !== 'active') {
+            abort(410, 'هذه الشهادة ملغاة.');
+        }
+
+        $service = $cert->application?->serviceDefinition;
+        $certConfig = $service?->getCertificateConfig() ?? [];
+        $titleAr = $certConfig['title_ar'] ?? ($service->name_ar ?? 'شهادة');
+        $titleEn = $certConfig['title_en'] ?? ($service->name_en ?? 'Certificate');
+        // Human labels for cert_data keys — falls back to the key itself
+        // if the schema didn't provide one, so unknown fields still print.
+        $fieldLabels = [];
+        foreach ($service?->getFields() ?? [] as $field) {
+            if (isset($field['id'], $field['label_ar'])) {
+                $fieldLabels[$field['id']] = $field['label_ar'];
+            }
+        }
+
+        // Verify URL points at the PUBLIC verify endpoint so a third
+        // party scanning the QR gets the JSON that proves authenticity.
+        $verifyUrl = url("/api/v1/certificates/verify/{$cert->certificate_number}");
+
+        // Encode the QR as SVG so dompdf embeds it losslessly + tiny.
+        $qrWriter = new \BaconQrCode\Writer(
+            new \BaconQrCode\Renderer\ImageRenderer(
+                new \BaconQrCode\Renderer\RendererStyle\RendererStyle(200),
+                new \BaconQrCode\Renderer\Image\SvgImageBackEnd(),
+            )
+        );
+        $qrBase64 = base64_encode($qrWriter->writeString($verifyUrl));
+
+        $html = view('certificates.pdf', [
+            'certificate' => $cert,
+            'service'     => $service,
+            'issuedTo'    => $cert->issuedTo,
+            'titleAr'     => $titleAr,
+            'titleEn'     => $titleEn,
+            'fieldLabels' => $fieldLabels,
+            'qrBase64'    => $qrBase64,
+        ])->render();
+
+        $dompdf = new \Dompdf\Dompdf(new \Dompdf\Options([
+            'defaultFont'          => 'DejaVu Sans',
+            'isRemoteEnabled'      => false, // no outbound requests from PDF context
+            'isHtml5ParserEnabled' => true,
+        ]));
+        $dompdf->loadHtml($html, 'UTF-8');
+        $dompdf->setPaper('A4', 'portrait');
+        $dompdf->render();
+        $pdf = $dompdf->output();
+
+        return response($pdf, 200, [
+            'Content-Type'        => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="' . $cert->certificate_number . '.pdf"',
+            'Cache-Control'       => 'private, max-age=0, no-cache',
         ]);
     }
 

@@ -251,6 +251,13 @@ export interface Application {
   documents?: ApplicationDocument[];
   reviews?: ApplicationReview[];
   certificate?: Certificate;
+  /**
+   * Signed public URL for downloading the certificate PDF. Present when
+   * the application has an issued certificate — includes the qr_token
+   * as a query param so the download endpoint can render without a
+   * session. Same security posture as the QR on the printed cert.
+   */
+  certificate_pdf_url?: string | null;
   created_at: string;
   updated_at: string;
 }

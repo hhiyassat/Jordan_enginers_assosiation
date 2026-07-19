@@ -18,6 +18,19 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * WF-001: ALLOWED_TRANSITIONS is the single authority for valid status values.
  * BR-004: organization_id scope enforced on every query (never query without it).
  * DATA-001: form data stored in JSON `data` column.
+ *
+ * @property int                                $id
+ * @property string                             $reference_number
+ * @property string                             $status
+ * @property string|null                        $current_stage
+ * @property int                                $applicant_id
+ * @property int|null                           $assigned_reviewer_id
+ * @property array<string, mixed>|null          $data
+ * @property float|string                       $fee_amount
+ * @property ServiceDefinition|null             $serviceDefinition
+ * @property Project|null                       $project
+ * @property Certificate|null                   $certificate
+ * @property User|null                          $applicant
  */
 class Application extends Model
 {

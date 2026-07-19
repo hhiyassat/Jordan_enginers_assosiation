@@ -167,12 +167,29 @@ function ApplicationRow({ app }: { app: Application }) {
             {app.service_definition?.name_ar || '—'}
           </p>
 
-          <div className="flex items-center gap-4 mt-2 text-xs text-gray-400">
+          <div className="flex items-center gap-4 mt-2 text-xs text-gray-400 flex-wrap">
             {app.submitted_at && (
               <span>📅 {new Date(app.submitted_at).toLocaleDateString('ar-EG')}</span>
             )}
             {(app.fee_amount ?? 0) > 0 && (
               <span>💰 {app.fee_amount} دينار</span>
+            )}
+            {/* Certificate download — only when the case actually issued
+                a cert. The signed URL carries the qr_token so the file
+                downloads without a session. stopPropagation keeps the
+                outer <Link to /applications/{id}> from firing when the
+                applicant clicks the button. */}
+            {app.certificate_pdf_url && (
+              <a
+                href={app.certificate_pdf_url}
+                target="_blank"
+                rel="noreferrer"
+                onClick={e => e.stopPropagation()}
+                className="text-teal-700 bg-teal-50 border border-teal-200 rounded-full px-2 py-0.5 font-semibold hover:bg-teal-100"
+                data-testid="certificate-pdf-link"
+              >
+                📄 تحميل الشهادة
+              </a>
             )}
           </div>
 

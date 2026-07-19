@@ -115,4 +115,34 @@ describe('MyApplications', () => {
     render(<MemoryRouter><MyApplications /></MemoryRouter>);
     await waitFor(() => expect(screen.getByText(/كل الطلبات مكتملة/)).toBeInTheDocument());
   });
+
+  it('renders the "تحميل الشهادة" link when a signed PDF URL is present', async () => {
+    // Regression pin — backend sends certificate_pdf_url on rows with
+    // an issued certificate. Without this render the applicant has no
+    // way to reach the download without opening the detail page.
+    mockList.mockResolvedValue({ applications: [
+      app({
+        id: 1,
+        status: 'certificate_issued',
+        certificate_pdf_url: 'http://localhost/api/v1/certificates/CERT-123/pdf?token=abc',
+      }),
+    ]});
+    render(<MemoryRouter><MyApplications /></MemoryRouter>);
+    // certificate_issued is terminal, so switch to the "all" tab to see it.
+    await waitFor(() => expect(screen.getByRole('tab', { name: /الكل/ })).toBeInTheDocument());
+    await userEvent.click(screen.getByRole('tab', { name: /الكل/ }));
+
+    const link = await screen.findByTestId('certificate-pdf-link');
+    expect(link).toHaveAttribute('href', 'http://localhost/api/v1/certificates/CERT-123/pdf?token=abc');
+    expect(link).toHaveAttribute('target', '_blank');
+  });
+
+  it('does not render the certificate link when certificate_pdf_url is absent', async () => {
+    mockList.mockResolvedValue({ applications: [
+      app({ id: 1, status: 'submitted', certificate_pdf_url: null }),
+    ]});
+    render(<MemoryRouter><MyApplications /></MemoryRouter>);
+    await waitFor(() => expect(screen.getByText('A-001')).toBeInTheDocument());
+    expect(screen.queryByTestId('certificate-pdf-link')).toBeNull();
+  });
 });
