@@ -1,8 +1,9 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Bell, Menu } from 'lucide-react';
+import { Menu } from 'lucide-react';
 import { JEALogo } from '../components/JEALogo';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
+import { NotificationBell } from '../components/NotificationBell';
 import type { User } from '../types';
 import { pageTitleKeyFor } from './pageTitle';
 
@@ -43,13 +44,7 @@ export function Header({ user, onMenuToggle }: {
       </div>
       <div className="flex items-center gap-2">
         <LanguageSwitcher compact />
-        <button
-          aria-label={t('layout.notifications')}
-          className="p-1.5 rounded hover:bg-white/10 transition-colors relative focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
-        >
-          <Bell size={17} aria-hidden="true" />
-          <span className="absolute top-0.5 right-0.5 w-2 h-2 bg-orange-400 rounded-full" aria-hidden="true" />
-        </button>
+        <NotificationBell />
         <Link
           to="/profile"
           className="w-7 h-7 rounded-full bg-jea-primary flex items-center justify-center text-xs font-bold text-white hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60"

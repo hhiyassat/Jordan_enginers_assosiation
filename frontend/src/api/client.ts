@@ -26,3 +26,5 @@ export { integrationApi } from './integration';
 export type { IntegrationCycle } from './integration';
 export { adminApi } from './admin';
 export type { AllApplicationsFilters, Paginated } from './admin';
+export { notificationsApi } from './notifications';
+export type { NotificationRow } from './notifications';

@@ -433,6 +433,19 @@
     "gitBranch": "فرع Git",
     "gitCommit": "التزام Git"
   },
+  "notifications": {
+    "title": "الإشعارات",
+    "empty": "لا توجد إشعارات جديدة",
+    "markAllRead": "تعليم الكل كمقروء",
+    "markRead": "تعليم كمقروء",
+    "viewAll": "عرض كل الإشعارات",
+    "unread": "غير مقروءة",
+    "loadFailed": "تعذّر تحميل الإشعارات",
+    "just_now": "الآن",
+    "minutes_ago": "قبل {{count}} دقيقة",
+    "hours_ago": "قبل {{count}} ساعة",
+    "days_ago": "قبل {{count}} يوم"
+  },
   "profile": {
     "title": "الملف الشخصي",
     "subtitle": "بيانات حسابك — يمكنك تعديل الاسم ورقم الهاتف",

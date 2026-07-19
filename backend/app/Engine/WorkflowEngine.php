@@ -10,6 +10,7 @@ use App\Models\AuditLog;
 use App\Models\Certificate;
 use App\Models\ServiceDefinition;
 use App\Models\User;
+use App\Services\Notifications\NotificationService;
 use App\Services\Payment\PaymentReceipt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -123,6 +124,20 @@ class WorkflowEngine
                 ],
             );
         });
+
+        // JORD-9: notify the applicant AFTER the transaction commits so
+        // the notification row can't outlive a rollback. Failing to emit
+        // must not block the workflow — swallow + log so the submit is
+        // still returned success on any downstream notification failure.
+        try {
+            app(NotificationService::class)->emitApplicationSubmitted($app->fresh());
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('notification emit failed', [
+                'event' => 'application.submitted',
+                'application_id' => $app->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         return $app->fresh();
     }
@@ -337,6 +352,24 @@ class WorkflowEngine
             );
         });
 
+        // JORD-9: notify the applicant of the reviewer's decision.
+        // Only fire on final decisions — mid-workflow stage-approvals
+        // don't move the applicant's mental model (they still see the
+        // case as under_review) so the notification would be noise.
+        if ($nextStageIfApproving === null) {
+            try {
+                app(NotificationService::class)
+                    ->emitApplicationDecided($app->fresh(), $actor, $decision);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('notification emit failed', [
+                    'event' => 'application.decided',
+                    'application_id' => $app->id,
+                    'decision' => $decision,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
         return $review;
     }
 
@@ -412,6 +445,17 @@ class WorkflowEngine
                 ],
             );
         });
+
+        // JORD-9: applicant should see the paid confirmation in the bell.
+        try {
+            app(NotificationService::class)->emitPaymentConfirmed($app->fresh());
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('notification emit failed', [
+                'event' => 'application.paid',
+                'application_id' => $app->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         return $app->fresh();
     }
@@ -494,6 +538,17 @@ class WorkflowEngine
                 ],
             );
         });
+
+        // JORD-9: notify the applicant that the certificate is ready.
+        try {
+            app(NotificationService::class)->emitCertificateIssued($app->fresh());
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('notification emit failed', [
+                'event' => 'application.certificate_issued',
+                'application_id' => $app->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         return $certificate;
     }

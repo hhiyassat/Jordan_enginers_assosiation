@@ -433,6 +433,19 @@
     "gitBranch": "Git branch",
     "gitCommit": "Git commit"
   },
+  "notifications": {
+    "title": "Notifications",
+    "empty": "No new notifications",
+    "markAllRead": "Mark all as read",
+    "markRead": "Mark as read",
+    "viewAll": "View all",
+    "unread": "unread",
+    "loadFailed": "Failed to load notifications",
+    "just_now": "just now",
+    "minutes_ago": "{{count}}m ago",
+    "hours_ago": "{{count}}h ago",
+    "days_ago": "{{count}}d ago"
+  },
   "profile": {
     "title": "Profile",
     "subtitle": "Your account details — you can edit name and phone",

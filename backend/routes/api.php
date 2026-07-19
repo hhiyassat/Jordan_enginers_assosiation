@@ -78,6 +78,13 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'token.inactivity', 'password.p
     // JORD-10: user updates their own profile (name + phone).
     Route::patch('auth/me',                [AuthController::class, 'updateProfile']);
 
+    // JORD-9: notification inbox (per-authenticated-user scoped).
+    Route::get ('notifications',                    [\App\Http\Controllers\Api\NotificationController::class, 'index']);
+    Route::get ('notifications/unread-count',       [\App\Http\Controllers\Api\NotificationController::class, 'unreadCount']);
+    Route::post('notifications/{id}/read',          [\App\Http\Controllers\Api\NotificationController::class, 'markRead'])
+        ->whereNumber('id');
+    Route::post('notifications/read-all',           [\App\Http\Controllers\Api\NotificationController::class, 'markAllRead']);
+
     // ── Applicant routes ──────────────────────────────────────────────
 
     Route::middleware('role:applicant,staff,auditor,admin')->group(function () {

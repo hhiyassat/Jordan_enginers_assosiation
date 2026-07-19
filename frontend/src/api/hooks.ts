@@ -5,6 +5,7 @@ import { projectsApi } from './projects';
 import { applicationsApi } from './applications';
 import { adminApi, type AllApplicationsFilters } from './admin';
 import { userManagementApi } from './users';
+import { notificationsApi } from './notifications';
 import type { ApiError } from './http';
 import type { Application, ServiceDefinition, User } from '../types';
 
@@ -163,6 +164,51 @@ export function useUpdateUser() {
     mutationFn: (vars: { id: number; data: Parameters<typeof userManagementApi.update>[1] }) =>
       userManagementApi.update(vars.id, vars.data),
     onSuccess: () => { void qc.invalidateQueries({ queryKey: ['users'] }); },
+  });
+}
+
+// ── Notifications (JORD-9) ─────────────────────────────────────────────
+
+/**
+ * Header bell counter — polls once a minute so a new notification lands
+ * without a full refetch of the whole inbox. staleTime is short (10s)
+ * because the counter drives a red dot the user immediately notices.
+ */
+export function useUnreadNotificationCount() {
+  return useQuery({
+    queryKey: ['notifications', 'unread-count'],
+    queryFn:  () => notificationsApi.unreadCount(),
+    staleTime: 10_000,
+    refetchInterval: 60_000,
+  });
+}
+
+/**
+ * Paginated inbox for the bell dropdown + the (future) full-inbox page.
+ * `unread_only` splits the two use-cases: the dropdown wants only unread
+ * for a compact list, the full inbox shows everything.
+ */
+export function useNotifications(params: { unread_only?: boolean; page?: number; per_page?: number } = {}) {
+  return useQuery({
+    queryKey: ['notifications', 'list', params],
+    queryFn:  () => notificationsApi.list(params),
+    staleTime: 10_000,
+  });
+}
+
+export function useMarkNotificationRead() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => notificationsApi.markRead(id),
+    onSuccess: () => { void qc.invalidateQueries({ queryKey: ['notifications'] }); },
+  });
+}
+
+export function useMarkAllNotificationsRead() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => notificationsApi.markAllRead(),
+    onSuccess: () => { void qc.invalidateQueries({ queryKey: ['notifications'] }); },
   });
 }
 
