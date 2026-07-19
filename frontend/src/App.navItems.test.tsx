@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { navItemsForRole, canReachAdmin } from './App';
+import { navItemsForRole, canReachAdmin, canReachReviewer } from './App';
 
 /**
  * Pins the per-role sidebar visibility. Regression that motivated this
@@ -72,5 +72,27 @@ describe('canReachAdmin', () => {
     expect(canReachAdmin('auditor')).toBe(false);
     expect(canReachAdmin('applicant')).toBe(false);
     expect(canReachAdmin(undefined)).toBe(false);
+  });
+});
+
+/**
+ * canReachReviewer must match the backend's role:staff,auditor,admin
+ * middleware on /api/v1/review/*. Superuser is deliberately excluded —
+ * superuser is a user-management role, not a god-mode.
+ */
+describe('canReachReviewer', () => {
+  it('lets staff, auditor, admin through', () => {
+    expect(canReachReviewer('staff')).toBe(true);
+    expect(canReachReviewer('auditor')).toBe(true);
+    expect(canReachReviewer('admin')).toBe(true);
+  });
+
+  it('blocks superuser (separation of duties)', () => {
+    expect(canReachReviewer('superuser')).toBe(false);
+  });
+
+  it('blocks applicant and unauthenticated', () => {
+    expect(canReachReviewer('applicant')).toBe(false);
+    expect(canReachReviewer(undefined)).toBe(false);
   });
 });

@@ -517,11 +517,28 @@ export function canReachAdmin(role: User['role'] | undefined): boolean {
   return role === 'admin' || role === 'superuser';
 }
 
+/**
+ * Which roles are allowed on /review/*. Note that superuser is
+ * deliberately excluded — the superuser role is user-management only,
+ * not a god-mode. Backend route middleware matches (role:staff,auditor,admin).
+ */
+export function canReachReviewer(role: User['role'] | undefined): boolean {
+  return role === 'staff' || role === 'auditor' || role === 'admin';
+}
+
 /** Blocks non-admins from admin-only routes (admin AND superuser pass). */
 function RequireAdmin({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   if (!user) return <Navigate to="/login" replace />;
   if (!canReachAdmin(user.role)) return <Navigate to="/" replace />;
+  return <>{children}</>;
+}
+
+/** Blocks non-reviewers from /review/* — same UX story as RequireAdmin. */
+function RequireReviewer({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
+  if (!user) return <Navigate to="/login" replace />;
+  if (!canReachReviewer(user.role)) return <Navigate to="/" replace />;
   return <>{children}</>;
 }
 
@@ -567,9 +584,11 @@ export default function App() {
           <Route path="/apply/:serviceCode"      element={<RequireApplicant><Layout><Apply /></Layout></RequireApplicant>} />
           <Route path="/my-applications"   element={<RequireApplicant><Layout><MyApplications /></Layout></RequireApplicant>} />
 
-          {/* Reviewer */}
-          <Route path="/review/queue"      element={<RequireAuth><Layout><ReviewQueue /></Layout></RequireAuth>} />
-          <Route path="/review/:id"        element={<RequireAuth><Layout><ReviewPanel /></Layout></RequireAuth>} />
+          {/* Reviewer — staff / auditor / admin. Applicants navigating here
+              used to see the page render followed by a backend 403; now the
+              SPA redirects them to / before the page mounts. */}
+          <Route path="/review/queue"      element={<RequireReviewer><Layout><ReviewQueue /></Layout></RequireReviewer>} />
+          <Route path="/review/:id"        element={<RequireReviewer><Layout><ReviewPanel /></Layout></RequireReviewer>} />
 
           {/* Admin — every /admin/* route requires admin or superuser.
               RequireAuth alone let staff/auditor into the Admin Dashboard
