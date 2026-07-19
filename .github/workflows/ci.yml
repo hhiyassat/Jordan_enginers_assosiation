@@ -21,10 +21,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up PHP 8.2
+      - name: Set up PHP 8.4
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.2'
+          # composer.json requires ^8.3, and transitive Symfony 8.1.x
+          # packages need >= 8.4.1. Pinning to 8.4 satisfies both. Bump
+          # this in lockstep with composer.json if the minimum ever moves.
+          php-version: '8.4'
           # bcmath: money math in FeeCalculator (JORD-4)
           # sqlite3 + pdo_sqlite: RefreshDatabase in-memory DB the suite uses
           # mbstring: Arabic string helpers throughout
