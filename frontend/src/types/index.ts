@@ -213,6 +213,15 @@ export interface ApplicationReview {
   annotations?: Record<string, unknown>;
   review_round: number;
   reviewer?: Pick<User, 'id' | 'name' | 'role'>;
+  /**
+   * Attached by GET /review/queue: true when the current actor's role
+   * matches the application's current stage. The queue is already filtered
+   * server-side, so this defaults to true for every row a non-admin sees;
+   * admin (who sees everything) uses it to grey out rows they can't act on.
+   */
+  can_claim?: boolean;
+  /** Role required by the current stage — used for "waiting for {role}" hints. */
+  current_stage_role?: string | null;
   created_at: string;
 }
 

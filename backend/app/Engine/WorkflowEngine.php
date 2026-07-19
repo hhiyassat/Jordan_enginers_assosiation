@@ -140,11 +140,18 @@ class WorkflowEngine
      */
     public function claim(Application $app, User $actor): Application
     {
-        // B-2/B-3: Role must match stage
+        // B-2/B-3: Role must match stage. Message is Arabic-first because
+        // the reviewer console renders whatever text the API returns.
         $stage = $this->service->getStage($app->current_stage ?? '');
         if ($stage && isset($stage['role'])) {
             if (! $actor->hasRole($stage['role'])) {
-                abort(403, "Stage '{$app->current_stage}' requires role '{$stage['role']}'.");
+                $stageLabel = $stage['label_ar'] ?? $app->current_stage;
+                abort(response()->json([
+                    'error'   => 'wrong_role_for_stage',
+                    'message' => "هذه المرحلة (\"{$stageLabel}\") مخصصة لدور: {$stage['role']}. لا يمكنك استلام الطلب.",
+                    'stage_role_required' => $stage['role'],
+                    'stage_id'            => $app->current_stage,
+                ], 403));
             }
         }
 

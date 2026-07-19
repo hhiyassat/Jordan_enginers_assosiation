@@ -141,4 +141,80 @@ class WorkflowClaimTest extends TestCase
         Sanctum::actingAs($this->staff);
         $this->postJson("/api/v1/applications/{$app->id}/claim")->assertStatus(403);
     }
+
+    public function test_wrong_role_claim_returns_arabic_message_with_role_hint(): void
+    {
+        // Regression: previously the wrong-role claim aborted with
+        // "Stage 'X' requires role 'Y'." which surfaced as raw English
+        // in the reviewer console. Now the endpoint returns a structured
+        // JSON error the frontend can render as a proper Arabic banner.
+        $app = $this->draft();
+        (new WorkflowEngine($this->service))->submit($app, $this->applicant);
+
+        Sanctum::actingAs($this->staff);
+        $res = $this->postJson("/api/v1/applications/{$app->id}/claim");
+        $res->assertStatus(403)
+            ->assertJsonPath('error', 'wrong_role_for_stage')
+            ->assertJsonPath('stage_role_required', 'auditor');
+        $this->assertStringContainsString('مراجعة السلامة', $res->json('message'),
+            'The message must name the stage (Arabic label) so the reviewer sees the specific step they can\'t act on.');
+    }
+
+    public function test_review_queue_hides_applications_the_actor_cannot_claim(): void
+    {
+        // Regression on the OTHER side of the same bug: the queue used
+        // to return every submitted application to every reviewer, so
+        // staff saw auditor-owned rows, clicked "استلام الطلب", and
+        // received the wrong-role 403. Now the queue filters server-side
+        // so wrong-role rows never appear.
+        $app = $this->draft();
+        (new WorkflowEngine($this->service))->submit($app, $this->applicant);
+
+        // Auditor sees it (their role matches public_safety_review).
+        Sanctum::actingAs($this->auditor);
+        $auditorQueue = $this->getJson('/api/v1/review/queue');
+        $auditorQueue->assertOk();
+        $auditorIds = array_column($auditorQueue->json('applications'), 'id');
+        $this->assertContains($app->id, $auditorIds);
+
+        // Staff does NOT see it — their role doesn't match the current stage.
+        Sanctum::actingAs($this->staff);
+        $staffQueue = $this->getJson('/api/v1/review/queue');
+        $staffQueue->assertOk();
+        $staffIds = array_column($staffQueue->json('applications'), 'id');
+        $this->assertNotContains($app->id, $staffIds,
+            'Staff must not see an auditor-stage application in their queue');
+    }
+
+    public function test_review_queue_carries_can_claim_and_stage_role_flags(): void
+    {
+        // The frontend uses can_claim to grey out a stale card instead of
+        // firing a broken request, and current_stage_role to show a
+        // "waiting for {role}" hint on rows the actor can't touch.
+        $app = $this->draft();
+        (new WorkflowEngine($this->service))->submit($app, $this->applicant);
+
+        Sanctum::actingAs($this->auditor);
+        $r = $this->getJson('/api/v1/review/queue');
+        $r->assertOk();
+        $row = collect($r->json('applications'))->firstWhere('id', $app->id);
+        $this->assertNotNull($row);
+        $this->assertTrue($row['can_claim']);
+        $this->assertSame('auditor', $row['current_stage_role']);
+    }
+
+    public function test_admin_sees_every_row_regardless_of_stage_role(): void
+    {
+        // Admin is the tiebreaker/escalation actor and must not be
+        // filtered out by the stage-role match.
+        $admin = $this->makeUser('admin', 'admin@t.esp');
+        $app = $this->draft();
+        (new WorkflowEngine($this->service))->submit($app, $this->applicant);
+
+        Sanctum::actingAs($admin);
+        $r = $this->getJson('/api/v1/review/queue');
+        $r->assertOk();
+        $ids = array_column($r->json('applications'), 'id');
+        $this->assertContains($app->id, $ids);
+    }
 }

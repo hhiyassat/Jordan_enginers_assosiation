@@ -275,6 +275,35 @@ class ApplicationController extends Controller
         // Merge both sets, my in-progress first
         $applications = $myInProgress->get()->merge($submitted->get());
 
+        // Filter to what THIS reviewer can actually act on. Admin sees
+        // everything (they're the tiebreaker); every other reviewer sees
+        // only applications whose current stage's role matches theirs.
+        // Without this, staff opened auditor-owned stages and hit
+        // "Stage 'X' requires role 'auditor'" with no way to know
+        // upfront that the queue lied to them.
+        if (! $user->isAdmin()) {
+            $applications = $applications->filter(function ($app) use ($user) {
+                $service = $app->serviceDefinition;
+                if (! $service) return false;
+                $stage = $service->getStage($app->current_stage ?? '');
+                if (! $stage) return true; // no stage info = don't hide; let claim() decide
+                return ($stage['role'] ?? null) === $user->role;
+            });
+        }
+
+        // Attach a `can_claim` hint per row so the UI can grey out the
+        // Claim button on a stale card instead of firing a broken request.
+        $applications = $applications->map(function ($app) use ($user) {
+            $service = $app->serviceDefinition;
+            $stage   = $service?->getStage($app->current_stage ?? '');
+            $canClaim = $user->isAdmin()
+                || ($stage && ($stage['role'] ?? null) === $user->role);
+            $arr = $app->toArray();
+            $arr['can_claim'] = $canClaim;
+            $arr['current_stage_role'] = $stage['role'] ?? null;
+            return $arr;
+        });
+
         return response()->json(['applications' => $applications->values()]);
     }
 
