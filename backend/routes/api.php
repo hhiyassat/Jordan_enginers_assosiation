@@ -75,6 +75,8 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'token.inactivity', 'password.p
     Route::get('auth/me',                  [AuthController::class, 'me']);
     Route::post('auth/logout',             [AuthController::class, 'logout']);
     Route::post('auth/password/change',    [AuthController::class, 'changePassword']);
+    // JORD-10: user updates their own profile (name + phone).
+    Route::patch('auth/me',                [AuthController::class, 'updateProfile']);
 
     // ── Applicant routes ──────────────────────────────────────────────
 

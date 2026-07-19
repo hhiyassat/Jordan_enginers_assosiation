@@ -433,6 +433,23 @@
     "gitBranch": "فرع Git",
     "gitCommit": "التزام Git"
   },
+  "profile": {
+    "title": "الملف الشخصي",
+    "subtitle": "بيانات حسابك — يمكنك تعديل الاسم ورقم الهاتف",
+    "sectionAccount": "بيانات الحساب",
+    "sectionSecurity": "الأمان",
+    "name": "الاسم",
+    "email": "البريد الإلكتروني",
+    "emailLocked": "لتغيير البريد يجب التواصل مع الإدارة",
+    "phone": "رقم الهاتف",
+    "phonePlaceholder": "+962-79-1234567",
+    "role": "الدور",
+    "saveProfile": "حفظ التغييرات",
+    "savedBanner": "تم حفظ بياناتك",
+    "changePassword": "تغيير كلمة المرور",
+    "linkToChangePassword": "الذهاب إلى صفحة تغيير كلمة المرور"
+  },
+  "nav_profile": "الملف الشخصي",
   "changeCredentials": {
     "title": "تحديث بيانات الدخول",
     "subtitleSuperuser": "يرجى اختيار البريد وكلمة المرور الدائمين — لن يمكن تعديلهما لاحقاً إلا من سطر الأوامر.",

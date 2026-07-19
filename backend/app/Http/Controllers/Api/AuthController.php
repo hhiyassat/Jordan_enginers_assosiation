@@ -132,12 +132,35 @@ class AuthController extends Controller
         return response()->json(['message' => 'تم تغيير كلمة المرور.']);
     }
 
+    /**
+     * JORD-10: PATCH /auth/me — the caller updates their OWN profile.
+     *
+     * Scope is deliberately narrow: name + phone only. Email is
+     * gated by the credential-change flow (see changePassword() above)
+     * because rotating an email is a security-sensitive act that also
+     * changes the login identity. Role, organization_id, is_active, and
+     * must_change_password stay off-limits — those are admin-only fields
+     * mutated via /admin/users.
+     */
+    public function updateProfile(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $data = $request->validate([
+            'name'  => ['sometimes', 'string', 'max:120'],
+            'phone' => ['sometimes', 'nullable', 'string', 'max:32'],
+        ]);
+        $user->update($data);
+
+        return response()->json(['user' => $this->userPayload($user->fresh())]);
+    }
+
     private function userPayload(User $user): array
     {
         return [
             'id'                   => $user->id,
             'name'                 => $user->name,
             'email'                => $user->email,
+            'phone'                => $user->phone,
             'role'                 => $user->role,
             'organization_id'      => $user->organization_id,
             // Frontend uses this to route to the change-credentials screen

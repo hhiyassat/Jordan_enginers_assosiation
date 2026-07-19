@@ -22,4 +22,8 @@ export const authApi = {
       current_password, password, password_confirmation,
       ...(email ? { email } : {}),
     }),
+  // JORD-10: user updates their own name / phone. Email + role stay
+  // gated to the credential-change + admin flows respectively.
+  updateProfile: (data: { name?: string; phone?: string | null }) =>
+    request<{ user: User }>('PATCH', '/auth/me', data),
 };

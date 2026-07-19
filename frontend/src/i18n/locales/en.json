@@ -433,6 +433,23 @@
     "gitBranch": "Git branch",
     "gitCommit": "Git commit"
   },
+  "profile": {
+    "title": "Profile",
+    "subtitle": "Your account details — you can edit name and phone",
+    "sectionAccount": "Account details",
+    "sectionSecurity": "Security",
+    "name": "Name",
+    "email": "Email",
+    "emailLocked": "To change your email, contact an admin",
+    "phone": "Phone",
+    "phonePlaceholder": "+962-79-1234567",
+    "role": "Role",
+    "saveProfile": "Save changes",
+    "savedBanner": "Profile saved",
+    "changePassword": "Change password",
+    "linkToChangePassword": "Go to the password-change page"
+  },
+  "nav_profile": "Profile",
   "changeCredentials": {
     "title": "Update sign-in details",
     "subtitleSuperuser": "Pick a permanent email + password. These can only be changed later from the command line.",

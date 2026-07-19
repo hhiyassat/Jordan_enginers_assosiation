@@ -1,4 +1,4 @@
-import { useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Bell, Menu } from 'lucide-react';
 import { JEALogo } from '../components/JEALogo';
@@ -50,13 +50,14 @@ export function Header({ user, onMenuToggle }: {
           <Bell size={17} aria-hidden="true" />
           <span className="absolute top-0.5 right-0.5 w-2 h-2 bg-orange-400 rounded-full" aria-hidden="true" />
         </button>
-        <div
-          className="w-7 h-7 rounded-full bg-jea-primary flex items-center justify-center text-xs font-bold"
-          aria-label={user?.name ? t('layout.userAvatar', { name: user.name }) : undefined}
-          title={user?.name}
+        <Link
+          to="/profile"
+          className="w-7 h-7 rounded-full bg-jea-primary flex items-center justify-center text-xs font-bold text-white hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+          aria-label={user?.name ? t('layout.userAvatar', { name: user.name }) : t('profile.title')}
+          title={user?.name ?? t('profile.title')}
         >
           {initial}
-        </div>
+        </Link>
       </div>
     </header>
   );

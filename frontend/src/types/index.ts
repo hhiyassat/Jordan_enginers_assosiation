@@ -12,12 +12,13 @@ export interface User {
   id: number;
   name: string;
   email: string;
+  phone?: string | null;
   role: 'applicant' | 'staff' | 'auditor' | 'admin' | 'superuser';
   organization_id: number;
   // Present on /auth/me and /auth/login payloads. When true the SPA routes
   // the user to /auth/change-credentials before anything else.
   must_change_password?: boolean;
-  // True only for the superuser role. Drives the "إدارة المستخدمين" nav link.
+  // True only for the superuser role. Drives the user-management nav link.
   can_manage_users?: boolean;
   is_active?: boolean;
   created_at?: string;

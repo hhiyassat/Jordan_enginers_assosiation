@@ -34,6 +34,7 @@ const ServicesList            = React.lazy(() => import('./pages/admin/ServicesL
 const EditService             = React.lazy(() => import('./pages/admin/EditService').then(m => ({ default: m.EditService })));
 const UserManagement          = React.lazy(() => import('./pages/admin/UserManagement').then(m => ({ default: m.UserManagement })));
 const ChangeCredentials       = React.lazy(() => import('./pages/auth/ChangeCredentials').then(m => ({ default: m.ChangeCredentials })));
+const Profile                 = React.lazy(() => import('./pages/auth/Profile').then(m => ({ default: m.Profile })));
 
 export function AppRoutes(): JSX.Element {
   return (
@@ -44,6 +45,7 @@ export function AppRoutes(): JSX.Element {
           carrying the must_change_password flag. Rendered without Layout so
           the sidebar/nav don't leak features they can't use yet. */}
       <Route path="/auth/change-credentials" element={<RequireAuth><ChangeCredentials /></RequireAuth>} />
+      <Route path="/profile"                 element={<RequireAuth><Layout><Profile /></Layout></RequireAuth>} />
 
       <Route path="/" element={<RequireAuth><Layout><HomeRedirect /></Layout></RequireAuth>} />
 
