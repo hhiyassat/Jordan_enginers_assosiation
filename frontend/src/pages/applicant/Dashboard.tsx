@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   FolderOpen, FileText, Award, Plus, ArrowLeft, MapPin, Building2,
   type LucideIcon,
@@ -20,6 +21,8 @@ import { QuotaCard } from '../../components/ui/QuotaCard';
  */
 export function Dashboard() {
   const { user } = useAuth();
+  const { t, i18n } = useTranslation();
+  const isRtl = i18n.language.startsWith('ar');
 
   const [projects, setProjects]         = useState<Project[]>([]);
   const [applications, setApplications] = useState<Application[]>([]);
@@ -67,9 +70,9 @@ export function Dashboard() {
   return (
     <div className="flex flex-col h-full" dir="rtl">
       <PageHero
-        titleAr="الرئيسية"
-        titleEn="Dashboard"
-        subtitleAr={user?.name ? `مرحباً، ${user.name}` : undefined}
+        titleAr={t('pageTitle.dashboard')}
+        titleEn={t('pageTitle.dashboard')}
+        subtitleAr={user?.name ? t('dashboard.greeting', { name: user.name }) : undefined}
       />
 
       <div className="flex-1 overflow-y-auto bg-jea-bg p-6 flex flex-col gap-6">
@@ -78,8 +81,8 @@ export function Dashboard() {
           <QuotaCard
             facet={quota?.totals ?? null}
             year={quota?.year}
-            titleAr="إجمالي رصيد المكتب"
-            titleEn="Office annual m² total"
+            titleAr={t('dashboard.officeQuotaTotal')}
+            titleEn={t('dashboard.officeQuotaTotal')}
             loading={quotaLoading}
             error={quotaError}
             onRetry={loadQuota}
@@ -87,22 +90,19 @@ export function Dashboard() {
 
           <div className="grid grid-cols-3 gap-3 lg:grid-cols-1 lg:w-56">
             <StatTile
-              ar="المشاريع"
-              en="Projects"
+              label={t('dashboard.stat.projects')}
               value={projects.length}
               Icon={FolderOpen}
               loading={loading}
             />
             <StatTile
-              ar="طلبات نشطة"
-              en="Active requests"
+              label={t('dashboard.stat.activeRequests')}
               value={activeAppsCount}
               Icon={FileText}
               loading={loading}
             />
             <StatTile
-              ar="الشهادات"
-              en="Certificates"
+              label={t('dashboard.stat.certificates')}
               value={certificatesCount}
               Icon={Award}
               loading={loading}
@@ -114,8 +114,7 @@ export function Dashboard() {
         {quota && quota.engineers.length > 0 && (
           <section aria-labelledby="engineer-quotas">
             <h2 id="engineer-quotas" className="text-sm font-black text-jea-text mb-3">
-              <span lang="ar">رصيد كل مهندس</span>
-              <span className="text-jea-muted font-normal text-xs mx-1" lang="en" dir="ltr">· Per-engineer quota</span>
+              {t('dashboard.perEngineerHeading')}
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
               {quota.engineers.map(eng => (
@@ -124,7 +123,7 @@ export function Dashboard() {
                   facet={eng}
                   year={eng.year}
                   titleAr={eng.engineer_name_ar}
-                  titleEn={`Engineer #${eng.engineer_id}`}
+                  titleEn={t('dashboard.engineerFallback', { id: eng.engineer_id })}
                   compact
                 />
               ))}
@@ -135,29 +134,25 @@ export function Dashboard() {
         {/* Row 2 — quick actions */}
         <section aria-labelledby="quick-actions">
           <h2 id="quick-actions" className="text-sm font-black text-jea-text mb-3">
-            <span lang="ar">إجراءات سريعة</span>
-            <span className="text-jea-muted font-normal text-xs mx-1" lang="en" dir="ltr">· Quick actions</span>
+            {t('common.quickActions')}
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <QuickAction
               to="/projects"
-              ar="مشاريعي"
-              en="My Projects"
-              desc="إدارة المشاريع وإضافة مشروع جديد"
+              title={t('dashboard.quickAction.myProjects.title')}
+              desc={t('dashboard.quickAction.myProjects.desc')}
               Icon={FolderOpen}
             />
             <QuickAction
               to="/services"
-              ar="الخدمات الإلكترونية"
-              en="E-Services"
-              desc="تصفح جميع الخدمات المتاحة"
+              title={t('dashboard.quickAction.eServices.title')}
+              desc={t('dashboard.quickAction.eServices.desc')}
               Icon={Plus}
             />
             <QuickAction
               to="/my-applications"
-              ar="طلباتي"
-              en="My Requests"
-              desc="متابعة حالة الطلبات المقدمة"
+              title={t('dashboard.quickAction.myRequests.title')}
+              desc={t('dashboard.quickAction.myRequests.desc')}
               Icon={FileText}
             />
           </div>
@@ -167,14 +162,13 @@ export function Dashboard() {
         <section aria-labelledby="recent-projects" className="max-w-4xl">
           <div className="flex items-center justify-between mb-3">
             <h2 id="recent-projects" className="text-sm font-black text-jea-text">
-              <span lang="ar">أحدث المشاريع</span>
-              <span className="text-jea-muted font-normal text-xs mx-1" lang="en" dir="ltr">· Recent projects</span>
+              {t('dashboard.recentProjects')}
             </h2>
             <Link
               to="/projects"
               className="text-xs font-bold text-jea-primary hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-jea-primary/40 rounded px-1"
             >
-              <span lang="ar">عرض الكل</span> · <span lang="en" dir="ltr">View all</span>
+              {t('common.viewAll')}
             </Link>
           </div>
 
@@ -188,8 +182,8 @@ export function Dashboard() {
 
           {!loading && recentProjects.length === 0 && (
             <div className="rounded-xl border border-jea-border bg-white p-8 text-center text-jea-muted">
-              <p className="text-sm font-bold text-jea-text" lang="ar">لا توجد مشاريع بعد</p>
-              <p className="text-xs mt-1" lang="ar">ابدأ بإضافة مشروع من صفحة «مشاريعي»</p>
+              <p className="text-sm font-bold text-jea-text">{t('dashboard.noProjectsYet')}</p>
+              <p className="text-xs mt-1">{t('dashboard.noProjectsCta')}</p>
             </div>
           )}
 
@@ -210,8 +204,8 @@ export function Dashboard() {
 
 /* ── Support components ─────────────────────────────────────────────── */
 
-function StatTile({ ar, en, value, Icon, loading }: {
-  ar: string; en: string; value: number;
+function StatTile({ label, value, Icon, loading }: {
+  label: string; value: number;
   Icon: LucideIcon;
   loading?: boolean;
 }) {
@@ -224,18 +218,14 @@ function StatTile({ ar, en, value, Icon, loading }: {
         <div className="text-xl font-black text-jea-text">
           {loading ? <span className="inline-block h-5 w-8 bg-jea-bg rounded animate-pulse" /> : value}
         </div>
-        <p className="text-[11px] text-jea-muted leading-tight">
-          <span lang="ar">{ar}</span>
-          <span className="mx-1" aria-hidden="true">·</span>
-          <span lang="en" dir="ltr">{en}</span>
-        </p>
+        <p className="text-[11px] text-jea-muted leading-tight">{label}</p>
       </div>
     </div>
   );
 }
 
-function QuickAction({ to, ar, en, desc, Icon }: {
-  to: string; ar: string; en: string; desc: string;
+function QuickAction({ to, title, desc, Icon }: {
+  to: string; title: string; desc: string;
   Icon: LucideIcon;
 }) {
   return (
@@ -250,21 +240,21 @@ function QuickAction({ to, ar, en, desc, Icon }: {
         <ArrowLeft size={14} className="text-white/40 mt-1" aria-hidden="true" />
       </div>
       <div>
-        <h3 className="text-sm font-black text-white leading-snug" lang="ar">{ar}</h3>
-        <p className="text-white/60 text-[11px] mt-0.5" lang="en" dir="ltr">{en}</p>
+        <h3 className="text-sm font-black text-white leading-snug">{title}</h3>
       </div>
-      <p className="text-white/70 text-xs leading-relaxed" lang="ar">{desc}</p>
+      <p className="text-white/70 text-xs leading-relaxed">{desc}</p>
     </Link>
   );
 }
 
 function RecentProjectRow({ project }: { project: Project }) {
+  const { t } = useTranslation();
   const statusPill =
     project.status === 'active'
-      ? { ar: 'نشط',          cls: 'bg-emerald-100 text-emerald-700 border-emerald-200' }
+      ? { label: t('projectStatus.active'),   cls: 'bg-emerald-100 text-emerald-700 border-emerald-200' }
       : project.status === 'pending'
-      ? { ar: 'قيد المراجعة', cls: 'bg-jea-accent text-jea-primary border-jea-border' }
-      : { ar: 'مؤرشف',        cls: 'bg-gray-100 text-gray-500 border-gray-200' };
+      ? { label: t('projectStatus.pending'),  cls: 'bg-jea-accent text-jea-primary border-jea-border' }
+      : { label: t('projectStatus.archived'), cls: 'bg-gray-100 text-gray-500 border-gray-200' };
 
   return (
     <Link
@@ -278,21 +268,21 @@ function RecentProjectRow({ project }: { project: Project }) {
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="text-sm font-black text-jea-text" lang="ar">{project.name_ar}</h3>
+            <h3 className="text-sm font-black text-jea-text">{project.name_ar}</h3>
             <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${statusPill.cls}`}>
-              <span lang="ar">{statusPill.ar}</span>
+              {statusPill.label}
             </span>
           </div>
           <div className="flex items-center gap-3 mt-1 flex-wrap text-[11px] text-jea-muted">
             {project.city && (
               <span className="flex items-center gap-1">
                 <MapPin size={11} aria-hidden="true" />
-                <span lang="ar">{project.city}</span>
+                <span>{project.city}</span>
               </span>
             )}
-            {project.area_m2 != null && <span>{project.area_m2} م²</span>}
+            {project.area_m2 != null && <span>{project.area_m2} m²</span>}
             {project.type && (
-              <span className="bg-jea-accent text-jea-primary px-2 py-0.5 rounded-full font-semibold" lang="ar">
+              <span className="bg-jea-accent text-jea-primary px-2 py-0.5 rounded-full font-semibold">
                 {project.type}
               </span>
             )}

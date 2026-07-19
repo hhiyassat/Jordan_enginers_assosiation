@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   ArrowLeft, FolderOpen, FileText, FileCheck, GraduationCap,
   CreditCard, Users, Scale, Wrench, Building2,
@@ -33,6 +34,8 @@ function iconFor(code: string) {
 }
 
 export function ServiceList() {
+  const { t, i18n } = useTranslation();
+  const isRtl = i18n.language.startsWith('ar');
   // JORD-33: useServices() dedupes concurrent fetches and caches the
   // result across route changes — the two Dashboard tiles that also
   // depend on the services list now share this single request.
@@ -61,12 +64,10 @@ export function ServiceList() {
   }, [services]);
 
   return (
-    <div className="flex flex-col h-full" dir="rtl">
+    <div className="flex flex-col h-full" dir={isRtl ? 'rtl' : 'ltr'}>
       <div className="bg-jea-topbar px-6 py-5 shrink-0">
-        <h1 className="text-xl font-black text-white">الخدمات الإلكترونية</h1>
-        <p className="text-white/50 text-xs mt-0.5">
-          Electronic Services · نقابة المهندسين الأردنيين
-        </p>
+        <h1 className="text-xl font-black text-white">{t('pageTitle.services')}</h1>
+        <p className="text-white/50 text-xs mt-0.5">{t('org.name')}</p>
       </div>
 
       <div className="flex-1 overflow-y-auto bg-jea-bg p-6">
@@ -81,8 +82,7 @@ export function ServiceList() {
         {!loading && !error && topLevel.length === 0 && (
           <div className="rounded-xl border border-jea-border bg-white p-16 text-center text-jea-muted max-w-4xl">
             <p className="text-4xl mb-3">📋</p>
-            <p className="text-sm font-bold text-jea-text">لا توجد خدمات متاحة حالياً</p>
-            <p className="text-xs mt-1">No services available</p>
+            <p className="text-sm font-bold text-jea-text">{t('services.empty')}</p>
           </div>
         )}
 
@@ -104,9 +104,18 @@ export function ServiceList() {
 
 function ServiceTile({ service, childCount }: { service: ServiceDefinition; childCount: number }) {
   const navigate = useNavigate();
+  const { i18n } = useTranslation();
+  const isArabic = i18n.language.startsWith('ar');
   const Icon = iconFor(service.code);
   const isCategory = childCount > 0;
-  const description = service.description_ar ?? service.name_en;
+  // Show the label in the active language; fall back to the other
+  // language if the ServiceDefinition doesn't carry it.
+  const title = isArabic
+    ? (service.name_ar || service.name_en)
+    : (service.name_en || service.name_ar);
+  const description = isArabic
+    ? (service.description_ar || service.description_en || '')
+    : (service.description_en || service.description_ar || '');
 
   const handleClick = () => {
     if (isCategory) navigate(`/services/${service.code}`);
@@ -116,24 +125,18 @@ function ServiceTile({ service, childCount }: { service: ServiceDefinition; chil
   return (
     <button
       onClick={handleClick}
-      className="text-right rounded-2xl p-5 flex flex-col gap-3 shadow-sm border border-white/10 transition-all duration-200 bg-jea-primary hover:shadow-lg hover:-translate-y-0.5 cursor-pointer"
+      className={`${isArabic ? 'text-right' : 'text-left'} rounded-2xl p-5 flex flex-col gap-3 shadow-sm border border-white/10 transition-all duration-200 bg-jea-primary hover:shadow-lg hover:-translate-y-0.5 cursor-pointer`}
     >
       <div className="flex items-start justify-between">
         <div className="w-11 h-11 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
           <Icon size={22} className="text-white" />
         </div>
-        <ArrowLeft size={16} className="text-white/40 mt-1" />
+        <ArrowLeft size={16} className={`text-white/40 mt-1 ${isArabic ? '' : 'rotate-180'}`} />
       </div>
       <div>
-        <h3 className="text-base font-black text-white leading-snug">{service.name_ar}</h3>
-        <p className="text-white/60 text-[11px] mt-0.5">{service.name_en}</p>
+        <h3 className="text-base font-black text-white leading-snug">{title}</h3>
       </div>
       <p className="text-white/70 text-xs leading-relaxed line-clamp-3">{description}</p>
-      {isCategory && (
-        <span className="text-[10px] font-bold text-white/70 mt-1">
-          {childCount} خدمة
-        </span>
-      )}
     </button>
   );
 }

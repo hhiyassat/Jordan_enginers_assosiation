@@ -58,5 +58,127 @@
     "integration": "التكامل",
     "home": "الرئيسية"
   },
-  "copyright": "© {{year}} نقابة المهندسين الأردنيين · جميع الحقوق محفوظة"
+  "copyright": "© {{year}} نقابة المهندسين الأردنيين · جميع الحقوق محفوظة",
+  "common": {
+    "viewAll": "عرض الكل",
+    "empty": "لا توجد نتائج",
+    "search": "بحث",
+    "cancel": "إلغاء",
+    "save": "حفظ",
+    "saving": "جارٍ الحفظ…",
+    "previous": "السابق",
+    "next": "التالي",
+    "previousPage": "الصفحة السابقة",
+    "nextPage": "الصفحة التالية",
+    "quickActions": "إجراءات سريعة",
+    "actions": "الإجراءات"
+  },
+  "status": {
+    "draft": "مسودة",
+    "submitted": "تم التقديم",
+    "under_review": "قيد المراجعة",
+    "modifications_requested": "يحتاج تعديل",
+    "pending_payment": "في انتظار الدفع",
+    "approved": "موافق عليه",
+    "rejected": "مرفوض",
+    "certificate_issued": "صدرت الشهادة"
+  },
+  "projectStatus": {
+    "active": "نشط",
+    "pending": "قيد المراجعة",
+    "archived": "مؤرشف"
+  },
+  "dashboard": {
+    "greeting": "مرحباً، {{name}}",
+    "officeQuotaTotal": "إجمالي رصيد المكتب",
+    "stat": {
+      "projects": "المشاريع",
+      "activeRequests": "طلبات نشطة",
+      "certificates": "الشهادات"
+    },
+    "perEngineerHeading": "رصيد كل مهندس",
+    "engineerFallback": "المهندس رقم {{id}}",
+    "recentProjects": "أحدث المشاريع",
+    "noProjectsYet": "لا توجد مشاريع بعد",
+    "noProjectsCta": "ابدأ بإضافة مشروع من صفحة «مشاريعي»",
+    "quickAction": {
+      "myProjects":   { "title": "مشاريعي",            "desc": "إدارة المشاريع وإضافة مشروع جديد" },
+      "eServices":    { "title": "الخدمات الإلكترونية", "desc": "تصفح جميع الخدمات المتاحة" },
+      "myRequests":   { "title": "طلباتي",             "desc": "متابعة حالة الطلبات المقدمة" }
+    }
+  },
+  "myApplications": {
+    "title": "طلباتي",
+    "tabs": {
+      "ongoing": "قيد التنفيذ",
+      "all": "الكل"
+    },
+    "justSubmitted": "تم استلام طلبك بنجاح. يمكنك متابعته من هنا.",
+    "empty": "لا توجد طلبات لعرضها",
+    "emptyOngoing": "لا توجد طلبات قيد المتابعة — كل الطلبات مكتملة.",
+    "downloadCertificate": "تحميل الشهادة",
+    "openApplication": "فتح الطلب"
+  },
+  "services": {
+    "empty": "لا توجد خدمات متاحة حالياً"
+  },
+  "adminApps": {
+    "title": "إدارة الطلبات",
+    "subtitle": "قائمة كاملة بجميع الطلبات في المنظمة",
+    "searchPlaceholder": "بحث بالاسم أو رقم الطلب أو اسم الخدمة…",
+    "searchLabel": "بحث في الطلبات",
+    "filterLabel": "فلترة حسب الحالة",
+    "allStatuses": "كل الحالات",
+    "perPageLabel": "عدد النتائج في الصفحة",
+    "perPageSuffix": "/ صفحة",
+    "columns": {
+      "reference": "رقم الطلب",
+      "applicant": "مقدم الطلب",
+      "service": "الخدمة",
+      "status": "الحالة",
+      "createdAt": "تاريخ الإنشاء"
+    },
+    "empty": "لا توجد نتائج مطابقة",
+    "view": "عرض",
+    "showing": "عرض {{from}}–{{to}} من {{total}} طلب"
+  },
+  "adminDashboard": {
+    "title": "لوحة التحكم",
+    "subtitle": "نظرة عامة على النظام",
+    "stat": {
+      "totalApplications": "إجمالي الطلبات",
+      "pendingReview": "في انتظار المراجعة",
+      "approvedToday": "موافق عليها اليوم",
+      "certificates": "الشهادات الصادرة",
+      "activeServices": "الخدمات النشطة",
+      "users": "المستخدمون"
+    },
+    "quickActions": "إجراءات سريعة",
+    "reviewQueue": "قائمة المراجعة",
+    "manageUsers": "إدارة المستخدمين",
+    "manageServices": "إدارة الخدمات",
+    "auditLogs": "سجل العمليات",
+    "aboutTitle": "eqratech-services-platform",
+    "aboutBody": "منصة خدمات إلكترونية جنيسة. أي خدمة حكومية تُعرَّف كـ JSON Schema وتعمل مباشرة — بدون كود إضافي.",
+    "aboutFeatures": {
+      "dynamicForm": "نموذج ديناميكي من المخطط",
+      "workflowEngine": "محرك سير العمل العام",
+      "certIssue": "إصدار شهادات تلقائي",
+      "multiTenant": "متعدد المستأجرين"
+    }
+  },
+  "changeCredentials": {
+    "title": "تحديث بيانات الدخول",
+    "subtitleSuperuser": "يرجى اختيار البريد وكلمة المرور الدائمين — لن يمكن تعديلهما لاحقاً إلا من سطر الأوامر.",
+    "subtitleUser": "يرجى اختيار كلمة مرور جديدة للمتابعة.",
+    "currentPassword": "كلمة المرور الحالية",
+    "newEmail": "البريد الإلكتروني الدائم",
+    "newPassword": "كلمة المرور الجديدة",
+    "passwordHint": "8 أحرف على الأقل — مع أحرف كبيرة وصغيرة وأرقام",
+    "passwordInvalid": "كلمة المرور لا تلبّي الشروط بعد.",
+    "confirmPassword": "تأكيد كلمة المرور",
+    "passwordsMismatch": "كلمتا المرور غير متطابقتين",
+    "submit": "حفظ ومتابعة",
+    "genericError": "حدث خطأ"
+  }
 }

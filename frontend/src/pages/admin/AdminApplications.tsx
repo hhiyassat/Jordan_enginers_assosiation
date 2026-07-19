@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Search, ChevronRight, ChevronLeft } from 'lucide-react';
 import { usePaginatedAdminApplications } from '../../api/hooks';
 import type { AllApplicationsFilters } from '../../api/admin';
@@ -16,17 +17,15 @@ import type { AllApplicationsFilters } from '../../api/admin';
  *   table flicker while the next page loads.
  */
 
-const STATUS_LABEL: Record<string, string> = {
-  draft:                   'مسودة',
-  submitted:               'تم التقديم',
-  under_review:            'قيد المراجعة',
-  modifications_requested: 'يحتاج تعديل',
-  approved:                'موافق عليه',
-  rejected:                'مرفوض',
-  certificate_issued:      'صدرت الشهادة',
-};
+const STATUS_KEYS = [
+  'draft', 'submitted', 'under_review', 'modifications_requested',
+  'approved', 'rejected', 'certificate_issued',
+] as const;
 
 export function AdminApplications(): JSX.Element {
+  const { t, i18n } = useTranslation();
+  const isRtl = i18n.language.startsWith('ar');
+  const dateLocale = isRtl ? 'ar-JO' : 'en-JO';
   const [q, setQ] = useState('');
   const [debouncedQ, setDebouncedQ] = useState('');
   const [status, setStatus] = useState<string>('');
@@ -58,45 +57,47 @@ export function AdminApplications(): JSX.Element {
   const to = data?.to ?? 0;
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8" dir="rtl">
+    <div className="max-w-6xl mx-auto px-4 py-8" dir={isRtl ? 'rtl' : 'ltr'}>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">إدارة الطلبات</h1>
-        <p className="text-gray-500 text-sm mt-1">قائمة كاملة بجميع الطلبات في المنظمة</p>
+        <h1 className="text-2xl font-bold text-gray-900">{t('adminApps.title')}</h1>
+        <p className="text-gray-500 text-sm mt-1">{t('adminApps.subtitle')}</p>
       </div>
 
       {/* Filter bar */}
       <div className="bg-white rounded-xl border border-gray-200 p-4 mb-4 flex flex-wrap gap-3 items-center">
         <div className="relative flex-1 min-w-[220px]">
-          <Search size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" aria-hidden="true" />
+          <Search size={16} className={`absolute ${isRtl ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 text-gray-400`} aria-hidden="true" />
           <input
             type="search"
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="بحث بالاسم أو رقم الطلب أو اسم الخدمة…"
-            aria-label="بحث في الطلبات"
-            className="w-full border border-gray-300 rounded-lg pr-9 pl-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+            placeholder={t('adminApps.searchPlaceholder')}
+            aria-label={t('adminApps.searchLabel')}
+            className={`w-full border border-gray-300 rounded-lg ${isRtl ? 'pr-9 pl-3' : 'pl-9 pr-3'} py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200`}
           />
         </div>
 
         <select
           value={status}
           onChange={(e) => { setStatus(e.target.value); setPage(1); }}
-          aria-label="فلترة حسب الحالة"
+          aria-label={t('adminApps.filterLabel')}
           className="border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500"
         >
-          <option value="">كل الحالات</option>
-          {Object.entries(STATUS_LABEL).map(([value, label]) => (
-            <option key={value} value={value}>{label}</option>
+          <option value="">{t('adminApps.allStatuses')}</option>
+          {STATUS_KEYS.map(key => (
+            <option key={key} value={key}>{t(`status.${key}`)}</option>
           ))}
         </select>
 
         <select
           value={perPage}
           onChange={(e) => { setPerPage(Number(e.target.value)); setPage(1); }}
-          aria-label="عدد النتائج في الصفحة"
+          aria-label={t('adminApps.perPageLabel')}
           className="border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500"
         >
-          {[5, 10, 20, 50].map(n => <option key={n} value={n}>{n} / صفحة</option>)}
+          {[5, 10, 20, 50].map(n => (
+            <option key={n} value={n}>{n} {t('adminApps.perPageSuffix')}</option>
+          ))}
         </select>
       </div>
 
@@ -107,13 +108,13 @@ export function AdminApplications(): JSX.Element {
       {/* Table */}
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 text-gray-500 text-right">
+          <thead className={`bg-gray-50 text-gray-500 ${isRtl ? 'text-right' : 'text-left'}`}>
             <tr>
-              <th className="px-4 py-3 font-semibold">رقم الطلب</th>
-              <th className="px-4 py-3 font-semibold">مقدم الطلب</th>
-              <th className="px-4 py-3 font-semibold">الخدمة</th>
-              <th className="px-4 py-3 font-semibold">الحالة</th>
-              <th className="px-4 py-3 font-semibold">تاريخ الإنشاء</th>
+              <th className="px-4 py-3 font-semibold">{t('adminApps.columns.reference')}</th>
+              <th className="px-4 py-3 font-semibold">{t('adminApps.columns.applicant')}</th>
+              <th className="px-4 py-3 font-semibold">{t('adminApps.columns.service')}</th>
+              <th className="px-4 py-3 font-semibold">{t('adminApps.columns.status')}</th>
+              <th className="px-4 py-3 font-semibold">{t('adminApps.columns.createdAt')}</th>
               <th className="px-4 py-3"></th>
             </tr>
           </thead>
@@ -128,7 +129,7 @@ export function AdminApplications(): JSX.Element {
 
             {!isPending && rows.length === 0 && (
               <tr><td colSpan={6} className="px-4 py-10 text-center text-gray-400">
-                لا توجد نتائج مطابقة
+                {t('adminApps.empty')}
               </td></tr>
             )}
 
@@ -136,18 +137,22 @@ export function AdminApplications(): JSX.Element {
               <tr key={app.id} className="border-t border-gray-100 hover:bg-gray-50">
                 <td className="px-4 py-3 font-mono text-blue-700">{app.reference_number}</td>
                 <td className="px-4 py-3">{app.applicant?.name ?? '—'}</td>
-                <td className="px-4 py-3">{app.service_definition?.name_ar ?? '—'}</td>
+                <td className="px-4 py-3">
+                  {isRtl
+                    ? (app.service_definition?.name_ar ?? app.service_definition?.name_en ?? '—')
+                    : (app.service_definition?.name_en ?? app.service_definition?.name_ar ?? '—')}
+                </td>
                 <td className="px-4 py-3">
                   <span className="inline-block px-2 py-0.5 rounded text-xs bg-gray-100">
-                    {STATUS_LABEL[app.status] ?? app.status}
+                    {t(`status.${app.status}`, { defaultValue: app.status })}
                   </span>
                 </td>
                 <td className="px-4 py-3 text-gray-500 text-xs">
-                  {new Date(app.created_at).toLocaleDateString('ar-JO')}
+                  {new Date(app.created_at).toLocaleDateString(dateLocale)}
                 </td>
                 <td className="px-4 py-3">
                   <Link to={`/review/${app.id}`} className="text-blue-600 hover:underline text-xs">
-                    عرض
+                    {t('adminApps.view')}
                   </Link>
                 </td>
               </tr>
@@ -159,17 +164,14 @@ export function AdminApplications(): JSX.Element {
       {/* Pagination footer */}
       <div className="mt-4 flex items-center justify-between text-sm text-gray-600">
         <div>
-          {total > 0
-            ? <>عرض {from}–{to} من {total} طلب</>
-            : <>—</>
-          }
+          {total > 0 ? t('adminApps.showing', { from, to, total }) : '—'}
         </div>
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={() => setPage(p => Math.max(1, p - 1))}
             disabled={page <= 1 || isFetching}
-            aria-label="الصفحة السابقة"
+            aria-label={t('common.previousPage')}
             className="px-2 py-1 rounded border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <ChevronRight size={14} />
@@ -181,7 +183,7 @@ export function AdminApplications(): JSX.Element {
             type="button"
             onClick={() => setPage(p => Math.min(lastPage, p + 1))}
             disabled={page >= lastPage || isFetching}
-            aria-label="الصفحة التالية"
+            aria-label={t('common.nextPage')}
             className="px-2 py-1 rounded border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <ChevronLeft size={14} />

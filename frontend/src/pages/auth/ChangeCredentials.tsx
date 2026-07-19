@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { authApi } from '../../api/client';
 import { useAuth } from '../../auth/AuthContext';
 
@@ -17,6 +18,8 @@ import { useAuth } from '../../auth/AuthContext';
 export function ChangeCredentials() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
+  const isRtl = i18n.language.startsWith('ar');
 
   const isSuperuser = user?.role === 'superuser';
 
@@ -64,24 +67,24 @@ export function ChangeCredentials() {
         e.errors?.password?.[0] ??
         e.errors?.current_password?.[0] ??
         e.message;
-      setError(first || 'حدث خطأ');
+      setError(first || t('changeCredentials.genericError'));
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4" dir="rtl">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4" dir={isRtl ? 'rtl' : 'ltr'}>
       <form
         onSubmit={handleSubmit}
         className="w-full max-w-md bg-white rounded-xl shadow-md p-6 space-y-4"
       >
         <div>
-          <h1 className="text-xl font-bold text-gray-900">تحديث بيانات الدخول</h1>
+          <h1 className="text-xl font-bold text-gray-900">{t('changeCredentials.title')}</h1>
           <p className="text-xs text-gray-500 mt-1">
             {isSuperuser
-              ? 'يرجى اختيار البريد وكلمة المرور الدائمين — لن يمكن تعديلهما لاحقاً إلا من سطر الأوامر.'
-              : 'يرجى اختيار كلمة مرور جديدة للمتابعة.'}
+              ? t('changeCredentials.subtitleSuperuser')
+              : t('changeCredentials.subtitleUser')}
           </p>
         </div>
 
@@ -92,7 +95,7 @@ export function ChangeCredentials() {
         )}
 
         <label className="block">
-          <span className="text-sm font-semibold text-gray-700">كلمة المرور الحالية</span>
+          <span className="text-sm font-semibold text-gray-700">{t('changeCredentials.currentPassword')}</span>
           <input
             type="password"
             autoComplete="current-password"
@@ -105,7 +108,7 @@ export function ChangeCredentials() {
 
         {isSuperuser && (
           <label className="block">
-            <span className="text-sm font-semibold text-gray-700">البريد الإلكتروني الدائم</span>
+            <span className="text-sm font-semibold text-gray-700">{t('changeCredentials.newEmail')}</span>
             <input
               type="email"
               autoComplete="email"
@@ -119,7 +122,7 @@ export function ChangeCredentials() {
         )}
 
         <label className="block">
-          <span className="text-sm font-semibold text-gray-700">كلمة المرور الجديدة</span>
+          <span className="text-sm font-semibold text-gray-700">{t('changeCredentials.newPassword')}</span>
           <input
             type="password"
             autoComplete="new-password"
@@ -130,17 +133,17 @@ export function ChangeCredentials() {
             minLength={8}
           />
           <span className="text-xs text-gray-500 mt-1 block">
-            8 أحرف على الأقل — مع أحرف كبيرة وصغيرة وأرقام
+            {t('changeCredentials.passwordHint')}
           </span>
           {newPassword.length > 0 && !passwordMeetsBackendRule(newPassword) && (
             <span className="text-xs text-red-600 mt-1 block">
-              كلمة المرور لا تلبّي الشروط بعد.
+              {t('changeCredentials.passwordInvalid')}
             </span>
           )}
         </label>
 
         <label className="block">
-          <span className="text-sm font-semibold text-gray-700">تأكيد كلمة المرور</span>
+          <span className="text-sm font-semibold text-gray-700">{t('changeCredentials.confirmPassword')}</span>
           <input
             type="password"
             autoComplete="new-password"
@@ -150,7 +153,7 @@ export function ChangeCredentials() {
             required
           />
           {confirm && confirm !== newPassword && (
-            <span className="text-xs text-red-600 mt-1 block">كلمتا المرور غير متطابقتين</span>
+            <span className="text-xs text-red-600 mt-1 block">{t('changeCredentials.passwordsMismatch')}</span>
           )}
         </label>
 
@@ -159,7 +162,7 @@ export function ChangeCredentials() {
           disabled={!canSubmit || submitting}
           className="w-full py-2.5 rounded bg-blue-600 text-white font-semibold text-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {submitting ? 'جاري الحفظ…' : 'حفظ ومتابعة'}
+          {submitting ? t('common.saving') : t('changeCredentials.submit')}
         </button>
       </form>
     </div>

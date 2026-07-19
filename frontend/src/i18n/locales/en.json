@@ -58,5 +58,127 @@
     "integration": "Integration Cycles",
     "home": "Home"
   },
-  "copyright": "© {{year}} Jordan Engineers Association · All rights reserved"
+  "copyright": "© {{year}} Jordan Engineers Association · All rights reserved",
+  "common": {
+    "viewAll": "View all",
+    "empty": "No results",
+    "search": "Search",
+    "cancel": "Cancel",
+    "save": "Save",
+    "saving": "Saving…",
+    "previous": "Previous",
+    "next": "Next",
+    "previousPage": "Previous page",
+    "nextPage": "Next page",
+    "quickActions": "Quick actions",
+    "actions": "Actions"
+  },
+  "status": {
+    "draft": "Draft",
+    "submitted": "Submitted",
+    "under_review": "Under Review",
+    "modifications_requested": "Modifications Requested",
+    "pending_payment": "Pending Payment",
+    "approved": "Approved",
+    "rejected": "Rejected",
+    "certificate_issued": "Certificate Issued"
+  },
+  "projectStatus": {
+    "active": "Active",
+    "pending": "Pending Review",
+    "archived": "Archived"
+  },
+  "dashboard": {
+    "greeting": "Welcome, {{name}}",
+    "officeQuotaTotal": "Office annual m² total",
+    "stat": {
+      "projects": "Projects",
+      "activeRequests": "Active requests",
+      "certificates": "Certificates"
+    },
+    "perEngineerHeading": "Per-engineer quota",
+    "engineerFallback": "Engineer #{{id}}",
+    "recentProjects": "Recent projects",
+    "noProjectsYet": "No projects yet",
+    "noProjectsCta": "Add one from the My Projects page",
+    "quickAction": {
+      "myProjects":   { "title": "My Projects",  "desc": "Manage projects and add a new one" },
+      "eServices":    { "title": "E-Services",   "desc": "Browse all available services" },
+      "myRequests":   { "title": "My Requests",  "desc": "Track the status of submitted requests" }
+    }
+  },
+  "myApplications": {
+    "title": "My Requests",
+    "tabs": {
+      "ongoing": "Ongoing",
+      "all": "All"
+    },
+    "justSubmitted": "Your request was submitted successfully. You can follow it here.",
+    "empty": "No requests to display",
+    "emptyOngoing": "No ongoing requests — all applications are complete.",
+    "downloadCertificate": "Download certificate",
+    "openApplication": "Open request"
+  },
+  "services": {
+    "empty": "No services available"
+  },
+  "adminApps": {
+    "title": "Applications",
+    "subtitle": "Full list of applications across the organization",
+    "searchPlaceholder": "Search by name, reference number or service…",
+    "searchLabel": "Search applications",
+    "filterLabel": "Filter by status",
+    "allStatuses": "All statuses",
+    "perPageLabel": "Results per page",
+    "perPageSuffix": "/ page",
+    "columns": {
+      "reference": "Reference",
+      "applicant": "Applicant",
+      "service": "Service",
+      "status": "Status",
+      "createdAt": "Created"
+    },
+    "empty": "No matching results",
+    "view": "View",
+    "showing": "Showing {{from}}–{{to}} of {{total}} applications"
+  },
+  "adminDashboard": {
+    "title": "Admin Dashboard",
+    "subtitle": "System overview",
+    "stat": {
+      "totalApplications": "Total applications",
+      "pendingReview": "Pending review",
+      "approvedToday": "Approved today",
+      "certificates": "Certificates issued",
+      "activeServices": "Active services",
+      "users": "Users"
+    },
+    "quickActions": "Quick actions",
+    "reviewQueue": "Review queue",
+    "manageUsers": "Manage users",
+    "manageServices": "Manage services",
+    "auditLogs": "Audit logs",
+    "aboutTitle": "eqratech-services-platform",
+    "aboutBody": "A generic e-services platform. Any government service is defined as JSON Schema and runs directly — with no additional code.",
+    "aboutFeatures": {
+      "dynamicForm": "Dynamic form from the schema",
+      "workflowEngine": "Generic workflow engine",
+      "certIssue": "Automatic certificate issuance",
+      "multiTenant": "Multi-tenant"
+    }
+  },
+  "changeCredentials": {
+    "title": "Update sign-in details",
+    "subtitleSuperuser": "Pick a permanent email + password. These can only be changed later from the command line.",
+    "subtitleUser": "Pick a new password to continue.",
+    "currentPassword": "Current password",
+    "newEmail": "Permanent email",
+    "newPassword": "New password",
+    "passwordHint": "8 characters minimum — upper & lower case + numbers",
+    "passwordInvalid": "Password does not meet the requirements yet.",
+    "confirmPassword": "Confirm password",
+    "passwordsMismatch": "Passwords do not match",
+    "submit": "Save and continue",
+    "genericError": "Something went wrong"
+  }
 }
