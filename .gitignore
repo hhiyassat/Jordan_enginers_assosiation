@@ -12,3 +12,10 @@ backend/.phpunit.cache/
 # Demo / packaged distributions that shouldn't live in git
 platform/
 *.zip
+
+# Playwright output — screenshots, videos, HTML report, per-run artifacts
+node_modules/
+test-results/
+playwright-report/
+/blob-report/
+/playwright/.cache/
