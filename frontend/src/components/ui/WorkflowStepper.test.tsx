@@ -68,4 +68,28 @@ describe('WorkflowStepper', () => {
     const slaLabels = document.body.textContent ?? '';
     expect(slaLabels).toMatch(/\d+س/);
   });
+
+  describe('dimForRole', () => {
+    it('marks office stages as owned + others as not-owned when dimForRole=office', () => {
+      render(<WorkflowStepper stages={STAGES} dimForRole="office" />);
+      const ownership = screen.getAllByTestId('workflow-stage')
+        .map(el => el.getAttribute('data-owned-by-actor'));
+      // 1 applicant + 1 auditor + 2 staff → office owns the first one only.
+      expect(ownership).toEqual(['true', 'false', 'false', 'false']);
+    });
+
+    it('inverts the ownership map when dimForRole=reviewer', () => {
+      render(<WorkflowStepper stages={STAGES} dimForRole="reviewer" />);
+      const ownership = screen.getAllByTestId('workflow-stage')
+        .map(el => el.getAttribute('data-owned-by-actor'));
+      expect(ownership).toEqual(['false', 'true', 'true', 'true']);
+    });
+
+    it('marks every stage as owned when dimForRole is omitted (backward compat)', () => {
+      render(<WorkflowStepper stages={STAGES} />);
+      for (const el of screen.getAllByTestId('workflow-stage')) {
+        expect(el.getAttribute('data-owned-by-actor')).toBe('true');
+      }
+    });
+  });
 });

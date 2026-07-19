@@ -237,6 +237,9 @@ export function Apply() {
             currentStageId={currentStageId}
             titleAr={activeVariant ? `${activeVariant.label_ar} · مسار الطلب` : 'مسار الطلب'}
             titleEn={activeVariant ? `${activeVariant.label_en} · Workflow` : 'Application workflow'}
+            /* Apply page is applicant-side — dim reviewer-owned stages so
+               the office sees THEIR path highlighted against the fuller flow. */
+            dimForRole="office"
           />
         </div>
       )}

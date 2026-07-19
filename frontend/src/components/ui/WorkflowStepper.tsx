@@ -4,6 +4,7 @@ import {
   Cog, GitBranch, RotateCw, CircleDot,
 } from 'lucide-react';
 import type { SchemaWorkflowStage } from '../../types';
+import { bucketOf, type PathRole } from '../../engine/workflowRolePath';
 
 /**
  * WorkflowStepper — read-only visualisation of an application's
@@ -29,6 +30,15 @@ interface WorkflowStepperProps {
   titleEn?: string;
   /** Layout — default horizontal on wide screens, vertical on narrow. */
   layout?: 'auto' | 'horizontal' | 'vertical';
+  /**
+   * When set, stages whose role doesn't belong to this actor are dimmed
+   * so the reader sees "their" path highlighted against the fuller flow.
+   *   'office'   → dims staff/auditor/admin stages
+   *   'reviewer' → dims applicant stages
+   * The past/current/future coloring still applies on the actor's own
+   * stages so nothing else about the stepper changes.
+   */
+  dimForRole?: PathRole;
   className?: string;
 }
 
@@ -92,6 +102,7 @@ export function WorkflowStepper({
   titleAr = 'مسار الطلب',
   titleEn = 'Application workflow',
   layout = 'auto',
+  dimForRole,
   className = '',
 }: WorkflowStepperProps) {
   if (!stages || stages.length === 0) return null;
@@ -128,11 +139,16 @@ export function WorkflowStepper({
           const Icon = iconFor(stage);
           const isLast = idx === stages.length - 1;
           const stageAria = `${stage.label_ar} · ${stage.label_en}`;
+          const isMine = dimForRole ? bucketOf(stage.role) === dimForRole : true;
+          const dimCls = isMine ? '' : 'opacity-40';
           return (
             <li
               key={stage.id}
               aria-current={pos === 'current' ? 'step' : undefined}
-              className="flex items-start gap-3 md:flex-col md:items-center md:flex-1 min-w-0"
+              data-testid="workflow-stage"
+              data-stage-role={stage.role}
+              data-owned-by-actor={isMine ? 'true' : 'false'}
+              className={`flex items-start gap-3 md:flex-col md:items-center md:flex-1 min-w-0 transition-opacity ${dimCls}`}
             >
               {/* Marker + connector */}
               <div className="flex items-center md:flex-col md:items-center gap-2 md:gap-0 md:w-full">

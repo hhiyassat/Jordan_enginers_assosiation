@@ -4,6 +4,7 @@ import { ArrowRight, Plus, Clock, Edit3 } from 'lucide-react';
 import { servicesApi } from '../../api/client';
 import type { ServiceDefinition } from '../../types';
 import { PhaseBadge } from '../../components/ui/PhaseBadge';
+import { RolePathBadge } from '../../components/ui/RolePathBadge';
 
 /**
  * Groups an array of services by subcategory_ar. Services with no
@@ -211,6 +212,12 @@ function DetailServiceCard({
             </div>
           ))}
         </div>
+
+        {/* Path summary — how many stages the office owns vs the reviewer.
+            Rendered per card so applicants can see the shape of each
+            service's flow before clicking in. */}
+        <RolePathBadge stages={service.schema?.workflow?.stages ?? []} className="mt-1" />
+
 
         <div className={`flex gap-2 ${hasModificationVariant ? '' : ''}`}>
           <button
