@@ -76,6 +76,34 @@ class ApplicationProjectLinkTest extends TestCase
         $this->assertSame($this->project->id, $app->project_id);
     }
 
+    public function test_store_accepts_empty_data_at_draft_stage(): void
+    {
+        // Regression: applicants clicking "Next → Documents" on a service
+        // whose schema has no applicant fields (e.g. drawing services where
+        // everything comes from the linked project + uploads) used to hit
+        // "بيانات الطلب مطلوبة." because the FormRequest treated `{}` as
+        // missing. `present` allows the key to be empty at draft save;
+        // SchemaValidator handles per-field enforcement on submit.
+        Sanctum::actingAs($this->applicant);
+        $this->postJson('/api/v1/applications', [
+            'service_code' => $this->service->code,
+            'data'         => [],
+            'project_id'   => $this->project->id,
+        ])->assertCreated();
+    }
+
+    public function test_store_still_rejects_a_missing_data_key(): void
+    {
+        // `present` requires the key to be posted — even if empty. Sending
+        // no `data` at all is still a client bug.
+        Sanctum::actingAs($this->applicant);
+        $this->postJson('/api/v1/applications', [
+            'service_code' => $this->service->code,
+            'project_id'   => $this->project->id,
+        ])->assertStatus(422)
+          ->assertJsonValidationErrors(['data']);
+    }
+
     public function test_store_omitting_project_id_leaves_it_null(): void
     {
         Sanctum::actingAs($this->applicant);
