@@ -119,6 +119,9 @@ export function useUsers() {
   return useQuery({
     queryKey: ['users', 'list'],
     queryFn:  async () => (await userManagementApi.list()).users,
+    // JORD-24: keep the presence dot fresh without a page reload.
+    refetchInterval: 30_000,
+    staleTime: 15_000,
   });
 }
 

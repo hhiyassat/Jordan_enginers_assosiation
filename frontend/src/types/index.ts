@@ -22,6 +22,10 @@ export interface User {
   can_manage_users?: boolean;
   is_active?: boolean;
   created_at?: string;
+  // JORD-24: server-computed presence bucket. Populated by the
+  // /admin/users list; absent on other user payloads.
+  presence?: 'online' | 'idle' | 'offline';
+  last_seen_at?: string | null;
 }
 
 // ── Schema types ────────────────────────────────────────────────────

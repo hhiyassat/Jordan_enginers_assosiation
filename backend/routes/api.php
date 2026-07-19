@@ -69,7 +69,7 @@ Route::prefix('v1')->group(function () {
 
 // ── Authenticated routes ────────────────────────────────────────────
 
-Route::prefix('v1')->middleware(['auth:sanctum', 'token.inactivity', 'password.policy'])->group(function () {
+Route::prefix('v1')->middleware(['auth:sanctum', 'token.inactivity', 'password.policy', 'track.activity'])->group(function () {
 
     // Auth
     Route::get('auth/me',                  [AuthController::class, 'me']);

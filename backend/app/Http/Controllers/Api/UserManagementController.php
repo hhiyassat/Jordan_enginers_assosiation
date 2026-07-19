@@ -46,6 +46,21 @@ class UserManagementController extends Controller
         return null;
     }
 
+    /**
+     * JORD-24: bucket a timestamp into online / idle / offline.
+     *   • online  — seen within the last 5 minutes
+     *   • idle    — seen within the last 30 minutes
+     *   • offline — otherwise (or null = never seen since login)
+     */
+    private function presenceBucket(?\Carbon\Carbon $seen): string
+    {
+        if ($seen === null) return 'offline';
+        $seconds = $seen->diffInSeconds(now());
+        if ($seconds <= 300)  return 'online';
+        if ($seconds <= 1800) return 'idle';
+        return 'offline';
+    }
+
     public function index(Request $request): JsonResponse
     {
         $this->guardCanManageUsers($request);
@@ -60,7 +75,16 @@ class UserManagementController extends Controller
             $q->whereIn('role', ['applicant', 'staff', 'auditor']);
         }
 
-        $users = $q->get(['id', 'name', 'email', 'role', 'is_active', 'must_change_password', 'created_at']);
+        $users = $q->get(['id', 'name', 'email', 'role', 'is_active', 'must_change_password', 'created_at', 'last_seen_at'])
+            // JORD-24: annotate each row with a bucketed presence status
+            // so the UI can render the coloured dot without any client-
+            // side clock arithmetic (browser clocks drift). Serialize
+            // to array so the presence field lands in the JSON payload.
+            ->map(function (User $u): array {
+                $arr = $u->toArray();
+                $arr['presence'] = $this->presenceBucket($u->last_seen_at);
+                return $arr;
+            });
         return response()->json(['users' => $users]);
     }
 

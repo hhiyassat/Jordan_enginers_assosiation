@@ -47,6 +47,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'gsb.ip_whitelist' => \App\Http\Middleware\GsbIpWhitelist::class,
             // Text captcha for public forms (login, register, tracking)
             'captcha'          => VerifyCaptcha::class,
+            // JORD-24: bump users.last_seen_at (coalesced to 1 write/min)
+            'track.activity'   => \App\Http\Middleware\TrackUserActivity::class,
         ]);
 
         // NOTE: statefulApi() (Sanctum SPA cookie auth) is intentionally REMOVED.

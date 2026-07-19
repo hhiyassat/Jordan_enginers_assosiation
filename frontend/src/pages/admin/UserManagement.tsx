@@ -98,6 +98,7 @@ export function UserManagement() {
           <table className="w-full text-sm">
             <thead className={`bg-gray-50 ${isRtl ? 'text-right' : 'text-left'}`}>
               <tr>
+                <th className="px-4 py-2 font-semibold w-4"><span className="sr-only">{t('presence.column')}</span></th>
                 <th className="px-4 py-2 font-semibold">{t('userManagement.columns.name')}</th>
                 <th className="px-4 py-2 font-semibold">{t('userManagement.columns.email')}</th>
                 <th className="px-4 py-2 font-semibold">{t('userManagement.columns.role')}</th>
@@ -108,6 +109,9 @@ export function UserManagement() {
             <tbody>
               {users.map(u => (
                 <tr key={u.id} className="border-t border-gray-100">
+                  <td className="px-2 py-2">
+                    <PresenceDot presence={u.presence} />
+                  </td>
                   <td className="px-4 py-2">{u.name}</td>
                   <td className="px-4 py-2" dir="ltr">{u.email}</td>
                   <td className="px-4 py-2">{t(`userManagement.roles.${u.role}`, { defaultValue: u.role })}</td>
@@ -153,6 +157,32 @@ export function UserManagement() {
         />
       )}
     </div>
+  );
+}
+
+/**
+ * JORD-24: coloured dot showing a user's server-computed presence.
+ *   • online  — filled green with a subtle pulse ring
+ *   • idle    — filled amber
+ *   • offline — hollow grey
+ *
+ * The label sits in a native `title` attribute so admins can hover to
+ * confirm before acting on a row.
+ */
+function PresenceDot({ presence }: { presence?: User['presence'] }): JSX.Element {
+  const { t } = useTranslation();
+  const state = presence ?? 'offline';
+  const cls =
+    state === 'online' ? 'bg-emerald-500 ring-2 ring-emerald-100'
+    : state === 'idle' ? 'bg-amber-400'
+    : 'bg-transparent border border-gray-300';
+  return (
+    <span
+      role="status"
+      aria-label={t(`presence.${state}`)}
+      title={t(`presence.${state}`)}
+      className={`inline-block w-2.5 h-2.5 rounded-full ${cls}`}
+    />
   );
 }
 

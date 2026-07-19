@@ -433,6 +433,12 @@
     "gitBranch": "Git branch",
     "gitCommit": "Git commit"
   },
+  "presence": {
+    "online": "Online",
+    "idle": "Idle",
+    "offline": "Offline",
+    "column": "Presence"
+  },
   "notifications": {
     "title": "Notifications",
     "empty": "No new notifications",

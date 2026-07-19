@@ -433,6 +433,12 @@
     "gitBranch": "فرع Git",
     "gitCommit": "التزام Git"
   },
+  "presence": {
+    "online": "متصل",
+    "idle": "خامل",
+    "offline": "غير متصل",
+    "column": "الحضور"
+  },
   "notifications": {
     "title": "الإشعارات",
     "empty": "لا توجد إشعارات جديدة",
