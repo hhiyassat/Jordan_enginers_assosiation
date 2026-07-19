@@ -49,7 +49,7 @@ class ApplicationController extends Controller
     public function show(Request $request, int $id): JsonResponse
     {
         $app = $this->findAccessible($request, $id);
-        $app->load(['serviceDefinition', 'applicant:id,name,email', 'documents', 'reviews.reviewer:id,name,role', 'certificate']);
+        $app->load(['serviceDefinition', 'project', 'applicant:id,name,email', 'documents', 'reviews.reviewer:id,name,role', 'certificate']);
 
         // Attach the schema-driven action set for the caller's role at the
         // application's current stage. The frontend renders one button per
@@ -80,12 +80,33 @@ class ApplicationController extends Controller
             ->where('status', 'active')
             ->firstOrFail();
 
+        // If project_id was passed, verify it belongs to the actor's org AND
+        // is owned by them. Cross-org or cross-user access is an escalation
+        // vector we close at the controller boundary — the FormRequest's
+        // `exists:` rule only proves the row exists globally, not that this
+        // user may read it.
+        $projectId = null;
+        if ($request->filled('project_id')) {
+            $project = \App\Models\Project::where('id', (int) $request->project_id)
+                ->where('organization_id', $request->user()->organization_id)
+                ->where('owner_user_id', $request->user()->id)
+                ->first();
+            if (! $project) {
+                return response()->json([
+                    'message' => 'المشروع غير مرتبط بحسابك.',
+                    'errors'  => ['project_id' => ['المشروع غير موجود أو لا يخصك.']],
+                ], 422);
+            }
+            $projectId = $project->id;
+        }
+
         $fee = (new FeeCalculator($service))->calculate($request->data);
 
         $app = Application::create([
             'reference_number'      => Application::generateReference($service),
             'organization_id'       => $request->user()->organization_id,
             'service_definition_id' => $service->id,
+            'project_id'            => $projectId,
             'applicant_id'          => $request->user()->id,
             'status'                => Application::STATUS_DRAFT,
             'data'                  => $request->data,

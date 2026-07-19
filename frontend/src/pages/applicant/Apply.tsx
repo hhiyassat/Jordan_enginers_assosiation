@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { applicationsApi, servicesApi } from '../../api/client';
+import { applicationsApi, projectsApi, servicesApi } from '../../api/client';
 import { DynamicForm } from '../../engine/DynamicForm';
 import { DocumentUploader } from '../../engine/DocumentUploader';
-import type { Application, ServiceDefinition, SchemaWorkflowStage } from '../../types';
+import type { Application, Project, ServiceDefinition, SchemaWorkflowStage } from '../../types';
 import { WorkflowStepper } from '../../components/ui/WorkflowStepper';
+import { ProjectContextHeader } from './ProjectContextHeader';
 
 /**
  * Map an Application.status to the corresponding stage_id in the
@@ -63,8 +64,11 @@ export function Apply() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const variantKey = searchParams.get('variant');
+  const projectIdParam = searchParams.get('project_id');
+  const projectId = projectIdParam ? Number(projectIdParam) : null;
 
   const [service, setService]         = useState<ServiceDefinition | null>(null);
+  const [project, setProject]         = useState<Project | null>(null);
   const [application, setApplication] = useState<Application | null>(null);
   const [formData, setFormData]       = useState<Record<string, unknown>>({});
   const [errors, setErrors]           = useState<Record<string, string>>({});
@@ -81,6 +85,16 @@ export function Apply() {
       .finally(() => setLoading(false));
   }, [serviceCode, navigate]);
 
+  // Load the project the applicant entered through (if any). Failure to
+  // fetch is non-fatal — worst case the form renders without the read-only
+  // project header, but the applicant can still submit.
+  useEffect(() => {
+    if (!projectId) { setProject(null); return; }
+    projectsApi.get(projectId)
+      .then(r => setProject((r as { project: Project }).project))
+      .catch(() => setProject(null));
+  }, [projectId]);
+
   const handleFieldChange = (field: string, value: unknown) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     // Clear error for this field as user corrects it
@@ -95,7 +109,9 @@ export function Apply() {
         const r = await applicationsApi.update(application.id, formData);
         setApplication((r as { application: Application }).application);
       } else {
-        const r = await applicationsApi.create(service.code, formData);
+        // Pass through the project link — the controller re-checks
+        // ownership + org so a spoofed URL can't cross-attach.
+        const r = await applicationsApi.create(service.code, formData, projectId ?? undefined);
         setApplication((r as { application: Application }).application);
       }
       setStep('documents');
@@ -242,6 +258,7 @@ export function Apply() {
       {/* Step 1 — Form */}
       {step === 'form' && (
         <section aria-labelledby="step-form-title" className="space-y-6">
+          {project && <ProjectContextHeader project={project} />}
           <DynamicForm
             schema={schema}
             values={formData}
@@ -344,3 +361,4 @@ export function Apply() {
     </main>
   );
 }
+

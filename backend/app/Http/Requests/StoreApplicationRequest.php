@@ -20,6 +20,10 @@ class StoreApplicationRequest extends FormRequest
         return [
             'service_code' => ['required', 'string', 'max:20'],
             'data'         => ['required', 'array'],
+            // Optional link to the applicant's project. When present the
+            // Apply flow renders the project's read-only header instead of
+            // asking the applicant to re-type the project's fields.
+            'project_id'   => ['sometimes', 'nullable', 'integer', 'exists:projects,id'],
         ];
     }
 
@@ -29,6 +33,7 @@ class StoreApplicationRequest extends FormRequest
             'service_code.required' => 'رمز الخدمة مطلوب.',
             'data.required'         => 'بيانات الطلب مطلوبة.',
             'data.array'            => 'بيانات الطلب يجب أن تكون كائناً.',
+            'project_id.exists'     => 'المشروع غير موجود.',
         ];
     }
 }

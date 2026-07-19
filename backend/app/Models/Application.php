@@ -24,7 +24,7 @@ class Application extends Model
     use SoftDeletes, BelongsToOrganization;
 
     protected $fillable = [
-        'reference_number', 'organization_id', 'service_definition_id', 'applicant_id',
+        'reference_number', 'organization_id', 'service_definition_id', 'project_id', 'applicant_id',
         'assigned_reviewer_id', 'status', 'current_stage', 'data', 'fee_amount',
         'payment_status', 'payment_reference', 'payment_confirmed_at',
         'sla_deadline', 'sla_breached_at', 'review_round',
@@ -56,6 +56,16 @@ class Application extends Model
     public function serviceDefinition(): BelongsTo
     {
         return $this->belongsTo(ServiceDefinition::class);
+    }
+
+    /**
+     * Optional link to the applicant's project — populated when the Apply
+     * flow was reached from /projects/{id}/…. Nullable because certificates,
+     * financial requests, and other non-drawing services carry no project.
+     */
+    public function project(): BelongsTo
+    {
+        return $this->belongsTo(Project::class);
     }
 
     public function applicant(): BelongsTo

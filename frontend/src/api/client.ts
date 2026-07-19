@@ -157,8 +157,11 @@ export interface StageAction {
 export const applicationsApi = {
   list:   () => request<{ applications: Application[] }>('GET', '/applications'),
   get:    (id: number) => request<{ application: Application; available_actions?: StageAction[] }>('GET', `/applications/${id}`),
-  create: (service_code: string, data: Record<string, unknown>) =>
-    request<{ application: Application }>('POST', '/applications', { service_code, data }),
+  create: (service_code: string, data: Record<string, unknown>, project_id?: number) =>
+    request<{ application: Application }>('POST', '/applications', {
+      service_code, data,
+      ...(project_id ? { project_id } : {}),
+    }),
   update: (id: number, data: Record<string, unknown>) =>
     request<{ application: Application }>('PUT', `/applications/${id}`, { data }),
   submit: (id: number) => request<{ application: Application }>('POST', `/applications/${id}/submit`),
