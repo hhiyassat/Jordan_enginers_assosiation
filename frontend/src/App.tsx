@@ -63,6 +63,21 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [token]);
 
+  // Re-verify the session whenever the tab regains focus. Fixes the
+  // stale-role bug: if the user logged in as a different role in another
+  // tab (single-session policy revoked this tab's token), calling /auth/me
+  // will either update the cached user or clear the session cleanly.
+  useEffect(() => {
+    if (!token) return;
+    const onFocus = () => {
+      authApi.me()
+        .then(r => setUser(r.user))
+        .catch(() => { localStorage.removeItem('esp_token'); setToken(null); });
+    };
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, [token]);
+
   const login = (t: string, u: User) => {
     localStorage.setItem('esp_token', t);
     setToken(t);
@@ -258,7 +273,7 @@ interface NavItem {
   Icon: React.ComponentType<{ size?: number; className?: string }>;
 }
 
-function navItemsForRole(role: User['role'] | undefined): NavItem[] {
+export function navItemsForRole(role: User['role'] | undefined): NavItem[] {
   const items: NavItem[] = [];
   if (!role) return items;
 
