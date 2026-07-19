@@ -20,8 +20,13 @@ use App\Engine\StageActions;
  */
 class SchemaStructureValidator
 {
+    /** @var array<string, string> */
     private array $errors = [];
 
+    /**
+     * @param  array<string, mixed> $schema
+     * @return array<string, string>|null
+     */
     public function validate(array $schema): ?array
     {
         $this->errors = [];

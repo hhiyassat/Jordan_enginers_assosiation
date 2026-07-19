@@ -55,11 +55,13 @@ class ServiceDefinition extends Model
 
     // ── Schema accessors (typed for engine use) ────────────────────────
 
+    /** @return list<array<string, mixed>> */
     public function getWorkflowStages(): array
     {
         return $this->schema['workflow']['stages'] ?? [];
     }
 
+    /** @return array<string, mixed>|null */
     public function getStage(string $stageId): ?array
     {
         foreach ($this->getWorkflowStages() as $stage) {
@@ -70,6 +72,7 @@ class ServiceDefinition extends Model
         return null;
     }
 
+    /** @return array<string, mixed>|null */
     public function getFirstStage(): ?array
     {
         return $this->getWorkflowStages()[0] ?? null;
@@ -82,6 +85,8 @@ class ServiceDefinition extends Model
      * the applicant clicks submit, the case moves to the first reviewer
      * stage so a staff/auditor can claim it. Falls back to getFirstStage()
      * if the entire workflow is applicant-owned (unusual but valid).
+     *
+     * @return array<string, mixed>|null
      */
     public function getFirstReviewerStage(): ?array
     {
@@ -93,21 +98,25 @@ class ServiceDefinition extends Model
         return $this->getFirstStage();
     }
 
+    /** @return list<array<string, mixed>> */
     public function getFields(): array
     {
         return $this->schema['fields'] ?? [];
     }
 
+    /** @return list<array<string, mixed>> */
     public function getDocuments(): array
     {
         return $this->schema['documents'] ?? [];
     }
 
+    /** @return array<string, mixed> */
     public function getFeeConfig(): array
     {
         return $this->schema['fee'] ?? [];
     }
 
+    /** @return array<string, mixed> */
     public function getCertificateConfig(): array
     {
         return $this->schema['certificate'] ?? [];

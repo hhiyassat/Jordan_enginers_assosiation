@@ -8,3 +8,7 @@ mcp/node_modules/
 
 # PHPUnit cache
 backend/.phpunit.cache/
+
+# Demo / packaged distributions that shouldn't live in git
+platform/
+*.zip

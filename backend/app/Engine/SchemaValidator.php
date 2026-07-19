@@ -28,6 +28,9 @@ class SchemaValidator
      * Returns null if valid; returns ['field_id' => 'error message'] if invalid.
      *
      * WF-005 / EDA-10: Failure returns field-level errors, application stays in draft.
+     *
+     * @param  array<string, mixed> $data
+     * @return array<string, string>|null
      */
     public function validateData(array $data): ?array
     {
@@ -145,6 +148,10 @@ class SchemaValidator
      *
      * Returns null if valid; returns associative error array if required docs missing.
      * Conditional documents are only required if their condition is met.
+     *
+     * @param  list<mixed>          $uploadedDocumentIds
+     * @param  array<string, mixed> $formData
+     * @return array<string, string>|null
      */
     public function validateDocuments(array $uploadedDocumentIds, array $formData = []): ?array
     {

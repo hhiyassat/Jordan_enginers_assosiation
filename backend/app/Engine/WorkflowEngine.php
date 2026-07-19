@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Engine;
 
 use App\Models\Application;
@@ -476,6 +478,7 @@ class WorkflowEngine
         $app->status = $newStatus;
     }
 
+    /** @return array<string, mixed>|null */
     private function getNextStage(string $currentStageId): ?array
     {
         $stages = $this->service->getWorkflowStages();

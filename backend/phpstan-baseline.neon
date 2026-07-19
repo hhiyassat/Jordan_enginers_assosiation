@@ -1,6 +1,18 @@
 parameters:
 	ignoreErrors:
 		-
+			message: '#^Method App\\Engine\\Exceptions\\RoleMismatchException\:\:extraBody\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Engine/Exceptions/RoleMismatchException.php
+
+		-
+			message: '#^Method App\\Engine\\Exceptions\\WorkflowException\:\:extraBody\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Engine/Exceptions/WorkflowException.php
+
+		-
 			message: '#^Method App\\Engine\\FeeCalculator\:\:calculate\(\) has parameter \$formData with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -55,54 +67,6 @@ parameters:
 			path: app/Engine/SchemaStructureValidator.php
 
 		-
-			message: '#^Method App\\Engine\\SchemaStructureValidator\:\:validate\(\) has parameter \$schema with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Engine/SchemaStructureValidator.php
-
-		-
-			message: '#^Method App\\Engine\\SchemaStructureValidator\:\:validate\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Engine/SchemaStructureValidator.php
-
-		-
-			message: '#^Property App\\Engine\\SchemaStructureValidator\:\:\$errors type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Engine/SchemaStructureValidator.php
-
-		-
-			message: '#^Method App\\Engine\\SchemaValidator\:\:validateData\(\) has parameter \$data with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Engine/SchemaValidator.php
-
-		-
-			message: '#^Method App\\Engine\\SchemaValidator\:\:validateData\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Engine/SchemaValidator.php
-
-		-
-			message: '#^Method App\\Engine\\SchemaValidator\:\:validateDocuments\(\) has parameter \$formData with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Engine/SchemaValidator.php
-
-		-
-			message: '#^Method App\\Engine\\SchemaValidator\:\:validateDocuments\(\) has parameter \$uploadedDocumentIds with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Engine/SchemaValidator.php
-
-		-
-			message: '#^Method App\\Engine\\SchemaValidator\:\:validateDocuments\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Engine/SchemaValidator.php
-
-		-
 			message: '#^Method App\\Engine\\SchemaValidator\:\:validateType\(\) has parameter \$field with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -110,12 +74,6 @@ parameters:
 
 		-
 			message: '#^Method App\\Engine\\WorkflowEngine\:\:decide\(\) has parameter \$annotations with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Engine/WorkflowEngine.php
-
-		-
-			message: '#^Method App\\Engine\\WorkflowEngine\:\:getNextStage\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
 			path: app/Engine/WorkflowEngine.php
@@ -220,6 +178,12 @@ parameters:
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$serviceDefinition\.$#'
 			identifier: property.notFound
 			count: 1
+			path: app/Http/Controllers/Api/ApplicationController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:getStage\(\)\.$#'
+			identifier: method.notFound
+			count: 2
 			path: app/Http/Controllers/Api/ApplicationController.php
 
 		-
@@ -344,6 +308,12 @@ parameters:
 
 		-
 			message: '#^Method App\\Models\\Application\:\:documents\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\HasMany does not specify its types\: TRelatedModel, TDeclaringModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: app/Models/Application.php
+
+		-
+			message: '#^Method App\\Models\\Application\:\:project\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
 			identifier: missingType.generics
 			count: 1
 			path: app/Models/Application.php
@@ -519,48 +489,6 @@ parameters:
 		-
 			message: '#^Method App\\Models\\ServiceDefinition\:\:applications\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\HasMany does not specify its types\: TRelatedModel, TDeclaringModel$#'
 			identifier: missingType.generics
-			count: 1
-			path: app/Models/ServiceDefinition.php
-
-		-
-			message: '#^Method App\\Models\\ServiceDefinition\:\:getCertificateConfig\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Models/ServiceDefinition.php
-
-		-
-			message: '#^Method App\\Models\\ServiceDefinition\:\:getDocuments\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Models/ServiceDefinition.php
-
-		-
-			message: '#^Method App\\Models\\ServiceDefinition\:\:getFeeConfig\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Models/ServiceDefinition.php
-
-		-
-			message: '#^Method App\\Models\\ServiceDefinition\:\:getFields\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Models/ServiceDefinition.php
-
-		-
-			message: '#^Method App\\Models\\ServiceDefinition\:\:getFirstStage\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Models/ServiceDefinition.php
-
-		-
-			message: '#^Method App\\Models\\ServiceDefinition\:\:getStage\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Models/ServiceDefinition.php
-
-		-
-			message: '#^Method App\\Models\\ServiceDefinition\:\:getWorkflowStages\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
 			count: 1
 			path: app/Models/ServiceDefinition.php
 
