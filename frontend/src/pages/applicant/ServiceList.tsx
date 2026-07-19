@@ -3,12 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, FolderOpen, FileText, FileCheck, GraduationCap,
   CreditCard, Users, Scale, Wrench, Building2,
+  type LucideIcon,
 } from 'lucide-react';
 import { servicesApi } from '../../api/client';
 import type { ServiceDefinition } from '../../types';
 
 // Icon selection by code prefix — matches the JEA portal design categories.
-const ICON_BY_PREFIX: Array<[string, React.ComponentType<{ size?: number; className?: string }>]> = [
+const ICON_BY_PREFIX: Array<[string, LucideIcon]> = [
   ['JEA-CERT',  GraduationCap],
   ['JEA-FIN',   CreditCard],
   ['JEA-PROJ',  FolderOpen],

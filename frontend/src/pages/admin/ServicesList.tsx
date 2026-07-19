@@ -117,7 +117,8 @@ export function ServicesList() {
       ) : (
         <div className="space-y-3">
           {services.map(service => {
-            const st = STATUS_CONFIG[service.status] ?? { label: service.status, color: 'bg-gray-100 text-gray-600' };
+            const status = service.status ?? 'draft';
+            const st = STATUS_CONFIG[status] ?? { label: status, color: 'bg-gray-100 text-gray-600' };
             const isLoading = activating === service.id;
 
             return (

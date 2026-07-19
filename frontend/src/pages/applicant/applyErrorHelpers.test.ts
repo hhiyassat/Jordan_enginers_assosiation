@@ -20,7 +20,7 @@ const sampleSchema: ServiceSchema = {
     { id: 'area_m2',    label_ar: 'المساحة',    label_en: 'Area',  type: 'number', required: true },
   ],
   documents: [
-    { id: 'permit_pdf', label_ar: 'الترخيص', label_en: 'Permit', required: true },
+    { id: 'permit_pdf', label_ar: 'الترخيص', label_en: 'Permit', required: true, accept: ['pdf'], max_size_mb: 5 },
   ],
 };
 

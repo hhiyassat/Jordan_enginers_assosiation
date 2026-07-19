@@ -88,7 +88,9 @@ describe('EditService — apply-and-save from the AI chat', () => {
       changes:        ['Restricted the demolition_drawings document upload to accept PDF files only'],
       tokens_used:    100,
     });
-    mockUpdateService.mockResolvedValue({ service: service({ schema: updatedSchemaWithDoc }) });
+    // Cast: the literal narrows role: 'staff' to plain string; the
+    // schema shape is otherwise identical to ServiceSchema.
+    mockUpdateService.mockResolvedValue({ service: service({ schema: updatedSchemaWithDoc as unknown as ServiceDefinition['schema'] }) });
 
     renderEdit();
     await waitFor(() => expect(screen.getByText('مخططات الهدم')).toBeInTheDocument());

@@ -73,7 +73,11 @@ export function FormField({
 
 /* ── Convenience: text input version ────────────────────────────────── */
 
-interface TextFieldProps extends FormFieldProps {
+// TextField owns the children render-prop internally, so we drop it
+// from the inherited FormFieldProps — callers of <TextField> should
+// never pass one. Prior to JORD-26 fix this was `extends FormFieldProps`
+// which flagged every single <TextField> call site with TS2741.
+interface TextFieldProps extends Omit<FormFieldProps, 'children'> {
   value: string;
   onChange: (v: string) => void;
   type?: string;

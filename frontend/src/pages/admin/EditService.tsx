@@ -184,7 +184,8 @@ export function EditService() {
     <div className="p-8 text-center text-red-600">خدمة غير موجودة</div>
   );
 
-  const st = STATUS_CONFIG[service.status] ?? { label: service.status, color: 'bg-gray-100 text-gray-600' };
+  const status = service.status ?? 'draft';
+  const st = STATUS_CONFIG[status] ?? { label: status, color: 'bg-gray-100 text-gray-600' };
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8" dir="rtl">

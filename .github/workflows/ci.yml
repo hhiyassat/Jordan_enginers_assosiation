@@ -96,13 +96,12 @@ jobs:
       - name: Vitest
         run: npm test
 
-      # TypeScript strict check is intentionally NOT wired here yet.
-      # `npm run typecheck` reports 74 pre-existing type errors that
-      # accumulated before CI existed. Wiring the check today would fail
-      # from day one and turn CI red into a permanent noise source.
-      # Follow-up: fix the type errors, then add:
-      #   - name: TypeScript
-      #     run: npm run typecheck
+      # JORD-26: 74 pre-existing tsc errors were cleared before wiring
+      # this step. It runs on every push so a new error fails CI the same
+      # day it's introduced, instead of piling up until nobody remembers
+      # why they exist.
+      - name: TypeScript
+        run: npm run typecheck
 
   e2e:
     name: E2E · Playwright (Chromium)

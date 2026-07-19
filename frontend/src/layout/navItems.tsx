@@ -1,7 +1,7 @@
-import React from 'react';
 import {
   LayoutDashboard, Home, FileText, ShieldCheck, Settings, ClipboardList,
   PlusCircle, Zap, User as UserIcon,
+  type LucideIcon,
 } from 'lucide-react';
 import type { User } from '../types';
 
@@ -15,7 +15,7 @@ import type { User } from '../types';
 export interface NavItem {
   to: string;
   labelKey: string;
-  Icon: React.ComponentType<{ size?: number; className?: string }>;
+  Icon: LucideIcon;
 }
 
 export function navItemsForRole(role: User['role'] | undefined): NavItem[] {

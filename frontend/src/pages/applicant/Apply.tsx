@@ -183,7 +183,7 @@ export function Apply() {
     }
   };
 
-  if (loading || !service) {
+  if (loading || !service || !service.schema) {
     return (
       <div className="flex items-center justify-center h-64" role="status" aria-label="جارٍ التحميل">
         <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full" />
@@ -191,6 +191,9 @@ export function Apply() {
     );
   }
 
+  // Narrows `schema` to non-null for the rest of the render. The `!service.schema`
+  // check above is a soft guard: services in draft state can technically ship
+  // without a schema, but reaching Apply for one is a bug — bail out cleanly.
   const schema = service.schema;
   const steps: { id: Step; label: string }[] = [
     { id: 'form',      label: 'البيانات' },
@@ -204,8 +207,11 @@ export function Apply() {
   // alternate entry point (e.g. ?variant=modification for the
   // "تعديل عقد سابق" flow).
   const workflow = schema?.workflow;
+  // `variantKey && expr` returns "" when variantKey is empty, which the
+  // ?? chain doesn't fall through — force undefined on the falsy branch
+  // so the fallback lands on workflow.stages instead of "".
   const workflowStages: SchemaWorkflowStage[] =
-    (variantKey && workflow?.variants?.[variantKey]?.stages)
+    (variantKey ? workflow?.variants?.[variantKey]?.stages : undefined)
       ?? workflow?.stages
       ?? [];
   const currentStageId = stageIdForApplication(workflowStages, application);

@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import type { ApplicationStatus } from '../../types';
 import { isTerminal, isOngoing, orderForApplicant, TERMINAL_STATUSES } from './applicationStatus';
 
 describe('applicationStatus', () => {
@@ -9,7 +10,10 @@ describe('applicationStatus', () => {
   });
 
   it('classifies draft / submitted / under_review / modifications_requested as ongoing', () => {
-    for (const s of ['draft', 'submitted', 'under_review', 'modifications_requested', 'pending_payment']) {
+    const ongoing: ApplicationStatus[] = [
+      'draft', 'submitted', 'under_review', 'modifications_requested',
+    ];
+    for (const s of ongoing) {
       expect(isOngoing({ status: s })).toBe(true);
     }
   });

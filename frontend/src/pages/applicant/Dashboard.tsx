@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   FolderOpen, FileText, Award, Plus, ArrowLeft, MapPin, Building2,
+  type LucideIcon,
 } from 'lucide-react';
 import { applicationsApi, projectsApi, type OfficeQuota } from '../../api/client';
 import type { Application, Project } from '../../types';
@@ -211,7 +212,7 @@ export function Dashboard() {
 
 function StatTile({ ar, en, value, Icon, loading }: {
   ar: string; en: string; value: number;
-  Icon: React.ComponentType<{ size?: number; className?: string }>;
+  Icon: LucideIcon;
   loading?: boolean;
 }) {
   return (
@@ -235,7 +236,7 @@ function StatTile({ ar, en, value, Icon, loading }: {
 
 function QuickAction({ to, ar, en, desc, Icon }: {
   to: string; ar: string; en: string; desc: string;
-  Icon: React.ComponentType<{ size?: number; className?: string }>;
+  Icon: LucideIcon;
 }) {
   return (
     <Link

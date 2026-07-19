@@ -40,7 +40,10 @@ function app(overrides: Partial<Application>): Application {
 
 const emptyQuota: OfficeQuota = {
   year: 2026,
-  totals: { engineer_id: 0, engineer_name_ar: 'الإجمالي', year: 2026, quota_m2: 5000, used_m2: 0, remaining_m2: 5000 },
+  totals: {
+    quota_m2: 5000, used_m2: 0, remaining_m2: 5000,
+    percent_used: 0, projects_count: 0, unlimited: false, engineers_count: 0,
+  },
   engineers: [],
 };
 

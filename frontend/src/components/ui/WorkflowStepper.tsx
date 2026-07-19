@@ -2,6 +2,7 @@ import React from 'react';
 import {
   User as UserIcon, ShieldCheck, Search, CreditCard, Award,
   Cog, GitBranch, RotateCw, CircleDot,
+  type LucideIcon,
 } from 'lucide-react';
 import type { SchemaWorkflowStage } from '../../types';
 import { bucketOf, type PathRole } from '../../engine/workflowRolePath';
@@ -43,7 +44,7 @@ interface WorkflowStepperProps {
 }
 
 /** Role → icon mapping. Reviewer/staff/system get distinctive glyphs. */
-const ROLE_ICON: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
+const ROLE_ICON: Record<string, LucideIcon> = {
   applicant: UserIcon,
   staff:     ShieldCheck,
   auditor:   Search,
@@ -52,7 +53,7 @@ const ROLE_ICON: Record<string, React.ComponentType<{ size?: number; className?:
 };
 
 /** Stage id → semantic-hint icon override (overrides role icon when matched). */
-const STAGE_HINT_ICON: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
+const STAGE_HINT_ICON: Record<string, LucideIcon> = {
   office_submission:             UserIcon,
   first_auditor_review:          ShieldCheck,
   second_auditor_review:         Search,
@@ -65,7 +66,7 @@ const STAGE_HINT_ICON: Record<string, React.ComponentType<{ size?: number; class
   additional_inspection_check:   RotateCw,
 };
 
-function iconFor(stage: SchemaWorkflowStage): React.ComponentType<{ size?: number; className?: string }> {
+function iconFor(stage: SchemaWorkflowStage): LucideIcon {
   return STAGE_HINT_ICON[stage.id] ?? ROLE_ICON[stage.role] ?? CircleDot;
 }
 

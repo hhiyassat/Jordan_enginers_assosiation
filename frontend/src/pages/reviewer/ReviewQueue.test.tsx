@@ -24,7 +24,7 @@ function service(): ServiceDefinition {
       fee: { type: 'fixed', amount: 0, currency: 'JOD' },
       sections: [], fields: [], documents: [],
     },
-  } as ServiceDefinition;
+  } as unknown as ServiceDefinition;
 }
 
 function app(overrides: Partial<Application>): Application {

@@ -149,8 +149,8 @@ export function NewService() {
 
       // Hukm response fields
       if (r.verdict)            setVerdict(r.verdict as Verdict);
-      if (r.validation_report)  setValidReport(r.validation_report as ValidationReport);
-      if (r.generation_audit)   setAudit(r.generation_audit as GenerationAudit);
+      if (r.validation_report)  setValidReport(r.validation_report as unknown as ValidationReport);
+      if (r.generation_audit)   setAudit(r.generation_audit as unknown as GenerationAudit);
       if (r.blockers)           setBlockers(r.blockers as Blocker[]);
       if (r.hukm_ir)            setHukmIRCount(Array.isArray(r.hukm_ir) ? r.hukm_ir.length : null);
       setTokensUsed(r.tokens_used);
