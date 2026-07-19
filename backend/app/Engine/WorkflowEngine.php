@@ -261,30 +261,37 @@ class WorkflowEngine
         $prevStatus = $app->status;
         $review     = null;
 
-        DB::transaction(function () use ($app, $actor, $decision, $notes, $annotations, $prevStatus, &$review) {
-            // B-5 + WF-001
-            $this->transitionTo($app, $decision);
+        // Decide whether this is a mid-workflow stage-approve (more stages
+        // to go) or the final approval. Same for rejection paths later.
+        $nextStageIfApproving = ($decision === Application::STATUS_APPROVED)
+            ? $this->getNextStage($app->current_stage)
+            : null;
 
-            // Advance to next stage or finalize
-            if ($decision === Application::STATUS_APPROVED) {
-                $nextStage = $this->getNextStage($app->current_stage);
-                if ($nextStage) {
-                    // Move to next workflow stage
-                    $this->transitionTo($app, Application::STATUS_UNDER_REVIEW);
-                    $app->current_stage        = $nextStage['id'];
-                    $app->assigned_reviewer_id = null; // reset for next stage
-                    if (isset($nextStage['sla_hours'])) {
-                        $app->sla_deadline = now()->addHours($nextStage['sla_hours']);
-                    }
+        DB::transaction(function () use ($app, $actor, $decision, $notes, $annotations, $prevStatus, $nextStageIfApproving, &$review) {
+            if ($decision === Application::STATUS_APPROVED && $nextStageIfApproving) {
+                // Mid-workflow stage-approve: application STAYS in
+                // under_review; only the stage pointer advances. This
+                // matches the transition table (approved→under_review is
+                // NOT allowed), and semantically the case isn't done —
+                // another reviewer still has work to do.
+                $app->current_stage        = $nextStageIfApproving['id'];
+                $app->assigned_reviewer_id = null; // freed for the next stage's role to claim
+                if (isset($nextStageIfApproving['sla_hours'])) {
+                    $app->sla_deadline = now()->addHours($nextStageIfApproving['sla_hours']);
                 }
-                // else: final stage approval — stays approved
-            } elseif ($decision === Application::STATUS_MODIFICATIONS_REQUESTED) {
-                // B-10: track review round
-                $app->review_round++;
-                $app->assigned_reviewer_id = null;
-            } elseif ($decision === Application::STATUS_REJECTED) {
-                // Terminal — assigned reviewer cleared
-                $app->assigned_reviewer_id = null;
+            } else {
+                // Final decision — commit the status transition.
+                $this->transitionTo($app, $decision);
+
+                if ($decision === Application::STATUS_MODIFICATIONS_REQUESTED) {
+                    $app->review_round++;
+                    $app->assigned_reviewer_id = null;
+                } elseif ($decision === Application::STATUS_REJECTED) {
+                    $app->assigned_reviewer_id = null;
+                }
+                // Final approve: reviewer stays assigned so the record
+                // shows who approved. Certificate-issuance flow picks up
+                // from here via the separate issue endpoint.
             }
 
             $app->save();

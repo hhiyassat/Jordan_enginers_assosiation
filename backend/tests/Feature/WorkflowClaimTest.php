@@ -217,4 +217,68 @@ class WorkflowClaimTest extends TestCase
         $ids = array_column($r->json('applications'), 'id');
         $this->assertContains($app->id, $ids);
     }
+
+    public function test_mid_workflow_approve_advances_stage_without_flipping_to_approved(): void
+    {
+        // Regression: WorkflowEngine::decide() was calling
+        // transitionTo(approved) THEN transitionTo(under_review) to advance
+        // the stage — the second transition tripped ALLOWED_TRANSITIONS
+        // ("Invalid transition: approved → under_review. Allowed:
+        // [certificate_issued].") because that path isn't allowed.
+        // The fix: on a mid-workflow approve, keep status=under_review and
+        // just advance the stage pointer.
+        $app = $this->draft();
+        $engine = new WorkflowEngine($this->service);
+        $engine->submit($app, $this->applicant);
+
+        // Auditor claims + approves the safety review.
+        $engine->claim($app->fresh(), $this->auditor);
+        $engine->decide($app->fresh(), $this->auditor, Application::STATUS_APPROVED);
+        $app->refresh();
+
+        $this->assertSame(Application::STATUS_UNDER_REVIEW, $app->status,
+            'Stage-approve on a multi-stage workflow must NOT flip the case to approved');
+        $this->assertSame('payment', $app->current_stage,
+            'Stage pointer must advance to the next stage');
+        $this->assertNull($app->assigned_reviewer_id,
+            'Assignment cleared so the next stage\'s role can claim');
+    }
+
+    public function test_final_stage_approve_flips_the_case_to_approved(): void
+    {
+        // The other half: when the approved stage is the LAST one, the
+        // engine must commit the transition to approved (terminal path).
+        $singleStage = ServiceDefinition::create([
+            'organization_id' => $this->org->id,
+            'code'    => 'ONE-STAGE',
+            'name_ar' => 'خدمة بمرحلة واحدة',
+            'name_en' => 'Single Stage',
+            'currency'=> 'JOD', 'status' => 'active', 'is_locked' => false,
+            'schema' => [
+                'workflow' => ['stages' => [
+                    ['id' => 'office_submission', 'role' => 'applicant', 'label_ar' => '.', 'sla_hours' => 24, 'actions' => ['submit']],
+                    ['id' => 'review',            'role' => 'auditor',   'label_ar' => 'مراجعة', 'sla_hours' => 48, 'actions' => ['approve', 'reject']],
+                ]],
+            ],
+        ]);
+
+        $app = Application::create([
+            'reference_number' => 'A-FINAL-'.random_int(1000, 9999),
+            'organization_id'       => $this->org->id,
+            'service_definition_id' => $singleStage->id,
+            'applicant_id'          => $this->applicant->id,
+            'status'                => Application::STATUS_DRAFT,
+            'current_stage'         => 'office_submission',
+            'data'                  => [],
+            'fee_amount'            => 0,
+            'payment_status'        => 'waived',
+        ]);
+        $engine = new WorkflowEngine($singleStage);
+        $engine->submit($app, $this->applicant);
+        $engine->claim($app->fresh(), $this->auditor);
+        $engine->decide($app->fresh(), $this->auditor, Application::STATUS_APPROVED);
+
+        $this->assertSame(Application::STATUS_APPROVED, $app->fresh()->status,
+            'Final-stage approve must land the case in approved (terminal-like) status');
+    }
 }
