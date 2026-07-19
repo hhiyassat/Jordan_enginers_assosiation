@@ -158,8 +158,16 @@ class WorkflowEngine
         $prevStatus = $app->status;
 
         DB::transaction(function () use ($app, $actor, $prevStatus) {
-            // WF-004: lockForUpdate() prevents concurrent claims
+            // WF-004: lockForUpdate() prevents concurrent claims. The row
+            // may have been deleted since the caller loaded $app (soft-
+            // delete, admin action, race with another request) — find()
+            // returns null in that case and the next lines would 500 with
+            // "Attempt to read property status on null". Guard first,
+            // return a clean 409 so the reviewer console can retry.
             $locked = Application::lockForUpdate()->find($app->id);
+            if ($locked === null) {
+                abort(409, 'الطلب لم يعد موجوداً.');
+            }
 
             if ($locked->status !== Application::STATUS_SUBMITTED) {
                 abort(409, 'Application is no longer available for claiming.');
@@ -391,9 +399,16 @@ class WorkflowEngine
             $this->transitionTo($app, Application::STATUS_CERTIFICATE_ISSUED);
             $app->save();
 
-            // Build cert data from schema fields_on_cert
-            $certFields = $certConfig['fields_on_cert'] ?? [];
-            $certData   = array_intersect_key($app->data ?? [], array_flip($certFields));
+            // Build cert data from schema fields_on_cert. Schema authors
+            // (or an AI-generated schema) can slip a non-string value into
+            // fields_on_cert; array_flip on a mixed list emits a warning
+            // AND silently drops the bad entries — so the certificate
+            // ended up with fewer fields than expected. Filter to strings
+            // first so the intent is explicit and the diagnostic is
+            // caught at authoring time, not from a mysterious blank cert.
+            $rawFields   = is_array($certConfig['fields_on_cert'] ?? null) ? $certConfig['fields_on_cert'] : [];
+            $certFields  = array_values(array_filter($rawFields, static fn ($v) => is_string($v) && $v !== ''));
+            $certData    = array_intersect_key($app->data ?? [], array_flip($certFields));
 
             // DATA-005: QR token is HMAC-signed
             $certNumber = $this->generateCertificateNumber($app);

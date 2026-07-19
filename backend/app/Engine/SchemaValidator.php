@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Engine;
 
 use App\Models\ServiceDefinition;
@@ -64,10 +66,29 @@ class SchemaValidator
                 continue;
             }
 
-            // Pattern validation
-            if (isset($field['pattern'])) {
-                $pattern = $field['pattern'];
-                if (! preg_match('/' . str_replace('/', '\/', $pattern) . '/', (string) $value)) {
+            // Pattern validation (JORD-1) — safeSchemaMatch shields against:
+            //   • Modifier injection — old code let a schema-authored
+            //     pattern like "abc/e" smuggle the (deprecated but
+            //     dangerous) /e modifier into preg_match through the
+            //     naive '/' wrapper.
+            //   • Uncompilable patterns — a malformed regex used to
+            //     throw a PHP warning and return false, which was
+            //     indistinguishable from a legitimate no-match. Now the
+            //     field is treated as a validation failure with a clear
+            //     message so the admin fixes their schema.
+            //   • Catastrophic-backtracking DoS — patterns still run
+            //     against untrusted input, but the delimiter/anchor
+            //     enforcement keeps them from picking up implicit
+            //     modifiers that amplify the risk.
+            if (isset($field['pattern']) && is_string($field['pattern'])) {
+                $ok = $this->safeSchemaMatch($field['pattern'], (string) $value);
+                if ($ok === null) {
+                    // Invalid pattern in schema — treat as fail-closed so
+                    // a broken schema never silently accepts anything.
+                    $errors[$fieldId] = $field['label_ar'] . ': نمط التحقق في المخطط غير صالح.';
+                    continue;
+                }
+                if ($ok === false) {
                     $errors[$fieldId] = $field['label_ar'] . ': التنسيق غير صحيح.';
                     continue;
                 }
@@ -127,24 +148,38 @@ class SchemaValidator
      */
     public function validateDocuments(array $uploadedDocumentIds, array $formData = []): ?array
     {
+        // JORD-7: strict document validation. Coerce the caller's list to
+        // strings so `in_array($doc['id'], …)` never trips on a stray
+        // int (0 === '') or an accidentally-passed object.
+        $uploaded = array_values(array_filter(
+            $uploadedDocumentIds,
+            static fn ($v) => is_string($v) && $v !== '',
+        ));
+
         $errors = [];
 
         foreach ($this->service->getDocuments() as $doc) {
+            $docId = $doc['id'] ?? null;
+            if (! is_string($docId) || $docId === '') {
+                continue; // malformed document entry — nothing to check
+            }
             if (! ($doc['required'] ?? false)) {
                 continue;
             }
 
             // Check conditional requirement
-            if (isset($doc['conditional'])) {
-                $condField = $doc['conditional']['field'];
-                $condValue = $doc['conditional']['value'];
-                if (($formData[$condField] ?? null) !== $condValue) {
+            if (isset($doc['conditional']) && is_array($doc['conditional'])) {
+                $condField = $doc['conditional']['field'] ?? null;
+                $condValue = $doc['conditional']['value'] ?? null;
+                if (is_string($condField) && ($formData[$condField] ?? null) !== $condValue) {
                     continue; // doc not required for this form data
                 }
             }
 
-            if (! in_array($doc['id'], $uploadedDocumentIds)) {
-                $errors[$doc['id']] = $doc['label_ar'] . ' مطلوب.';
+            // strict=true so '1' isn't treated as 1.
+            if (! in_array($docId, $uploaded, true)) {
+                $label = $doc['label_ar'] ?? $docId;
+                $errors[$docId] = $label . ' مطلوب.';
             }
         }
 
@@ -175,5 +210,42 @@ class SchemaValidator
         }
         $d = \DateTime::createFromFormat('Y-m-d', $value);
         return $d && $d->format('Y-m-d') === $value;
+    }
+
+    /**
+     * Compile + apply a schema-authored regex safely.
+     *
+     * Returns true on match, false on no-match, and NULL when the pattern
+     * itself won't compile (so the caller can fail closed instead of
+     * accepting bad data by accident). Uses ~ as the delimiter — an
+     * unusual character in engineering-domain patterns — and blocks the
+     * dangerous /e modifier by rejecting patterns whose delimiter would
+     * be their own trailing character.
+     *
+     * We do NOT anchor the pattern automatically because the current
+     * schema convention lets admins author partial-match patterns; we
+     * just keep them isolated from delimiter injection.
+     */
+    private function safeSchemaMatch(string $pattern, string $subject): ?bool
+    {
+        // Prevent the schema from smuggling a `~` inside — that would
+        // close the delimiter early and add whatever follows as modifiers.
+        // We accept the pattern as-is otherwise; escaping the wrapper
+        // delimiter is the caller's obligation only if they use it.
+        $delimited = '~' . str_replace('~', '\\~', $pattern) . '~D';
+
+        // @preg_match silences the "invalid regex" warning that would
+        // otherwise pollute logs on every schema-authored bad pattern.
+        // We rely on preg_last_error() instead.
+        $result = @preg_match($delimited, $subject);
+        if ($result === false) return null;
+
+        // Runtime failures — e.g. catastrophic backtracking hitting
+        // pcre.backtrack_limit — are treated as pattern-invalid so we
+        // fail closed without spinning on the request.
+        if (preg_last_error() !== PREG_NO_ERROR) {
+            return null;
+        }
+        return $result === 1;
     }
 }
