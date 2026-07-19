@@ -10,6 +10,7 @@ use App\Models\AuditLog;
 use App\Models\Certificate;
 use App\Models\ServiceDefinition;
 use App\Models\User;
+use App\Services\Payment\PaymentReceipt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -343,16 +344,57 @@ class WorkflowEngine
     // confirmPayment() — records payment before certificate issuance
     // ─────────────────────────────────────────────────────────────────
 
+    /**
+     * Legacy string-reference entry point.
+     *
+     * Kept so admin-triggered manual confirmations (ConfirmPaymentRequest)
+     * still work. Internally builds a synthetic receipt and delegates to
+     * confirmPaymentFromReceipt() — that method is the single mutation
+     * point so audit-log shape stays identical across both call paths.
+     */
     public function confirmPayment(Application $app, User $actor, string $paymentReference): Application
+    {
+        return $this->confirmPaymentFromReceipt(
+            $app,
+            $actor,
+            new PaymentReceipt(
+                reference: $paymentReference,
+                amount:    (float) $app->fee_amount,
+                currency:  (string) ($this->service->currency ?? 'JOD'),
+                settledAt: now()->toIso8601String(),
+                meta:      ['source' => 'manual'],
+            ),
+        );
+    }
+
+    /**
+     * The authoritative confirmation path. Called by:
+     *   • confirmPayment() above (manual/admin path)
+     *   • the payment-webhook controller once it has verified a callback
+     *     via PaymentGateway::verifyCallback()
+     *
+     * Amount is cross-checked against the application's fee — a
+     * mismatch means the gateway settled the wrong amount and we MUST
+     * NOT flip payment_status. A tampered webhook payload would be
+     * rejected here even if the signature check somehow passed.
+     */
+    public function confirmPaymentFromReceipt(Application $app, User $actor, PaymentReceipt $receipt): Application
     {
         if ($app->status !== Application::STATUS_APPROVED) {
             throw new Exceptions\InvalidStateException('تأكيد الدفع مسموح فقط للطلبات الموافق عليها.');
         }
 
-        DB::transaction(function () use ($app, $actor, $paymentReference) {
+        // Tolerate < 1 cent drift only — anything larger is a real mismatch.
+        if (abs($receipt->amount - (float) $app->fee_amount) > 0.01) {
+            throw new Exceptions\InvalidStateException(
+                'مبلغ الدفع المستلم لا يطابق المبلغ المستحق للطلب.'
+            );
+        }
+
+        DB::transaction(function () use ($app, $actor, $receipt) {
             $app->update([
                 'payment_status'        => 'paid',
-                'payment_reference'     => $paymentReference,
+                'payment_reference'     => $receipt->reference,
                 'payment_confirmed_at'  => now(),
             ]);
 
@@ -362,7 +404,11 @@ class WorkflowEngine
                 action:  'application.payment_confirmed',
                 extra: [
                     'rule_id'           => 'ESP-WF-005',
-                    'payment_reference' => $paymentReference,
+                    'payment_reference' => $receipt->reference,
+                    'amount'            => $receipt->amount,
+                    'currency'          => $receipt->currency,
+                    'settled_at'        => $receipt->settledAt,
+                    'gateway_meta'      => $receipt->meta,
                 ],
             );
         });

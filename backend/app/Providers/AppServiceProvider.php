@@ -6,6 +6,8 @@ namespace App\Providers;
 
 use App\Services\Gsb\GsbAuthManager;
 use App\Services\Gsb\GsbClient;
+use App\Services\Payment\MockPaymentGateway;
+use App\Services\Payment\PaymentGateway;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -41,6 +43,15 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(GsbClient::class, function ($app) {
             return new GsbClient(auth: $app->make(GsbAuthManager::class));
         });
+
+        // ── Payment gateway ──────────────────────────────────────────────
+        // WorkflowEngine + controllers resolve PaymentGateway from the
+        // container. MockPaymentGateway is bound today so local dev + the
+        // test suite exercise the code path without a real provider. Swap
+        // this binding (only — no other files change) when the real
+        // integration lands:
+        //     $this->app->singleton(PaymentGateway::class, JoMoPayGateway::class);
+        $this->app->singleton(PaymentGateway::class, MockPaymentGateway::class);
     }
 
     public function boot(): void
