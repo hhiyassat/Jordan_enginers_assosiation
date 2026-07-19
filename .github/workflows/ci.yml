@@ -42,18 +42,36 @@ jobs:
           key: composer-${{ runner.os }}-${{ hashFiles('backend/composer.lock') }}
           restore-keys: composer-${{ runner.os }}-
 
+      # StorageServiceProvider throws at boot when APP_ENV=production +
+      # FILESYSTEM_DISK !== object storage. package:discover runs during
+      # composer install's post-autoload-dump hook, BEFORE the .env prep
+      # step below — so we prime .env first and set safe env vars for
+      # the whole job.
+      - name: Prime .env for boot-time providers
+        run: cp .env.example .env
+
       - name: Install PHP dependencies
+        env:
+          APP_ENV: testing
+          FILESYSTEM_DISK: local
         run: composer install --no-interaction --no-progress --prefer-dist
 
-      - name: Prepare test environment
-        run: |
-          cp .env.example .env
-          php artisan key:generate --ansi
+      - name: Finalise test environment
+        env:
+          APP_ENV: testing
+          FILESYSTEM_DISK: local
+        run: php artisan key:generate --ansi
 
       - name: PHPUnit
+        env:
+          APP_ENV: testing
+          FILESYSTEM_DISK: local
         run: ./vendor/bin/phpunit --colors=always
 
       - name: PHPStan (level 6, existing baseline)
+        env:
+          APP_ENV: testing
+          FILESYSTEM_DISK: local
         run: ./vendor/bin/phpstan analyse --memory-limit=1G --no-progress
 
   frontend:
