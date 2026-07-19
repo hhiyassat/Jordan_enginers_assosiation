@@ -48,7 +48,7 @@ const AuthContext = createContext<AuthContextType>({
 export const useAuth = () => useContext(AuthContext);
 
 function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [token, setToken] = useState<string | null>(localStorage.getItem('esp_token'));
+  const [token, setToken] = useState<string | null>(sessionStorage.getItem('esp_token'));
   const [user, setUser]   = useState<User | null>(null);
   const [ready, setReady] = useState(false);
 
@@ -56,7 +56,7 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
     if (token) {
       authApi.me()
         .then(r => setUser(r.user))
-        .catch(() => { localStorage.removeItem('esp_token'); setToken(null); })
+        .catch(() => { sessionStorage.removeItem('esp_token'); setToken(null); })
         .finally(() => setReady(true));
     } else {
       setReady(true);
@@ -72,21 +72,21 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
     const onFocus = () => {
       authApi.me()
         .then(r => setUser(r.user))
-        .catch(() => { localStorage.removeItem('esp_token'); setToken(null); });
+        .catch(() => { sessionStorage.removeItem('esp_token'); setToken(null); });
     };
     window.addEventListener('focus', onFocus);
     return () => window.removeEventListener('focus', onFocus);
   }, [token]);
 
   const login = (t: string, u: User) => {
-    localStorage.setItem('esp_token', t);
+    sessionStorage.setItem('esp_token', t);
     setToken(t);
     setUser(u);
   };
 
   const logout = () => {
     authApi.logout().catch(() => {});
-    localStorage.removeItem('esp_token');
+    sessionStorage.removeItem('esp_token');
     setToken(null);
     setUser(null);
   };

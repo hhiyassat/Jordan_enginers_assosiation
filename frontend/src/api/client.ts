@@ -6,7 +6,12 @@ import type { Application, ApplicationDocument, Certificate, DashboardStats, Eng
 const BASE = '/api/v1';
 
 function getToken(): string | null {
-  return localStorage.getItem('esp_token');
+  // sessionStorage is per-tab. localStorage is shared across every tab on
+  // the same origin, which meant logging in as a different user in tab 2
+  // silently clobbered tab 1's admin session and every subsequent request
+  // used the newer token. Per-tab isolation lets a demo/dev workflow keep
+  // admin + staff + applicant sessions open side by side.
+  return sessionStorage.getItem('esp_token');
 }
 
 async function request<T>(
