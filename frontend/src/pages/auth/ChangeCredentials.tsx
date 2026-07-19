@@ -27,9 +27,16 @@ export function ChangeCredentials() {
   const [submitting, setSubmitting]           = useState(false);
   const [error, setError]                     = useState('');
 
+  // JORD-46: mirror the backend rule `Password::min(8)->mixedCase()->numbers()`.
+  // Previously the input only enforced minLength=8 while the hint text
+  // demanded three character classes, so users typed "password" and got
+  // a 422 back from the server. Better to catch it inline.
+  const passwordMeetsBackendRule = (pw: string): boolean =>
+    pw.length >= 8 && /[a-z]/.test(pw) && /[A-Z]/.test(pw) && /\d/.test(pw);
+
   const canSubmit =
     currentPassword.length > 0 &&
-    newPassword.length >= 8 &&
+    passwordMeetsBackendRule(newPassword) &&
     newPassword === confirm &&
     (!isSuperuser || newEmail.trim().length > 0);
 
@@ -125,6 +132,11 @@ export function ChangeCredentials() {
           <span className="text-xs text-gray-500 mt-1 block">
             8 أحرف على الأقل — مع أحرف كبيرة وصغيرة وأرقام
           </span>
+          {newPassword.length > 0 && !passwordMeetsBackendRule(newPassword) && (
+            <span className="text-xs text-red-600 mt-1 block">
+              كلمة المرور لا تلبّي الشروط بعد.
+            </span>
+          )}
         </label>
 
         <label className="block">

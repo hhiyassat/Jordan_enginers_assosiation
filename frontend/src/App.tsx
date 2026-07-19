@@ -1,35 +1,42 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, Suspense, useContext, useEffect, useState } from 'react';
 import { BrowserRouter, Navigate, Route, Routes, useNavigate, useLocation } from 'react-router-dom';
 import {
   LogOut, Home, LayoutDashboard, FileText, Settings, ClipboardList, PlusCircle, ShieldCheck, Zap,
   Bell, Menu, Building2, User as UserIcon, Eye, EyeOff, AlertTriangle, LogIn,
 } from 'lucide-react';
-import { authApi } from './api/client';
+import { authApi, setUnauthorizedHandler } from './api/client';
 import type { User } from './types';
 import { JEALogo } from './components/JEALogo';
 import { SkipToContent } from './components/ui/SkipToContent';
 import { Button } from './components/ui/Button';
 import { TextField } from './components/ui/FormField';
 import { Captcha } from './components/ui/Captcha';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
-// ── Pages ─────────────────────────────────────────────────────────────────────
-import { ServiceList }             from './pages/applicant/ServiceList';
-import { CategoryServicesView }    from './pages/applicant/CategoryServicesView';
-import { ProjectsList }            from './pages/applicant/ProjectsList';
-import { ProjectDetail }           from './pages/applicant/ProjectDetail';
-import { Dashboard }               from './pages/applicant/Dashboard';
-import { Apply }                   from './pages/applicant/Apply';
-import { MyApplications }          from './pages/applicant/MyApplications';
-import { ReviewQueue }             from './pages/reviewer/ReviewQueue';
-import { ReviewPanel }             from './pages/reviewer/ReviewPanel';
-import { AdminDashboard }          from './pages/admin/AdminDashboard';
-import { IntegrationCycles }       from './pages/admin/IntegrationCycles';
-import { IntegrationCycleDetail }  from './pages/admin/IntegrationCycleDetail';
-import { NewService }              from './pages/admin/NewService';
-import { ServicesList }            from './pages/admin/ServicesList';
-import { EditService }             from './pages/admin/EditService';
-import { UserManagement }          from './pages/admin/UserManagement';
-import { ChangeCredentials }       from './pages/auth/ChangeCredentials';
+// ── Pages (code-split via React.lazy) ────────────────────────────────────────
+//
+// JORD-32: every route used to live in the same JS chunk — an applicant
+// downloaded the entire admin/reviewer surface on first load. Splitting on
+// route boundaries means each user role fetches only what it can reach.
+// Pages are named exports (not defaults) — the tiny shim below re-shapes
+// each module as { default } so React.lazy is happy.
+const ServiceList             = React.lazy(() => import('./pages/applicant/ServiceList').then(m => ({ default: m.ServiceList })));
+const CategoryServicesView    = React.lazy(() => import('./pages/applicant/CategoryServicesView').then(m => ({ default: m.CategoryServicesView })));
+const ProjectsList            = React.lazy(() => import('./pages/applicant/ProjectsList').then(m => ({ default: m.ProjectsList })));
+const ProjectDetail           = React.lazy(() => import('./pages/applicant/ProjectDetail').then(m => ({ default: m.ProjectDetail })));
+const Dashboard               = React.lazy(() => import('./pages/applicant/Dashboard').then(m => ({ default: m.Dashboard })));
+const Apply                   = React.lazy(() => import('./pages/applicant/Apply').then(m => ({ default: m.Apply })));
+const MyApplications          = React.lazy(() => import('./pages/applicant/MyApplications').then(m => ({ default: m.MyApplications })));
+const ReviewQueue             = React.lazy(() => import('./pages/reviewer/ReviewQueue').then(m => ({ default: m.ReviewQueue })));
+const ReviewPanel             = React.lazy(() => import('./pages/reviewer/ReviewPanel').then(m => ({ default: m.ReviewPanel })));
+const AdminDashboard          = React.lazy(() => import('./pages/admin/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
+const IntegrationCycles       = React.lazy(() => import('./pages/admin/IntegrationCycles').then(m => ({ default: m.IntegrationCycles })));
+const IntegrationCycleDetail  = React.lazy(() => import('./pages/admin/IntegrationCycleDetail').then(m => ({ default: m.IntegrationCycleDetail })));
+const NewService              = React.lazy(() => import('./pages/admin/NewService').then(m => ({ default: m.NewService })));
+const ServicesList            = React.lazy(() => import('./pages/admin/ServicesList').then(m => ({ default: m.ServicesList })));
+const EditService             = React.lazy(() => import('./pages/admin/EditService').then(m => ({ default: m.EditService })));
+const UserManagement          = React.lazy(() => import('./pages/admin/UserManagement').then(m => ({ default: m.UserManagement })));
+const ChangeCredentials       = React.lazy(() => import('./pages/auth/ChangeCredentials').then(m => ({ default: m.ChangeCredentials })));
 
 // ── Auth Context ──────────────────────────────────────────────────────────────
 
@@ -40,7 +47,9 @@ interface AuthContextType {
   logout: () => void;
 }
 
-const AuthContext = createContext<AuthContextType>({
+// Exported so tests can wrap components in a synthetic provider without
+// spinning up the full AuthProvider (which fires network calls on mount).
+export const AuthContext = createContext<AuthContextType>({
   user: null, token: null,
   login: () => {}, logout: () => {},
 });
@@ -90,6 +99,19 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
     setToken(null);
     setUser(null);
   };
+
+  // JORD-29: give the api client a way to invalidate the session when it
+  // sees a 401, so callers don't have to check status codes themselves.
+  // The api client fires this once; RequireAuth then bounces to /login on
+  // the next render because user becomes null.
+  useEffect(() => {
+    setUnauthorizedHandler(() => {
+      sessionStorage.removeItem('esp_token');
+      setToken(null);
+      setUser(null);
+    });
+    return () => setUnauthorizedHandler(null);
+  }, []);
 
   if (!ready) return <div className="flex items-center justify-center h-screen"><div className="animate-spin w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full" /></div>;
 
@@ -249,10 +271,16 @@ function LoginPage() {
               {loading ? 'جارٍ تسجيل الدخول...' : (<><span lang="ar">تسجيل الدخول</span> · <span lang="en" dir="ltr">Sign in</span></>)}
             </Button>
 
-            <div className="text-[10px] text-jea-muted bg-jea-bg rounded-lg px-3 py-2 leading-relaxed text-center">
-              <p className="font-bold text-jea-text mb-0.5" lang="ar">حسابات تجريبية (Demo1234!)</p>
-              <p dir="ltr">admin@demo.esp · staff@demo.esp · auditor@demo.esp · ahmed@demo.esp</p>
-            </div>
+            {/* JORD-40: demo credentials only render in dev builds so they
+                don't leak on the deployed portal. import.meta.env.DEV is
+                statically replaced by Vite at build time — the block is
+                dead-code-eliminated from the production bundle. */}
+            {import.meta.env.DEV && (
+              <div className="text-[10px] text-jea-muted bg-jea-bg rounded-lg px-3 py-2 leading-relaxed text-center">
+                <p className="font-bold text-jea-text mb-0.5" lang="ar">حسابات تجريبية (Demo1234!)</p>
+                <p dir="ltr">admin@demo.esp · staff@demo.esp · auditor@demo.esp · ahmed@demo.esp</p>
+              </div>
+            )}
           </form>
         </div>
 
@@ -499,6 +527,18 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
 }
 
 /**
+ * JORD-42: the inverse guard — sends an already-authenticated user off
+ * the /login page. Without this, hitting the browser Back button after
+ * signing in would drop the user on the login form even though they
+ * still had a valid session, which was confusing UX. Exported for tests.
+ */
+export function RequireGuest({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
+  if (user) return <Navigate to="/" replace />;
+  return <>{children}</>;
+}
+
+/**
  * Blocks users who can't manage the roster. Admin AND superuser both
  * pass — the page itself filters actions by the actor's tier.
  */
@@ -561,12 +601,38 @@ function HomeRedirect() {
 
 // ── Root ──────────────────────────────────────────────────────────────────────
 
+/**
+ * Route-wide Suspense fallback for the code-split page chunks. Kept
+ * intentionally spartan — the chunks are small; a full skeleton would
+ * flicker on cached loads. RTL because the whole shell is RTL.
+ */
+function RouteSuspense({ children }: { children: React.ReactNode }) {
+  return (
+    <Suspense
+      fallback={
+        <div
+          className="flex items-center justify-center h-full min-h-[240px]"
+          role="status"
+          aria-live="polite"
+          aria-label="جارٍ التحميل"
+        >
+          <div className="animate-spin w-8 h-8 border-4 border-jea-primary border-t-transparent rounded-full" />
+        </div>
+      }
+    >
+      {children}
+    </Suspense>
+  );
+}
+
 export default function App() {
   return (
     <BrowserRouter>
-      <AuthProvider>
+      <ErrorBoundary>
+        <AuthProvider>
+          <RouteSuspense>
         <Routes>
-          <Route path="/login" element={<LoginPage />} />
+          <Route path="/login" element={<RequireGuest><LoginPage /></RequireGuest>} />
 
           {/* First-login credential change — reachable by an authenticated user
               carrying the must_change_password flag. Rendered without Layout so
@@ -607,7 +673,9 @@ export default function App() {
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-      </AuthProvider>
+          </RouteSuspense>
+        </AuthProvider>
+      </ErrorBoundary>
     </BrowserRouter>
   );
 }

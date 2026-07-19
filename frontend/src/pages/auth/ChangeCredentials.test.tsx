@@ -109,3 +109,40 @@ describe('ChangeCredentials — superuser', () => {
     expect(screen.getByText('كلمتا المرور غير متطابقتين')).toBeInTheDocument();
   });
 });
+
+/**
+ * JORD-46: the old check only enforced minLength=8, so a plain
+ * "password" input passed client-side and got a 422 back from the
+ * server (which requires mixedCase + digits). These tests pin the
+ * inline rule so the mismatch can't regress.
+ */
+describe('ChangeCredentials — JORD-46 password rule alignment', () => {
+  beforeEach(() => {
+    mockUser = { id: 1, name: 'u', email: 'u@t.esp', role: 'applicant', organization_id: 1, must_change_password: true };
+  });
+
+  it('rejects an 8-char lowercase password (missing uppercase + digit)', async () => {
+    renderPage();
+    await userEvent.type(screen.getByLabelText(/كلمة المرور الحالية/), 'Bootstrap1!');
+    await userEvent.type(screen.getByLabelText(/كلمة المرور الجديدة/), 'password');
+    await userEvent.type(screen.getByLabelText(/تأكيد كلمة المرور/), 'password');
+    expect(screen.getByRole('button', { name: /حفظ ومتابعة/ })).toBeDisabled();
+    expect(screen.getByText(/لا تلبّي الشروط/)).toBeInTheDocument();
+  });
+
+  it('rejects a mixed-case password without a digit', async () => {
+    renderPage();
+    await userEvent.type(screen.getByLabelText(/كلمة المرور الحالية/), 'Bootstrap1!');
+    await userEvent.type(screen.getByLabelText(/كلمة المرور الجديدة/), 'PasswordX');
+    await userEvent.type(screen.getByLabelText(/تأكيد كلمة المرور/), 'PasswordX');
+    expect(screen.getByRole('button', { name: /حفظ ومتابعة/ })).toBeDisabled();
+  });
+
+  it('accepts once mixedCase + digit + 8 chars all present', async () => {
+    renderPage();
+    await userEvent.type(screen.getByLabelText(/كلمة المرور الحالية/), 'Bootstrap1!');
+    await userEvent.type(screen.getByLabelText(/كلمة المرور الجديدة/), 'Secret123');
+    await userEvent.type(screen.getByLabelText(/تأكيد كلمة المرور/), 'Secret123');
+    expect(screen.getByRole('button', { name: /حفظ ومتابعة/ })).not.toBeDisabled();
+  });
+});
