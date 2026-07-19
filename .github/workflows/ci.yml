@@ -1,0 +1,84 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# One run per commit; supersede in-flight runs on the same ref.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend · PHPUnit + PHPStan
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP 8.2
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          # bcmath: money math in FeeCalculator (JORD-4)
+          # sqlite3 + pdo_sqlite: RefreshDatabase in-memory DB the suite uses
+          # mbstring: Arabic string helpers throughout
+          extensions: bcmath, sqlite3, pdo_sqlite, mbstring, intl
+          coverage: none
+          tools: composer:v2
+
+      - name: Cache Composer packages
+        uses: actions/cache@v4
+        with:
+          path: backend/vendor
+          key: composer-${{ runner.os }}-${{ hashFiles('backend/composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      - name: Install PHP dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Prepare test environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate --ansi
+
+      - name: PHPUnit
+        run: ./vendor/bin/phpunit --colors=always
+
+      - name: PHPStan (level 6, existing baseline)
+        run: ./vendor/bin/phpstan analyse --memory-limit=1G --no-progress
+
+  frontend:
+    name: Frontend · Vitest
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Vitest
+        run: npm test
+
+      # TypeScript strict check is intentionally NOT wired here yet.
+      # `npm run typecheck` reports 74 pre-existing type errors that
+      # accumulated before CI existed. Wiring the check today would fail
+      # from day one and turn CI red into a permanent noise source.
+      # Follow-up: fix the type errors, then add:
+      #   - name: TypeScript
+      #     run: npm run typecheck
