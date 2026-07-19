@@ -1,24 +1,28 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { applicationsApi } from '../../api/client';
 import type { Application } from '../../types';
+import { isOngoing, orderForApplicant } from './applicationStatus';
+import { MiniStageTimeline } from './MiniStageTimeline';
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: string }> = {
-  draft:               { label: 'مسودة',          color: 'bg-gray-100 text-gray-600',   icon: '📝' },
-  submitted:           { label: 'تم التقديم',      color: 'bg-blue-100 text-blue-700',   icon: '📨' },
-  initial_review:      { label: 'مراجعة أولية',    color: 'bg-yellow-100 text-yellow-700',icon: '🔍' },
-  legal_review:        { label: 'مراجعة قانونية',  color: 'bg-purple-100 text-purple-700',icon: '⚖️' },
-  modifications_requested: { label: 'يحتاج تعديل', color: 'bg-orange-100 text-orange-700',icon: '✏️' },
-  pending_payment:     { label: 'في انتظار الدفع', color: 'bg-yellow-100 text-yellow-800',icon: '💳' },
-  approved:            { label: 'موافق عليه',      color: 'bg-green-100 text-green-700', icon: '✅' },
-  rejected:            { label: 'مرفوض',           color: 'bg-red-100 text-red-700',     icon: '❌' },
-  certificate_issued:  { label: 'صدرت الشهادة',    color: 'bg-teal-100 text-teal-700',   icon: '🏆' },
+  draft:                    { label: 'مسودة',           color: 'bg-gray-100 text-gray-600',    icon: '📝' },
+  submitted:                { label: 'تم التقديم',       color: 'bg-blue-100 text-blue-700',    icon: '📨' },
+  under_review:             { label: 'قيد المراجعة',     color: 'bg-yellow-100 text-yellow-700',icon: '🔍' },
+  modifications_requested:  { label: 'يحتاج تعديل',      color: 'bg-orange-100 text-orange-700',icon: '✏️' },
+  pending_payment:          { label: 'في انتظار الدفع',  color: 'bg-yellow-100 text-yellow-800',icon: '💳' },
+  approved:                 { label: 'موافق عليه',       color: 'bg-green-100 text-green-700',  icon: '✅' },
+  rejected:                 { label: 'مرفوض',            color: 'bg-red-100 text-red-700',      icon: '❌' },
+  certificate_issued:       { label: 'صدرت الشهادة',     color: 'bg-teal-100 text-teal-700',    icon: '🏆' },
 };
 
+type Filter = 'ongoing' | 'all';
+
 export function MyApplications() {
-  const [apps, setApps]     = useState<Application[]>([]);
+  const [apps, setApps]       = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError]   = useState('');
+  const [error, setError]     = useState('');
+  const [filter, setFilter]   = useState<Filter>('ongoing');
   const location = useLocation();
   const justSubmitted = (location.state as { submitted?: boolean })?.submitted;
 
@@ -28,6 +32,16 @@ export function MyApplications() {
       .catch(e => setError((e as Error).message))
       .finally(() => setLoading(false));
   }, []);
+
+  const { visible, ongoingCount, totalCount } = useMemo(() => {
+    const ordered = orderForApplicant(apps);
+    const visibleApps = filter === 'ongoing' ? ordered.filter(isOngoing) : ordered;
+    return {
+      visible: visibleApps,
+      ongoingCount: apps.filter(isOngoing).length,
+      totalCount: apps.length,
+    };
+  }, [apps, filter]);
 
   if (loading) return <div className="flex justify-center py-20"><div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full" /></div>;
   if (error)   return <div className="p-8 text-red-600 text-center">{error}</div>;
@@ -40,10 +54,15 @@ export function MyApplications() {
         </div>
       )}
 
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">طلباتي</h1>
-          <p className="text-gray-500 text-sm mt-1">{apps.length} طلب</p>
+          <p className="text-gray-500 text-sm mt-1">
+            {filter === 'ongoing'
+              ? <>{ongoingCount} طلب قيد المتابعة · <span className="text-gray-400">{totalCount} في الإجمالي</span></>
+              : <>{totalCount} طلب</>
+            }
+          </p>
         </div>
         <Link
           to="/services"
@@ -53,26 +72,68 @@ export function MyApplications() {
         </Link>
       </div>
 
-      {apps.length === 0 ? (
+      {/* Filter tabs — ongoing by default per office ask: the engineer
+          office wants THEIR to-do list, not the archive of everything.
+          "الكل" reveals approved / rejected / certificate_issued too. */}
+      <div className="flex items-center gap-2 mb-5" role="tablist" aria-label="تصفية الطلبات">
+        <FilterTab active={filter === 'ongoing'} onClick={() => setFilter('ongoing')} count={ongoingCount}>
+          قيد المتابعة
+        </FilterTab>
+        <FilterTab active={filter === 'all'} onClick={() => setFilter('all')} count={totalCount}>
+          الكل
+        </FilterTab>
+      </div>
+
+      {visible.length === 0 ? (
         <div className="text-center py-20 text-gray-400">
           <p className="text-5xl mb-4">📋</p>
-          <p className="text-lg font-medium text-gray-500">لا توجد طلبات بعد</p>
+          <p className="text-lg font-medium text-gray-500">
+            {filter === 'ongoing' && totalCount > 0
+              ? 'لا توجد طلبات قيد المتابعة — كل الطلبات مكتملة.'
+              : 'لا توجد طلبات بعد'}
+          </p>
           <Link to="/services" className="mt-4 inline-block text-blue-600 hover:underline text-sm">
             تصفح الخدمات المتاحة
           </Link>
         </div>
       ) : (
         <div className="space-y-3">
-          {apps.map(app => <ApplicationRow key={app.id} app={app} />)}
+          {visible.map(app => <ApplicationRow key={app.id} app={app} />)}
         </div>
       )}
     </div>
   );
 }
 
+function FilterTab({ active, onClick, count, children }: {
+  active: boolean;
+  onClick: () => void;
+  count: number;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      role="tab"
+      aria-selected={active}
+      onClick={onClick}
+      className={`px-4 py-1.5 text-sm rounded-full font-medium transition-colors ${
+        active
+          ? 'bg-jea-primary text-white'
+          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+      }`}
+    >
+      {children}
+      <span className={`mr-1.5 inline-flex items-center justify-center px-1.5 rounded-full text-[10px] ${
+        active ? 'bg-white/20' : 'bg-gray-300 text-gray-600'
+      }`}>{count}</span>
+    </button>
+  );
+}
+
 function ApplicationRow({ app }: { app: Application }) {
   const statusInfo = STATUS_CONFIG[app.status] || { label: app.status, color: 'bg-gray-100 text-gray-600', icon: '❓' };
   const needsAction = app.status === 'modifications_requested';
+  const stages = app.service_definition?.schema?.workflow?.stages ?? [];
 
   return (
     <Link
@@ -83,7 +144,6 @@ function ApplicationRow({ app }: { app: Application }) {
           : 'border-gray-200 hover:border-blue-300'
       }`}
     >
-      {/* Action-needed banner — Eqratech methodology: applicant must see when modifications requested */}
       {needsAction && (
         <div className="mb-3 bg-orange-100 text-orange-800 text-xs font-medium px-3 py-2 rounded-lg flex items-center gap-2">
           <span>⚠️</span>
@@ -111,10 +171,14 @@ function ApplicationRow({ app }: { app: Application }) {
             {app.submitted_at && (
               <span>📅 {new Date(app.submitted_at).toLocaleDateString('ar-EG')}</span>
             )}
-            {app.fee_amount > 0 && (
+            {(app.fee_amount ?? 0) > 0 && (
               <span>💰 {app.fee_amount} دينار</span>
             )}
           </div>
+
+          {/* Compact stage timeline — the engineer office sees where the
+              application is inside the JEA workflow without opening it. */}
+          <MiniStageTimeline stages={stages} currentStageId={app.current_stage ?? null} />
         </div>
 
         <div className="flex-shrink-0 text-gray-300 text-xl">›</div>

@@ -32,8 +32,16 @@ class ApplicationController extends Controller
 
     public function index(Request $request): JsonResponse
     {
+        // Include `schema` on the service_definition so MyApplications can
+        // render a per-row stage timeline (past → current → future) without
+        // a follow-up round-trip per row. The `schema` column is JSON — the
+        // frontend picks off workflow.stages[] — so the size cost is small
+        // for a typical catalog.
         $query = Application::forOrganization($request->user()->organization_id)
-            ->with(['serviceDefinition:id,code,name_ar,name_en', 'certificate:id,application_id,certificate_number,status'])
+            ->with([
+                'serviceDefinition:id,code,name_ar,name_en,schema',
+                'certificate:id,application_id,certificate_number,status',
+            ])
             ->orderByDesc('created_at');
 
         // Applicants see only their own; staff/admin see all
