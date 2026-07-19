@@ -19,7 +19,11 @@ return new class extends Migration
             $table->string('name');
             $table->string('email')->unique();
             $table->string('password');
-            $table->enum('role', ['applicant', 'staff', 'auditor', 'admin'])->default('applicant');
+            // 'superuser' sits above 'admin' — only role that can add/edit/delete
+            // other users through the /admin/users API + UI. Own credentials are
+            // set on first login (must_change_password gate) and after that can
+            // only be rotated via `php artisan user:credentials`.
+            $table->enum('role', ['applicant', 'staff', 'auditor', 'admin', 'superuser'])->default('applicant');
             $table->string('phone')->nullable();
             $table->boolean('is_active')->default(true);
             $table->boolean('must_change_password')->default(false);

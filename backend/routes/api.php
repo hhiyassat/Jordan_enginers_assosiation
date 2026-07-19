@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\GsbController;
 use App\Http\Controllers\Api\IntegrationController;
 use App\Http\Controllers\Api\ProjectController;
 use App\Http\Controllers\Api\ServiceCatalogController;
+use App\Http\Controllers\Api\UserManagementController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -115,12 +116,12 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'token.inactivity', 'password.p
 
     // ── Admin-only routes ─────────────────────────────────────────────
 
-    Route::middleware('role:admin')->group(function () {
+    Route::middleware('role:admin,superuser')->group(function () {
         // FR-014 to FR-016: Admin dashboard
         Route::get('admin/dashboard',             [AdminController::class, 'dashboard']);
-        Route::get('admin/users',                 [AdminController::class, 'listUsers']);
-        Route::post('admin/users',                [AdminController::class, 'createUser']);
-        Route::put('admin/users/{id}',            [AdminController::class, 'updateUser']);
+        // User CRUD moved to the superuser role — see the role:superuser
+        // block further down. Admin keeps read-only visibility via dashboard
+        // stats but no longer touches the user roster.
         Route::get('admin/applications',          [AdminController::class, 'allApplications']);
         Route::get('admin/audit-logs',            [AdminController::class, 'auditLogs']);
 
@@ -130,6 +131,10 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'token.inactivity', 'password.p
         Route::post('services',                            [ServiceCatalogController::class, 'store']);
         Route::put('services/{id}',                        [ServiceCatalogController::class, 'update']);
         Route::patch('services/{id}/status',               [ServiceCatalogController::class, 'updateStatus']);
+        // Lock/unlock — every mutation above refuses when is_locked=true,
+        // so unlocking is an explicit action separate from ordinary edits.
+        Route::post('admin/services/{id}/lock',            [ServiceCatalogController::class, 'lock']);
+        Route::post('admin/services/{id}/unlock',          [ServiceCatalogController::class, 'unlock']);
 
         // FR-018: AI schema generation (calls Claude API server-side)
         Route::post('admin/services/generate-schema',           [AdminController::class, 'generateSchema']);
@@ -137,6 +142,19 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'token.inactivity', 'password.p
 
         // FR-019: AI schema chat update — natural language edits to existing schema
         Route::post('admin/services/chat-schema',          [AdminController::class, 'chatUpdateSchema']);
+    });
+
+    // ── User management ─────────────────────────────────────────────────
+    // Admin can add/edit/delete applicant, staff, and auditor accounts.
+    // Superuser can additionally manage admin and other superuser accounts.
+    // The tier boundary is enforced inside the controller via
+    // User::canManageRole() so a request that leaked past this middleware
+    // still can't cross it.
+    Route::middleware('role:admin,superuser')->group(function () {
+        Route::get('admin/users',            [UserManagementController::class, 'index']);
+        Route::post('admin/users',           [UserManagementController::class, 'store']);
+        Route::put('admin/users/{id}',       [UserManagementController::class, 'update']);
+        Route::delete('admin/users/{id}',    [UserManagementController::class, 'destroy']);
     });
 
     // ── GSB (Government Service Bus) routes — MODEE Annex 4.15 ──────────

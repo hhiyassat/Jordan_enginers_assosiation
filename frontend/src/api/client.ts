@@ -68,8 +68,23 @@ export const authApi = {
     }),
   me:     () => request<{ user: User }>('GET', '/auth/me'),
   logout: () => request<void>('POST', '/auth/logout'),
-  changePassword: (current_password: string, password: string, password_confirmation: string) =>
-    request<{ message: string }>('POST', '/auth/password/change', { current_password, password, password_confirmation }),
+  changePassword: (current_password: string, password: string, password_confirmation: string, email?: string) =>
+    request<{ message: string }>('POST', '/auth/password/change', {
+      current_password, password, password_confirmation,
+      ...(email ? { email } : {}),
+    }),
+};
+
+// ── User Management (superuser-only) ──────────────────────────────────
+
+export const userManagementApi = {
+  list:   () => request<{ users: User[] }>('GET', '/admin/users'),
+  create: (data: { name: string; email: string; password: string; role: User['role']; phone?: string }) =>
+    request<{ user: User }>('POST', '/admin/users', data),
+  update: (id: number, data: Partial<{ name: string; email: string; role: User['role']; is_active: boolean; password: string }>) =>
+    request<{ user: User }>('PUT', `/admin/users/${id}`, data),
+  destroy: (id: number) =>
+    request<{ message: string }>('DELETE', `/admin/users/${id}`),
 };
 
 // ── Services ──────────────────────────────────────────────────────────
@@ -268,6 +283,13 @@ export const adminApi = {
     name_ar: string; name_en: string; description_ar: string;
     description_en: string; schema: Record<string, unknown>; status: string;
   }>) => request<{ service: ServiceDefinition }>('PUT', `/services/${id}`, data),
+
+  /** Lock / unlock a service. Every content mutation is refused with 423
+   *  while the service is locked — call unlock before editing. */
+  lockService:   (id: number) =>
+    request<{ service: ServiceDefinition; message: string }>('POST', `/admin/services/${id}/lock`),
+  unlockService: (id: number) =>
+    request<{ service: ServiceDefinition; message: string }>('POST', `/admin/services/${id}/unlock`),
 
   /** FR-019: Apply a natural-language change to an existing schema via Claude */
   chatUpdateSchema: (current_schema: Record<string, unknown>, message: string) =>

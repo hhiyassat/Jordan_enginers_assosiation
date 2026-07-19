@@ -28,6 +28,8 @@ import { IntegrationCycleDetail }  from './pages/admin/IntegrationCycleDetail';
 import { NewService }              from './pages/admin/NewService';
 import { ServicesList }            from './pages/admin/ServicesList';
 import { EditService }             from './pages/admin/EditService';
+import { UserManagement }          from './pages/admin/UserManagement';
+import { ChangeCredentials }       from './pages/auth/ChangeCredentials';
 
 // ── Auth Context ──────────────────────────────────────────────────────────────
 
@@ -268,11 +270,14 @@ function navItemsForRole(role: User['role'] | undefined): NavItem[] {
   if (role === 'staff' || role === 'auditor' || role === 'admin') {
     items.push({ to: '/review/queue',    ar: 'المراجعة',   en: 'Review',       Icon: ShieldCheck });
   }
-  if (role === 'admin') {
+  if (role === 'admin' || role === 'superuser') {
     items.push({ to: '/admin',                 ar: 'الإدارة',       en: 'Admin',       Icon: Settings });
     items.push({ to: '/admin/services',        ar: 'إدارة الخدمات', en: 'Services',    Icon: ClipboardList });
     items.push({ to: '/admin/services/new',    ar: 'خدمة جديدة',    en: 'New Service', Icon: PlusCircle });
     items.push({ to: '/admin/integration',     ar: 'Nashmi',        en: 'Nashmi',      Icon: Zap });
+    // Both admin and superuser get the user-management lane. The backend
+    // decides which roles the actor can act on inside the page.
+    items.push({ to: '/admin/users',           ar: 'إدارة المستخدمين', en: 'Users',    Icon: UserIcon });
   }
   return items;
 }
@@ -467,7 +472,25 @@ function Layout({ children }: { children: React.ReactNode }) {
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
+  const location = useLocation();
   if (!user) return <Navigate to="/login" replace />;
+  // First-login gate — the bootstrap password is one-time-use. Redirect
+  // to /auth/change-credentials before rendering anything else, unless the
+  // user is already on that page.
+  if (user.must_change_password && location.pathname !== '/auth/change-credentials') {
+    return <Navigate to="/auth/change-credentials" replace />;
+  }
+  return <>{children}</>;
+}
+
+/**
+ * Blocks users who can't manage the roster. Admin AND superuser both
+ * pass — the page itself filters actions by the actor's tier.
+ */
+function RequireUserManager({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
+  if (!user) return <Navigate to="/login" replace />;
+  if (!user.can_manage_users) return <Navigate to="/" replace />;
   return <>{children}</>;
 }
 
@@ -482,7 +505,8 @@ function RequireApplicant({ children }: { children: React.ReactNode }) {
 function HomeRedirect() {
   const { user } = useAuth();
   if (!user) return <Navigate to="/login" replace />;
-  if (user.role === 'admin')   return <Navigate to="/admin" replace />;
+  if (user.role === 'superuser')                        return <Navigate to="/admin/users" replace />;
+  if (user.role === 'admin')                            return <Navigate to="/admin" replace />;
   if (user.role === 'staff' || user.role === 'auditor') return <Navigate to="/review/queue" replace />;
   return <Navigate to="/dashboard" replace />;
 }
@@ -495,6 +519,11 @@ export default function App() {
       <AuthProvider>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+
+          {/* First-login credential change — reachable by an authenticated user
+              carrying the must_change_password flag. Rendered without Layout so
+              the sidebar/nav don't leak features they can't use yet. */}
+          <Route path="/auth/change-credentials" element={<RequireAuth><ChangeCredentials /></RequireAuth>} />
 
           <Route path="/" element={<RequireAuth><Layout><HomeRedirect /></Layout></RequireAuth>} />
 
@@ -518,6 +547,9 @@ export default function App() {
           <Route path="/admin/services/:id/edit"    element={<RequireAuth><Layout><EditService /></Layout></RequireAuth>} />
           <Route path="/admin/integration"          element={<RequireAuth><Layout><IntegrationCycles /></Layout></RequireAuth>} />
           <Route path="/admin/integration/:id"      element={<RequireAuth><Layout><IntegrationCycleDetail /></Layout></RequireAuth>} />
+
+          {/* User management — admin + superuser */}
+          <Route path="/admin/users" element={<RequireUserManager><Layout><UserManagement /></Layout></RequireUserManager>} />
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

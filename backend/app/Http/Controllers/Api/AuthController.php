@@ -83,24 +83,49 @@ class AuthController extends Controller
         ], 201);
     }
 
+    /**
+     * Handles both the first-login credential rotation (superuser only: may
+     * also change their own email) and ordinary password change. After a
+     * superuser has cleared the must_change_password gate once, this endpoint
+     * refuses to touch their credentials again — from that point on the only
+     * legitimate rotation path is `php artisan user:credentials`. This makes
+     * a stolen superuser token useless for lateral escalation.
+     */
     public function changePassword(Request $request): JsonResponse
     {
-        $data = $request->validate([
+        $user = $request->user();
+
+        // Superusers who already changed initial creds can't rotate via API.
+        if ($user->isSuperuser() && ! $user->must_change_password) {
+            return response()->json([
+                'message' => 'يمكن تغيير بيانات المستخدم الأعلى فقط من خلال سطر الأوامر: '
+                           . 'php artisan user:credentials ' . $user->email,
+            ], 403);
+        }
+
+        $rules = [
             'current_password' => ['required', 'string'],
             'password'         => ['required', 'confirmed', Password::min(8)->mixedCase()->numbers()],
-        ]);
-
-        $user = $request->user();
+        ];
+        // On first login the superuser may pick their own login email.
+        if ($user->isSuperuser() && $user->must_change_password) {
+            $rules['email'] = ['sometimes', 'email', 'unique:users,email,' . $user->id];
+        }
+        $data = $request->validate($rules);
 
         if (! Hash::check($data['current_password'], $user->password)) {
             return response()->json(['message' => 'كلمة المرور الحالية غير صحيحة.'], 422);
         }
 
-        $user->update([
-            'password'            => Hash::make($data['password']),
+        $update = [
+            'password'             => Hash::make($data['password']),
             'must_change_password' => false,
             'password_changed_at'  => now(),
-        ]);
+        ];
+        if (isset($data['email'])) {
+            $update['email'] = $data['email'];
+        }
+        $user->update($update);
 
         return response()->json(['message' => 'تم تغيير كلمة المرور.']);
     }
@@ -108,11 +133,15 @@ class AuthController extends Controller
     private function userPayload(User $user): array
     {
         return [
-            'id'              => $user->id,
-            'name'            => $user->name,
-            'email'           => $user->email,
-            'role'            => $user->role,
-            'organization_id' => $user->organization_id,
+            'id'                   => $user->id,
+            'name'                 => $user->name,
+            'email'                => $user->email,
+            'role'                 => $user->role,
+            'organization_id'      => $user->organization_id,
+            // Frontend uses this to route to the change-credentials screen
+            // and to gate the /admin/users nav link.
+            'must_change_password' => (bool) $user->must_change_password,
+            'can_manage_users'     => $user->canManageUsers(),
         ];
     }
 }

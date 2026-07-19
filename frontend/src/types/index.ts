@@ -12,8 +12,15 @@ export interface User {
   id: number;
   name: string;
   email: string;
-  role: 'applicant' | 'staff' | 'auditor' | 'admin';
+  role: 'applicant' | 'staff' | 'auditor' | 'admin' | 'superuser';
   organization_id: number;
+  // Present on /auth/me and /auth/login payloads. When true the SPA routes
+  // the user to /auth/change-credentials before anything else.
+  must_change_password?: boolean;
+  // True only for the superuser role. Drives the "إدارة المستخدمين" nav link.
+  can_manage_users?: boolean;
+  is_active?: boolean;
+  created_at?: string;
 }
 
 // ── Schema types ────────────────────────────────────────────────────
@@ -131,6 +138,11 @@ export interface ServiceDefinition {
   phase?: 1 | 2 | 3 | 4 | 5 | null;
   /** Keys of alternate workflows available (e.g. ['modification']) */
   variant_keys?: string[];
+  /**
+   * When true, the backend refuses every mutation with 423. Admin +
+   * superuser can toggle via POST /admin/services/{id}/lock|unlock.
+   */
+  is_locked?: boolean;
 }
 
 // ── Engineer ────────────────────────────────────────────────────────
