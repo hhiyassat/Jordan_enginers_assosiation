@@ -29,7 +29,7 @@ use Illuminate\Support\Facades\Route;
 // IMPORTANT: registered BEFORE the v1 group so Sanctum never intercepts them.
 
 Route::prefix('integration')
-    ->middleware(['integration.key', 'throttle:60,1'])
+    ->middleware(['integration.key', 'throttle:integration'])
     ->group(function () {
         // Inbound from Nashmi
         Route::post('receive-requirements',             [IntegrationController::class, 'receiveRequirements']);
@@ -49,11 +49,13 @@ Route::prefix('integration')
 Route::prefix('v1')->group(function () {
 
     // Captcha challenge for public forms (unauthed, rate-limited)
-    Route::get('captcha', [CaptchaController::class, 'issue'])->middleware('throttle:30,1');
+    Route::get('captcha', [CaptchaController::class, 'issue'])->middleware('throttle:captcha-issue');
 
-    // SEC-009: Strict rate limit on login + captcha challenge
-    Route::post('auth/login',    [AuthController::class, 'login'])->middleware(['throttle:5,1', 'captcha']);
-    Route::post('auth/register', [AuthController::class, 'register'])->middleware(['throttle:10,1', 'captcha']);
+    // SEC-009: named limiters registered in AppServiceProvider::registerRateLimiters().
+    // Each named limiter has a custom response callback that logs the trip
+    // to the security channel and returns an Arabic 429 body the SPA can render.
+    Route::post('auth/login',    [AuthController::class, 'login'])->middleware(['throttle:login', 'captcha']);
+    Route::post('auth/register', [AuthController::class, 'register'])->middleware(['throttle:register', 'captcha']);
 
     // FR-013: Public certificate verification
     Route::get('certificates/verify/{certNumber}', [ApplicationController::class, 'verifyCertificate']);
@@ -87,7 +89,8 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'token.inactivity', 'password.p
         Route::get('applications/{id}',                       [ApplicationController::class, 'show']);
         Route::put('applications/{id}',                       [ApplicationController::class, 'update']);
         Route::post('applications/{id}/submit',               [ApplicationController::class, 'submit']);
-        Route::post('applications/{id}/documents',            [ApplicationController::class, 'uploadDocument']);
+        Route::post('applications/{id}/documents',            [ApplicationController::class, 'uploadDocument'])
+            ->middleware('throttle:document-upload');
 
         // Projects — user's engineering projects (containers for applications)
         Route::get('projects',        [ProjectController::class, 'index']);
@@ -141,12 +144,16 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'token.inactivity', 'password.p
         Route::post('admin/services/{id}/lock',            [ServiceCatalogController::class, 'lock']);
         Route::post('admin/services/{id}/unlock',          [ServiceCatalogController::class, 'unlock']);
 
-        // FR-018: AI schema generation (calls Claude API server-side)
-        Route::post('admin/services/generate-schema',           [AdminController::class, 'generateSchema']);
-        Route::post('admin/services/generate-schema-from-file', [AdminController::class, 'generateSchemaFromFile']);
-
-        // FR-019: AI schema chat update — natural language edits to existing schema
-        Route::post('admin/services/chat-schema',          [AdminController::class, 'chatUpdateSchema']);
+        // FR-018 + FR-019: every Claude-backed AI endpoint shares the
+        // 'ai-schema' bucket — 10 calls/hour per user is generous for
+        // interactive authoring but stops a runaway loop from burning
+        // through the API budget in minutes.
+        Route::post('admin/services/generate-schema',           [AdminController::class, 'generateSchema'])
+            ->middleware('throttle:ai-schema');
+        Route::post('admin/services/generate-schema-from-file', [AdminController::class, 'generateSchemaFromFile'])
+            ->middleware('throttle:ai-schema');
+        Route::post('admin/services/chat-schema',               [AdminController::class, 'chatUpdateSchema'])
+            ->middleware('throttle:ai-schema');
     });
 
     // ── User management ─────────────────────────────────────────────────
