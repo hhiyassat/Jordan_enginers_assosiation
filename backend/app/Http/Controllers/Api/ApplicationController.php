@@ -167,10 +167,12 @@ class ApplicationController extends Controller
 
         $request->validate([
             'document_id' => ['required', 'string'],
-            // SEC-008 + FR-018: allowlist docs (pdf/img/office) and video (mp4/mov/webm).
-            // Outer cap 100 MB accommodates video; per-slot cap is enforced by the
-            // service schema (documents[i].max_size_mb) via SchemaValidator downstream.
-            'file'        => ['required', 'file', 'max:102400', 'mimes:pdf,jpg,jpeg,png,tiff,doc,docx,mp4,mov,webm'],
+            // SEC-008 hardened: only PDF drawings and DWG source files are
+            // accepted as application attachments. The PdfOrDwgFile rule
+            // inspects the leading bytes (not just the extension) to reject
+            // renamed executables. 50 MB outer cap matches the schema-level
+            // per-slot cap enforced downstream by SchemaValidator.
+            'file'        => ['required', 'file', 'max:51200', new \App\Rules\PdfOrDwgFile()],
         ]);
 
         $file = $request->file('file');
