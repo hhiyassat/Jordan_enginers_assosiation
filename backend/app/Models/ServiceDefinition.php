@@ -75,6 +75,24 @@ class ServiceDefinition extends Model
         return $this->getWorkflowStages()[0] ?? null;
     }
 
+    /**
+     * First stage that isn't owned by the applicant — the workflow position
+     * an application should occupy AFTER submit. Applicant-owned stages
+     * (typically 'office_submission') are the draft-authoring phase; once
+     * the applicant clicks submit, the case moves to the first reviewer
+     * stage so a staff/auditor can claim it. Falls back to getFirstStage()
+     * if the entire workflow is applicant-owned (unusual but valid).
+     */
+    public function getFirstReviewerStage(): ?array
+    {
+        foreach ($this->getWorkflowStages() as $stage) {
+            if (($stage['role'] ?? null) !== 'applicant') {
+                return $stage;
+            }
+        }
+        return $this->getFirstStage();
+    }
+
     public function getFields(): array
     {
         return $this->schema['fields'] ?? [];

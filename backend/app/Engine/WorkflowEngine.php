@@ -85,18 +85,24 @@ class WorkflowEngine
             abort(422, 'Application cannot be submitted in its current state.');
         }
 
-        $firstStage = $this->service->getFirstStage();
+        // Applicant-owned stages (e.g. 'office_submission') are the
+        // draft-authoring phase. On submit the case should move to the
+        // FIRST REVIEWER stage so a staff/auditor can claim it — otherwise
+        // WorkflowEngine::claim() sees current_stage='office_submission'
+        // (role=applicant) and 403s every reviewer with
+        // "Stage 'office_submission' requires role 'applicant'."
+        $firstReviewer = $this->service->getFirstReviewerStage();
         $prevStatus = $app->status;
 
-        DB::transaction(function () use ($app, $actor, $firstStage, $prevStatus) {
+        DB::transaction(function () use ($app, $actor, $firstReviewer, $prevStatus) {
             // B-5 + WF-001: transition through ALLOWED_TRANSITIONS
             $this->transitionTo($app, Application::STATUS_SUBMITTED);
 
-            $app->current_stage = $firstStage['id'] ?? null;
+            $app->current_stage = $firstReviewer['id'] ?? null;
 
             // WF-008: set SLA deadline from schema
-            if (isset($firstStage['sla_hours'])) {
-                $app->sla_deadline = now()->addHours($firstStage['sla_hours']);
+            if (isset($firstReviewer['sla_hours'])) {
+                $app->sla_deadline = now()->addHours($firstReviewer['sla_hours']);
             }
 
             $app->save();
