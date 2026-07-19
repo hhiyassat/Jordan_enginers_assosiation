@@ -3,9 +3,12 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import type { ServiceDefinition } from '../../types';
 import { ServiceList } from './ServiceList';
+import { makeQueryWrapper } from '../../test/queryWrapper';
 
 const mockList = vi.fn();
-vi.mock('../../api/client', () => ({
+// After JORD-22, useServices() imports servicesApi from ./services
+// directly, not from the client barrel. Mock the domain module.
+vi.mock('../../api/services', () => ({
   servicesApi: { list: (...a: unknown[]) => mockList(...a) },
 }));
 
@@ -36,10 +39,13 @@ describe('ServiceList — tile ordering', () => {
       ],
     });
 
+    const { Wrapper } = makeQueryWrapper();
     render(
-      <MemoryRouter initialEntries={['/services']}>
-        <ServiceList />
-      </MemoryRouter>
+      <Wrapper>
+        <MemoryRouter initialEntries={['/services']}>
+          <ServiceList />
+        </MemoryRouter>
+      </Wrapper>
     );
 
     // Wait for the tiles to be visible before measuring order.
@@ -63,10 +69,13 @@ describe('ServiceList — tile ordering', () => {
       ],
     });
 
+    const { Wrapper } = makeQueryWrapper();
     render(
-      <MemoryRouter initialEntries={['/services']}>
-        <ServiceList />
-      </MemoryRouter>
+      <Wrapper>
+        <MemoryRouter initialEntries={['/services']}>
+          <ServiceList />
+        </MemoryRouter>
+      </Wrapper>
     );
     await waitFor(() => expect(screen.getByText('الشهادات')).toBeInTheDocument());
 

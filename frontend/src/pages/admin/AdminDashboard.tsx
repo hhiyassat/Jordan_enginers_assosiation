@@ -1,41 +1,37 @@
-import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { adminApi } from '../../api/client';
+import { useAdminDashboardStats } from '../../api/hooks';
 import { useAuth } from '../../auth/AuthContext';
+import type { DashboardStats } from '../../types';
 
-interface Stats {
+// Concrete row shape from /admin/dashboard. Fields the backend returns
+// are optional at the type level (DashboardStats) — narrow to non-null
+// once the query resolves.
+type Stats = DashboardStats & Partial<{
   total_applications: number;
   pending_review: number;
   approved_today: number;
   certificates_issued: number;
   active_services: number;
   total_users: number;
-}
+}>;
 
 export function AdminDashboard() {
   const { user } = useAuth();
-  const [stats, setStats]   = useState<Stats | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError]   = useState('');
+  const { data, isPending, error } = useAdminDashboardStats();
+  const stats = data as Stats | undefined;
+  const loading = isPending;
   // Defense in depth — the /admin route is gated at the SPA layer, but if
   // that gate ever slips this still hides user-mgmt affordances from an
   // actor who can't act on them.
   const canManageUsers = user?.can_manage_users ?? false;
 
-  useEffect(() => {
-    adminApi.dashboard()
-      .then(r => setStats(r.stats as Stats))
-      .catch(e => setError((e as Error).message))
-      .finally(() => setLoading(false));
-  }, []);
-
   const cards = stats ? [
-    { label: 'إجمالي الطلبات',    value: stats.total_applications, icon: '📋', link: '/admin/applications', color: 'bg-blue-50 border-blue-200' },
-    { label: 'في انتظار المراجعة', value: stats.pending_review,     icon: '🔍', link: '/review/queue',      color: 'bg-yellow-50 border-yellow-200' },
-    { label: 'موافق عليها اليوم',  value: stats.approved_today,     icon: '✅', link: '/admin/applications', color: 'bg-green-50 border-green-200' },
-    { label: 'الشهادات الصادرة',   value: stats.certificates_issued, icon: '🏆', link: '/admin/certificates', color: 'bg-teal-50 border-teal-200' },
-    { label: 'الخدمات النشطة',     value: stats.active_services,    icon: '⚙️', link: '/admin/services',     color: 'bg-purple-50 border-purple-200' },
-    ...(canManageUsers ? [{ label: 'المستخدمون', value: stats.total_users, icon: '👥', link: '/admin/users', color: 'bg-gray-50 border-gray-200' }] : []),
+    { label: 'إجمالي الطلبات',    value: stats.total_applications ?? 0, icon: '📋', link: '/admin/applications', color: 'bg-blue-50 border-blue-200' },
+    { label: 'في انتظار المراجعة', value: stats.pending_review ?? 0,     icon: '🔍', link: '/review/queue',      color: 'bg-yellow-50 border-yellow-200' },
+    { label: 'موافق عليها اليوم',  value: stats.approved_today ?? 0,     icon: '✅', link: '/admin/applications', color: 'bg-green-50 border-green-200' },
+    { label: 'الشهادات الصادرة',   value: stats.certificates_issued ?? 0, icon: '🏆', link: '/admin/certificates', color: 'bg-teal-50 border-teal-200' },
+    { label: 'الخدمات النشطة',     value: stats.active_services ?? 0,    icon: '⚙️', link: '/admin/services',     color: 'bg-purple-50 border-purple-200' },
+    ...(canManageUsers ? [{ label: 'المستخدمون', value: stats.total_users ?? 0, icon: '👥', link: '/admin/users', color: 'bg-gray-50 border-gray-200' }] : []),
   ] : [];
 
   return (
@@ -45,7 +41,7 @@ export function AdminDashboard() {
         <p className="text-gray-500 text-sm mt-1">نظرة عامة على النظام</p>
       </div>
       {error && (
-        <div className="mb-6 bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 text-sm">{error}</div>
+        <div className="mb-6 bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 text-sm">{error.message}</div>
       )}
 
       {loading ? (

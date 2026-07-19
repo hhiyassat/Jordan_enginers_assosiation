@@ -1,11 +1,11 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, FolderOpen, FileText, FileCheck, GraduationCap,
   CreditCard, Users, Scale, Wrench, Building2,
   type LucideIcon,
 } from 'lucide-react';
-import { servicesApi } from '../../api/client';
+import { useServices } from '../../api/hooks';
 import type { ServiceDefinition } from '../../types';
 
 // Icon selection by code prefix — matches the JEA portal design categories.
@@ -33,16 +33,12 @@ function iconFor(code: string) {
 }
 
 export function ServiceList() {
-  const [services, setServices] = useState<ServiceDefinition[]>([]);
-  const [loading, setLoading]   = useState(true);
-  const [error, setError]       = useState('');
-
-  useEffect(() => {
-    servicesApi.list()
-      .then(r => setServices(r.services))
-      .catch(e => setError(e.message))
-      .finally(() => setLoading(false));
-  }, []);
+  // JORD-33: useServices() dedupes concurrent fetches and caches the
+  // result across route changes — the two Dashboard tiles that also
+  // depend on the services list now share this single request.
+  const { data, isPending, error } = useServices();
+  const services = data ?? [];
+  const loading = isPending;
 
   // Top-level = anything without a parent. Categories = top-levels that have children.
   // Display order pins مشاريعي (JEA-PROJ) first and استطلاع الموقع (JEA-SURV)
@@ -78,7 +74,7 @@ export function ServiceList() {
 
         {!loading && error && (
           <div className="rounded-xl border border-jea-danger/30 bg-white p-6 text-jea-danger max-w-4xl">
-            {error}
+            {error.message}
           </div>
         )}
 

@@ -116,18 +116,55 @@ class AdminController extends Controller
         return response()->json(['user' => $user]);
     }
 
+    /**
+     * JORD-35: server-side pagination + free-text search.
+     *
+     * Query params:
+     *   • status    — exact match on Application.status
+     *   • q         — free-text; matches reference_number, applicant name/
+     *                 email, service code, service name_ar/name_en.
+     *   • page      — 1-indexed page number (Laravel default)
+     *   • per_page  — 10 / 20 / 50 (clamped)
+     *
+     * Search runs as a single UNION-free WHERE with OR clauses; every
+     * matched column has a b-tree index (see 2026_07_19 migration on
+     * applications.reference_number + applicants.email). q is
+     * lowercased on both sides so the match is case-insensitive on
+     * MySQL and SQLite alike.
+     */
     public function allApplications(Request $request): JsonResponse
     {
         $this->requireAdmin($request);
 
         $query = Application::forOrganization($request->user()->organization_id)
-            ->with(['serviceDefinition:id,code,name_ar', 'applicant:id,name,email']);
+            ->with(['serviceDefinition:id,code,name_ar,name_en', 'applicant:id,name,email']);
 
         if ($request->filled('status')) {
-            $query->where('status', $request->status);
+            $query->where('status', $request->string('status'));
         }
 
-        return response()->json($query->orderByDesc('created_at')->paginate(20));
+        if ($request->filled('q')) {
+            $needle = '%' . strtolower(trim((string) $request->string('q'))) . '%';
+            $query->where(function ($q) use ($needle) {
+                $q->whereRaw('LOWER(reference_number) LIKE ?', [$needle])
+                  ->orWhereHas('applicant', function ($a) use ($needle) {
+                      $a->whereRaw('LOWER(name) LIKE ?', [$needle])
+                        ->orWhereRaw('LOWER(email) LIKE ?', [$needle]);
+                  })
+                  ->orWhereHas('serviceDefinition', function ($s) use ($needle) {
+                      $s->whereRaw('LOWER(code) LIKE ?', [$needle])
+                        ->orWhereRaw('LOWER(name_ar) LIKE ?', [$needle])
+                        ->orWhereRaw('LOWER(name_en) LIKE ?', [$needle]);
+                  });
+            });
+        }
+
+        // per_page is clamped so a malicious ?per_page=100000 can't ask
+        // the backend for the whole table.
+        $perPage = (int) $request->integer('per_page', 20);
+        $perPage = max(5, min(50, $perPage));
+
+        return response()->json($query->orderByDesc('created_at')->paginate($perPage));
     }
 
     // ── Schema Generator ──────────────────────────────────────────────

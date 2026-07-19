@@ -1,6 +1,6 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { applicationsApi } from '../../api/client';
+import { useMyApplications } from '../../api/hooks';
 import type { Application } from '../../types';
 import { isOngoing, orderForApplicant } from './applicationStatus';
 import { MiniStageTimeline } from './MiniStageTimeline';
@@ -19,19 +19,15 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: string
 type Filter = 'ongoing' | 'all';
 
 export function MyApplications() {
-  const [apps, setApps]       = useState<Application[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError]     = useState('');
+  // JORD-33: React Query dedupes concurrent fetches + caches across
+  // route changes. Coming back from Apply → MyApplications no longer
+  // spins the loader when the list hasn't gone stale.
+  const { data, isPending, error } = useMyApplications();
+  const apps = data ?? [];
+  const loading = isPending;
   const [filter, setFilter]   = useState<Filter>('ongoing');
   const location = useLocation();
   const justSubmitted = (location.state as { submitted?: boolean })?.submitted;
-
-  useEffect(() => {
-    applicationsApi.list()
-      .then(r => setApps(r.applications))
-      .catch(e => setError((e as Error).message))
-      .finally(() => setLoading(false));
-  }, []);
 
   const { visible, ongoingCount, totalCount } = useMemo(() => {
     const ordered = orderForApplicant(apps);
@@ -44,7 +40,7 @@ export function MyApplications() {
   }, [apps, filter]);
 
   if (loading) return <div className="flex justify-center py-20"><div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full" /></div>;
-  if (error)   return <div className="p-8 text-red-600 text-center">{error}</div>;
+  if (error)   return <div className="p-8 text-red-600 text-center">{error.message}</div>;
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8" dir="rtl">

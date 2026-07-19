@@ -5,8 +5,13 @@ import { MemoryRouter } from 'react-router-dom';
 import { MyApplications } from './MyApplications';
 import type { Application, ServiceDefinition } from '../../types';
 
+import { makeQueryWrapper } from '../../test/queryWrapper';
+
 const mockList = vi.fn();
-vi.mock('../../api/client', () => ({
+// JORD-22 + JORD-33: hooks import from the split domain modules, not
+// from the client barrel — so the mock has to point at the same path
+// the hook resolves.
+vi.mock('../../api/applications', () => ({
   applicationsApi: { list: () => mockList() },
 }));
 
@@ -52,7 +57,8 @@ describe('MyApplications', () => {
       app({ id: 4, reference_number: 'A-4', status: 'rejected' }),
       app({ id: 5, reference_number: 'A-5', status: 'approved' }),
     ]});
-    render(<MemoryRouter><MyApplications /></MemoryRouter>);
+    const { Wrapper } = makeQueryWrapper();
+    render(<Wrapper><MemoryRouter><MyApplications /></MemoryRouter></Wrapper>);
     await waitFor(() => expect(screen.getByText('A-1')).toBeInTheDocument());
 
     // Ongoing bucket visible; terminal buckets absent.
@@ -67,7 +73,8 @@ describe('MyApplications', () => {
       app({ id: 1, reference_number: 'A-1', status: 'submitted' }),
       app({ id: 2, reference_number: 'A-2', status: 'certificate_issued' }),
     ]});
-    render(<MemoryRouter><MyApplications /></MemoryRouter>);
+    const { Wrapper } = makeQueryWrapper();
+    render(<Wrapper><MemoryRouter><MyApplications /></MemoryRouter></Wrapper>);
     await waitFor(() => expect(screen.getByText('A-1')).toBeInTheDocument());
     expect(screen.queryByText('A-2')).toBeNull();
 
@@ -81,7 +88,8 @@ describe('MyApplications', () => {
     mockList.mockResolvedValue({ applications: [
       app({ current_stage: 'review' }),
     ]});
-    render(<MemoryRouter><MyApplications /></MemoryRouter>);
+    const { Wrapper } = makeQueryWrapper();
+    render(<Wrapper><MemoryRouter><MyApplications /></MemoryRouter></Wrapper>);
     await waitFor(() => expect(screen.getByText('A-001')).toBeInTheDocument());
 
     // The mini timeline is present and highlights the current stage.
@@ -99,7 +107,8 @@ describe('MyApplications', () => {
       app({ id: 1, reference_number: 'A-OLD',  status: 'submitted' }),
       app({ id: 2, reference_number: 'A-BLOCK',status: 'modifications_requested' }),
     ]});
-    render(<MemoryRouter><MyApplications /></MemoryRouter>);
+    const { Wrapper } = makeQueryWrapper();
+    render(<Wrapper><MemoryRouter><MyApplications /></MemoryRouter></Wrapper>);
     await waitFor(() => expect(screen.getByText('A-BLOCK')).toBeInTheDocument());
 
     // Reading top-to-bottom: A-BLOCK must appear before A-OLD.
@@ -112,7 +121,8 @@ describe('MyApplications', () => {
     mockList.mockResolvedValue({ applications: [
       app({ id: 1, status: 'certificate_issued' }),
     ]});
-    render(<MemoryRouter><MyApplications /></MemoryRouter>);
+    const { Wrapper } = makeQueryWrapper();
+    render(<Wrapper><MemoryRouter><MyApplications /></MemoryRouter></Wrapper>);
     await waitFor(() => expect(screen.getByText(/كل الطلبات مكتملة/)).toBeInTheDocument());
   });
 
@@ -127,7 +137,8 @@ describe('MyApplications', () => {
         certificate_pdf_url: 'http://localhost/api/v1/certificates/CERT-123/pdf?token=abc',
       }),
     ]});
-    render(<MemoryRouter><MyApplications /></MemoryRouter>);
+    const { Wrapper } = makeQueryWrapper();
+    render(<Wrapper><MemoryRouter><MyApplications /></MemoryRouter></Wrapper>);
     // certificate_issued is terminal, so switch to the "all" tab to see it.
     await waitFor(() => expect(screen.getByRole('tab', { name: /الكل/ })).toBeInTheDocument());
     await userEvent.click(screen.getByRole('tab', { name: /الكل/ }));
@@ -141,7 +152,8 @@ describe('MyApplications', () => {
     mockList.mockResolvedValue({ applications: [
       app({ id: 1, status: 'submitted', certificate_pdf_url: null }),
     ]});
-    render(<MemoryRouter><MyApplications /></MemoryRouter>);
+    const { Wrapper } = makeQueryWrapper();
+    render(<Wrapper><MemoryRouter><MyApplications /></MemoryRouter></Wrapper>);
     await waitFor(() => expect(screen.getByText('A-001')).toBeInTheDocument());
     expect(screen.queryByTestId('certificate-pdf-link')).toBeNull();
   });

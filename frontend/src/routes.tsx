@@ -26,6 +26,7 @@ const MyApplications          = React.lazy(() => import('./pages/applicant/MyApp
 const ReviewQueue             = React.lazy(() => import('./pages/reviewer/ReviewQueue').then(m => ({ default: m.ReviewQueue })));
 const ReviewPanel             = React.lazy(() => import('./pages/reviewer/ReviewPanel').then(m => ({ default: m.ReviewPanel })));
 const AdminDashboard          = React.lazy(() => import('./pages/admin/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
+const AdminApplications       = React.lazy(() => import('./pages/admin/AdminApplications').then(m => ({ default: m.AdminApplications })));
 const IntegrationCycles       = React.lazy(() => import('./pages/admin/IntegrationCycles').then(m => ({ default: m.IntegrationCycles })));
 const IntegrationCycleDetail  = React.lazy(() => import('./pages/admin/IntegrationCycleDetail').then(m => ({ default: m.IntegrationCycleDetail })));
 const NewService              = React.lazy(() => import('./pages/admin/NewService').then(m => ({ default: m.NewService })));
@@ -63,6 +64,7 @@ export function AppRoutes(): JSX.Element {
 
       {/* Admin — every /admin/* route requires admin or superuser. */}
       <Route path="/admin"                      element={<RequireAdmin><Layout><AdminDashboard /></Layout></RequireAdmin>} />
+      <Route path="/admin/applications"         element={<RequireAdmin><Layout><AdminApplications /></Layout></RequireAdmin>} />
       <Route path="/admin/services"             element={<RequireAdmin><Layout><ServicesList /></Layout></RequireAdmin>} />
       <Route path="/admin/services/new"         element={<RequireAdmin><Layout><NewService /></Layout></RequireAdmin>} />
       <Route path="/admin/services/:id/edit"    element={<RequireAdmin><Layout><EditService /></Layout></RequireAdmin>} />

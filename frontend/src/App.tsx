@@ -1,8 +1,10 @@
 import { BrowserRouter } from 'react-router-dom';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './auth/AuthProvider';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { RouteSuspense } from './layout/RouteSuspense';
 import { AppRoutes } from './routes';
+import { queryClient } from './api/queryClient';
 
 /**
  * App — pure composition root (JORD-25).
@@ -18,14 +20,16 @@ import { AppRoutes } from './routes';
  */
 export default function App(): JSX.Element {
   return (
-    <BrowserRouter>
-      <ErrorBoundary>
-        <AuthProvider>
-          <RouteSuspense>
-            <AppRoutes />
-          </RouteSuspense>
-        </AuthProvider>
-      </ErrorBoundary>
-    </BrowserRouter>
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <ErrorBoundary>
+          <AuthProvider>
+            <RouteSuspense>
+              <AppRoutes />
+            </RouteSuspense>
+          </AuthProvider>
+        </ErrorBoundary>
+      </BrowserRouter>
+    </QueryClientProvider>
   );
 }
