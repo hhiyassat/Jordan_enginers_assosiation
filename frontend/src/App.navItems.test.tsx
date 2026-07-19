@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { navItemsForRole } from './App';
+import { navItemsForRole, canReachAdmin } from './App';
 
 /**
  * Pins the per-role sidebar visibility. Regression that motivated this
@@ -51,5 +51,26 @@ describe('navItemsForRole', () => {
     // Superuser does NOT sit in the review-role bucket, so the review
     // lane is absent — HomeRedirect sends them to /admin/users anyway.
     expect(links).not.toContain('/review/queue');
+  });
+});
+
+/**
+ * canReachAdmin is the pure boundary used by RequireAdmin. Regression
+ * that motivated pinning it here: /admin/* routes were originally guarded
+ * by RequireAuth (not by role), so a staff user could reach the Admin
+ * Dashboard and see admin quick-actions, then bounce to /review/queue
+ * when they clicked "إدارة المستخدمين".
+ */
+describe('canReachAdmin', () => {
+  it('lets admin and superuser through', () => {
+    expect(canReachAdmin('admin')).toBe(true);
+    expect(canReachAdmin('superuser')).toBe(true);
+  });
+
+  it('blocks every other role', () => {
+    expect(canReachAdmin('staff')).toBe(false);
+    expect(canReachAdmin('auditor')).toBe(false);
+    expect(canReachAdmin('applicant')).toBe(false);
+    expect(canReachAdmin(undefined)).toBe(false);
   });
 });

@@ -509,6 +509,22 @@ function RequireUserManager({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+/**
+ * Which roles are allowed on /admin/*. Pure so the boundary is testable
+ * without mounting the router — the RequireAdmin guard just wraps it.
+ */
+export function canReachAdmin(role: User['role'] | undefined): boolean {
+  return role === 'admin' || role === 'superuser';
+}
+
+/** Blocks non-admins from admin-only routes (admin AND superuser pass). */
+function RequireAdmin({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
+  if (!user) return <Navigate to="/login" replace />;
+  if (!canReachAdmin(user.role)) return <Navigate to="/" replace />;
+  return <>{children}</>;
+}
+
 /** Blocks non-applicants from applicant-only routes */
 function RequireApplicant({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
@@ -555,13 +571,17 @@ export default function App() {
           <Route path="/review/queue"      element={<RequireAuth><Layout><ReviewQueue /></Layout></RequireAuth>} />
           <Route path="/review/:id"        element={<RequireAuth><Layout><ReviewPanel /></Layout></RequireAuth>} />
 
-          {/* Admin */}
-          <Route path="/admin"                      element={<RequireAuth><Layout><AdminDashboard /></Layout></RequireAuth>} />
-          <Route path="/admin/services"             element={<RequireAuth><Layout><ServicesList /></Layout></RequireAuth>} />
-          <Route path="/admin/services/new"         element={<RequireAuth><Layout><NewService /></Layout></RequireAuth>} />
-          <Route path="/admin/services/:id/edit"    element={<RequireAuth><Layout><EditService /></Layout></RequireAuth>} />
-          <Route path="/admin/integration"          element={<RequireAuth><Layout><IntegrationCycles /></Layout></RequireAuth>} />
-          <Route path="/admin/integration/:id"      element={<RequireAuth><Layout><IntegrationCycleDetail /></Layout></RequireAuth>} />
+          {/* Admin — every /admin/* route requires admin or superuser.
+              RequireAuth alone let staff/auditor into the Admin Dashboard
+              because the route wasn't role-gated at the SPA layer even
+              though the backend was 403'ing every API call. Fix belongs
+              here so the page never renders for a role that can't use it. */}
+          <Route path="/admin"                      element={<RequireAdmin><Layout><AdminDashboard /></Layout></RequireAdmin>} />
+          <Route path="/admin/services"             element={<RequireAdmin><Layout><ServicesList /></Layout></RequireAdmin>} />
+          <Route path="/admin/services/new"         element={<RequireAdmin><Layout><NewService /></Layout></RequireAdmin>} />
+          <Route path="/admin/services/:id/edit"    element={<RequireAdmin><Layout><EditService /></Layout></RequireAdmin>} />
+          <Route path="/admin/integration"          element={<RequireAdmin><Layout><IntegrationCycles /></Layout></RequireAdmin>} />
+          <Route path="/admin/integration/:id"      element={<RequireAdmin><Layout><IntegrationCycleDetail /></Layout></RequireAdmin>} />
 
           {/* User management — admin + superuser */}
           <Route path="/admin/users" element={<RequireUserManager><Layout><UserManagement /></Layout></RequireUserManager>} />

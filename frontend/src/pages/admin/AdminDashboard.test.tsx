@@ -1,0 +1,57 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
+import type { User } from '../../types';
+
+const mockDashboard = vi.fn();
+vi.mock('../../api/client', () => ({
+  adminApi: { dashboard: () => mockDashboard() },
+}));
+
+let mockUser: User | null = null;
+vi.mock('../../App', () => ({
+  useAuth: () => ({ user: mockUser, logout: vi.fn(), token: 'x', login: vi.fn() }),
+}));
+
+import { AdminDashboard } from './AdminDashboard';
+
+function renderPage() {
+  return render(<MemoryRouter><AdminDashboard /></MemoryRouter>);
+}
+
+beforeEach(() => {
+  mockDashboard.mockReset();
+  mockDashboard.mockResolvedValue({
+    stats: {
+      total_applications: 3, pending_review: 1, approved_today: 0,
+      certificates_issued: 2, active_services: 56, total_users: 5,
+    },
+  });
+  mockUser = null;
+});
+
+describe('AdminDashboard — user management affordances', () => {
+  it('shows the "إدارة المستخدمين" quick-action for admins', async () => {
+    mockUser = { id: 1, name: 'admin', email: 'admin@t.esp', role: 'admin', organization_id: 1, can_manage_users: true };
+    renderPage();
+    await waitFor(() => expect(screen.getByText('إجراءات سريعة')).toBeInTheDocument());
+    expect(screen.getByText('إدارة المستخدمين')).toBeInTheDocument();
+  });
+
+  it('shows the "المستخدمون" stat card for admins', async () => {
+    mockUser = { id: 1, name: 'admin', email: 'admin@t.esp', role: 'admin', organization_id: 1, can_manage_users: true };
+    renderPage();
+    await waitFor(() => expect(screen.getByText('المستخدمون')).toBeInTheDocument());
+  });
+
+  it('hides the "إدارة المستخدمين" quick-action when the user cannot manage users', async () => {
+    // Belt-and-braces — the /admin route now blocks staff/auditor anyway.
+    // But if that gate ever slips, this ensures user-management affordances
+    // still stay hidden from a role that can't act on them.
+    mockUser = { id: 2, name: 'staff', email: 'staff@t.esp', role: 'staff', organization_id: 1, can_manage_users: false };
+    renderPage();
+    await waitFor(() => expect(screen.getByText('إجراءات سريعة')).toBeInTheDocument());
+    expect(screen.queryByText('إدارة المستخدمين')).toBeNull();
+    expect(screen.queryByText('المستخدمون')).toBeNull();
+  });
+});

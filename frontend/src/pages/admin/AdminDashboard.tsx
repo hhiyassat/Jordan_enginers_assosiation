@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { adminApi } from '../../api/client';
+import { useAuth } from '../../App';
 
 interface Stats {
   total_applications: number;
@@ -12,9 +13,14 @@ interface Stats {
 }
 
 export function AdminDashboard() {
+  const { user } = useAuth();
   const [stats, setStats]   = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError]   = useState('');
+  // Defense in depth — the /admin route is gated at the SPA layer, but if
+  // that gate ever slips this still hides user-mgmt affordances from an
+  // actor who can't act on them.
+  const canManageUsers = user?.can_manage_users ?? false;
 
   useEffect(() => {
     adminApi.dashboard()
@@ -29,7 +35,7 @@ export function AdminDashboard() {
     { label: 'موافق عليها اليوم',  value: stats.approved_today,     icon: '✅', link: '/admin/applications', color: 'bg-green-50 border-green-200' },
     { label: 'الشهادات الصادرة',   value: stats.certificates_issued, icon: '🏆', link: '/admin/certificates', color: 'bg-teal-50 border-teal-200' },
     { label: 'الخدمات النشطة',     value: stats.active_services,    icon: '⚙️', link: '/admin/services',     color: 'bg-purple-50 border-purple-200' },
-    { label: 'المستخدمون',         value: stats.total_users,        icon: '👥', link: '/admin/users',        color: 'bg-gray-50 border-gray-200' },
+    ...(canManageUsers ? [{ label: 'المستخدمون', value: stats.total_users, icon: '👥', link: '/admin/users', color: 'bg-gray-50 border-gray-200' }] : []),
   ] : [];
 
   return (
@@ -72,9 +78,11 @@ export function AdminDashboard() {
             <Link to="/review/queue" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 text-sm text-gray-700 transition-colors">
               <span>🔍</span> قائمة المراجعة
             </Link>
-            <Link to="/admin/users" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 text-sm text-gray-700 transition-colors">
-              <span>👥</span> إدارة المستخدمين
-            </Link>
+            {canManageUsers && (
+              <Link to="/admin/users" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 text-sm text-gray-700 transition-colors">
+                <span>👥</span> إدارة المستخدمين
+              </Link>
+            )}
             <Link to="/admin/services" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 text-sm text-gray-700 transition-colors">
               <span>⚙️</span> إدارة الخدمات
             </Link>
