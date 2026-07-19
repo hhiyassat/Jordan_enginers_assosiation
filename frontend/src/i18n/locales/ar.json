@@ -1,0 +1,62 @@
+{
+  "org": {
+    "name": "نقابة المهندسين الأردنيين",
+    "portal": "بوابة الخدمات الإلكترونية"
+  },
+  "nav": {
+    "dashboard": "الرئيسية",
+    "services": "الخدمات",
+    "myRequests": "طلباتي",
+    "review": "المراجعة",
+    "admin": "الإدارة",
+    "servicesAdmin": "إدارة الخدمات",
+    "newService": "خدمة جديدة",
+    "integration": "التكامل",
+    "users": "إدارة المستخدمين"
+  },
+  "layout": {
+    "sidebarLabel": "القائمة الجانبية",
+    "openSidebar": "فتح القائمة الجانبية",
+    "notifications": "الإشعارات",
+    "userAvatar": "المستخدم: {{name}}",
+    "mainMenu": "القائمة الرئيسية"
+  },
+  "auth": {
+    "signIn": "تسجيل الدخول",
+    "signOut": "تسجيل الخروج",
+    "signingIn": "جارٍ تسجيل الدخول...",
+    "email": "البريد الإلكتروني",
+    "password": "كلمة المرور",
+    "showPassword": "إظهار كلمة المرور",
+    "hidePassword": "إخفاء كلمة المرور",
+    "captchaRequired": "يرجى إدخال رمز التحقق كاملاً",
+    "credentialsRequired": "يرجى إدخال البريد الإلكتروني وكلمة المرور",
+    "loginError": "خطأ في تسجيل الدخول",
+    "demoAccountsTitle": "حسابات تجريبية (Demo1234!)"
+  },
+  "language": {
+    "switchTo": "التبديل إلى {{lang}}",
+    "arabic": "العربية",
+    "english": "الإنجليزية"
+  },
+  "loading": "جارٍ التحميل",
+  "error": {
+    "unexpected": "حدث خطأ غير متوقع",
+    "retry": "إعادة المحاولة",
+    "refresh": "تحديث الصفحة",
+    "sorry": "نأسف على الإزعاج. يمكنك تحديث الصفحة أو المحاولة مرة أخرى."
+  },
+  "pageTitle": {
+    "dashboard": "الرئيسية",
+    "services": "الخدمات الإلكترونية",
+    "projects": "مشاريعي",
+    "myRequests": "طلباتي",
+    "review": "المراجعة",
+    "admin": "الإدارة",
+    "newService": "خدمة جديدة",
+    "servicesAdmin": "إدارة الخدمات",
+    "integration": "التكامل",
+    "home": "الرئيسية"
+  },
+  "copyright": "© {{year}} نقابة المهندسين الأردنيين · جميع الحقوق محفوظة"
+}

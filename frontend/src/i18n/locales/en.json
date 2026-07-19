@@ -1,0 +1,62 @@
+{
+  "org": {
+    "name": "Jordan Engineers Association",
+    "portal": "E-Services Portal"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "services": "E-Services",
+    "myRequests": "My Requests",
+    "review": "Review",
+    "admin": "Admin",
+    "servicesAdmin": "Services",
+    "newService": "New Service",
+    "integration": "Integration",
+    "users": "Users"
+  },
+  "layout": {
+    "sidebarLabel": "Sidebar navigation",
+    "openSidebar": "Open sidebar",
+    "notifications": "Notifications",
+    "userAvatar": "User: {{name}}",
+    "mainMenu": "Main menu"
+  },
+  "auth": {
+    "signIn": "Sign In",
+    "signOut": "Sign Out",
+    "signingIn": "Signing in…",
+    "email": "Email",
+    "password": "Password",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "captchaRequired": "Please enter the full captcha code",
+    "credentialsRequired": "Please enter your email and password",
+    "loginError": "Login failed",
+    "demoAccountsTitle": "Demo accounts (Demo1234!)"
+  },
+  "language": {
+    "switchTo": "Switch to {{lang}}",
+    "arabic": "Arabic",
+    "english": "English"
+  },
+  "loading": "Loading",
+  "error": {
+    "unexpected": "Something went wrong",
+    "retry": "Retry",
+    "refresh": "Reload page",
+    "sorry": "Sorry for the interruption. You can reload the page or try again."
+  },
+  "pageTitle": {
+    "dashboard": "Dashboard",
+    "services": "E-Services Portal",
+    "projects": "My Projects",
+    "myRequests": "My Requests",
+    "review": "Review",
+    "admin": "Admin Dashboard",
+    "newService": "New Service",
+    "servicesAdmin": "Services Admin",
+    "integration": "Integration Cycles",
+    "home": "Home"
+  },
+  "copyright": "© {{year}} Jordan Engineers Association · All rights reserved"
+}

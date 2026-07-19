@@ -1,5 +1,6 @@
 import React, { createContext, Suspense, useContext, useEffect, useState } from 'react';
 import { BrowserRouter, Navigate, Route, Routes, useNavigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   LogOut, Home, LayoutDashboard, FileText, Settings, ClipboardList, PlusCircle, ShieldCheck, Zap,
   Bell, Menu, Building2, User as UserIcon, Eye, EyeOff, AlertTriangle, LogIn,
@@ -12,6 +13,7 @@ import { Button } from './components/ui/Button';
 import { TextField } from './components/ui/FormField';
 import { Captcha } from './components/ui/Captcha';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { LanguageSwitcher } from './components/LanguageSwitcher';
 
 // ── Pages (code-split via React.lazy) ────────────────────────────────────────
 //
@@ -127,6 +129,8 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
 function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
+  const isRtl = i18n.language.startsWith('ar');
   const [email, setEmail]         = useState('');
   const [password, setPassword]   = useState('');
   const [showPass, setShowPass]   = useState(false);
@@ -141,11 +145,11 @@ function LoginPage() {
     setError('');
     setCaptchaError('');
     if (!email.trim() || !password.trim()) {
-      setError('يرجى إدخال البريد الإلكتروني وكلمة المرور');
+      setError(t('auth.credentialsRequired'));
       return;
     }
     if (!captcha.answer || captcha.answer.length < 6) {
-      setCaptchaError('يرجى إدخال رمز التحقق كاملاً');
+      setCaptchaError(t('auth.captchaRequired'));
       return;
     }
     setLoading(true);
@@ -164,7 +168,7 @@ function LoginPage() {
       if (captchaMsg) {
         setCaptchaError(captchaMsg);
       } else {
-        setError(e.message || 'خطأ في تسجيل الدخول');
+        setError(e.message || t('auth.loginError'));
       }
     } finally {
       setLoading(false);
@@ -174,7 +178,7 @@ function LoginPage() {
   return (
     <div
       className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden"
-      dir="rtl"
+      dir={isRtl ? 'rtl' : 'ltr'}
       style={{ background: 'linear-gradient(145deg, #0F5A99 0%, #1A77BC 55%, #3D90C8 100%)' }}
     >
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -193,29 +197,33 @@ function LoginPage() {
         </div>
       </div>
 
+      {/* Language switcher pinned to the top corner so the user can
+          flip the whole login page before they've authenticated. */}
+      <div className={`absolute top-4 ${isRtl ? 'left-4' : 'right-4'} z-20`}>
+        <LanguageSwitcher compact />
+      </div>
+
       <div className="relative z-10 w-full max-w-md mx-4">
         <div className="flex flex-col items-center mb-8">
           <div className="bg-white rounded-2xl px-5 py-4 shadow-xl mb-4 inline-flex items-center gap-4">
             <JEALogo size={48} />
-            <div className="text-right">
-              <p className="text-sm font-black text-jea-text leading-tight">نقابة المهندسين الأردنيين</p>
-              <p className="text-[11px] text-jea-muted">Jordan Engineers Association</p>
+            <div className={isRtl ? 'text-right' : 'text-left'}>
+              <p className="text-sm font-black text-jea-text leading-tight">{t('org.name')}</p>
             </div>
           </div>
           <div className="mt-1 px-3 py-1 bg-white/15 rounded-full text-white/80 text-xs font-semibold">
-            بوابة الخدمات الإلكترونية
+            {t('org.portal')}
           </div>
         </div>
 
         <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
           <div className="bg-jea-bg px-6 py-4 border-b border-jea-border">
-            <h2 className="text-base font-black text-jea-text" lang="ar">تسجيل الدخول</h2>
-            <p className="text-xs text-jea-muted mt-0.5" lang="en" dir="ltr">Sign In</p>
+            <h2 className="text-base font-black text-jea-text">{t('auth.signIn')}</h2>
           </div>
           <form onSubmit={handleSubmit} className="px-6 py-6 flex flex-col gap-5" noValidate>
             <TextField
-              label="البريد الإلكتروني"
-              labelEn="Email"
+              label={t('auth.email')}
+              labelEn={t('auth.email')}
               value={email}
               onChange={setEmail}
               type="email"
@@ -226,8 +234,8 @@ function LoginPage() {
             />
 
             <TextField
-              label="كلمة المرور"
-              labelEn="Password"
+              label={t('auth.password')}
+              labelEn={t('auth.password')}
               value={password}
               onChange={setPassword}
               type={showPass ? 'text' : 'password'}
@@ -239,7 +247,7 @@ function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setShowPass(s => !s)}
-                  aria-label={showPass ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
+                  aria-label={showPass ? t('auth.hidePassword') : t('auth.showPassword')}
                   aria-pressed={showPass}
                   className="text-jea-muted hover:text-jea-primary transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-jea-primary/40 rounded"
                 >
@@ -268,7 +276,7 @@ function LoginPage() {
               className="w-full"
               icon={<LogIn size={16} />}
             >
-              {loading ? 'جارٍ تسجيل الدخول...' : (<><span lang="ar">تسجيل الدخول</span> · <span lang="en" dir="ltr">Sign in</span></>)}
+              {loading ? t('auth.signingIn') : t('auth.signIn')}
             </Button>
 
             {/* JORD-40: demo credentials only render in dev builds so they
@@ -277,7 +285,7 @@ function LoginPage() {
                 dead-code-eliminated from the production bundle. */}
             {import.meta.env.DEV && (
               <div className="text-[10px] text-jea-muted bg-jea-bg rounded-lg px-3 py-2 leading-relaxed text-center">
-                <p className="font-bold text-jea-text mb-0.5" lang="ar">حسابات تجريبية (Demo1234!)</p>
+                <p className="font-bold text-jea-text mb-0.5">{t('auth.demoAccountsTitle')}</p>
                 <p dir="ltr">admin@demo.esp · staff@demo.esp · auditor@demo.esp · ahmed@demo.esp</p>
               </div>
             )}
@@ -285,7 +293,7 @@ function LoginPage() {
         </div>
 
         <p className="text-center text-white/40 text-[11px] mt-6">
-          © {new Date().getFullYear()} نقابة المهندسين الأردنيين · جميع الحقوق محفوظة
+          {t('copyright', { year: new Date().getFullYear() })}
         </p>
       </div>
     </div>
@@ -296,8 +304,8 @@ function LoginPage() {
 
 interface NavItem {
   to: string;
-  ar: string;
-  en: string;
+  /** i18n key resolved at render time; nav items are language-agnostic now. */
+  labelKey: string;
   Icon: React.ComponentType<{ size?: number; className?: string }>;
 }
 
@@ -306,36 +314,41 @@ export function navItemsForRole(role: User['role'] | undefined): NavItem[] {
   if (!role) return items;
 
   if (role === 'applicant') {
-    items.push({ to: '/dashboard',       ar: 'الرئيسية',   en: 'Dashboard',    Icon: LayoutDashboard });
-    items.push({ to: '/services',        ar: 'الخدمات',    en: 'E-Services',   Icon: Home });
-    items.push({ to: '/my-applications', ar: 'طلباتي',     en: 'My Requests',  Icon: FileText });
+    items.push({ to: '/dashboard',       labelKey: 'nav.dashboard',    Icon: LayoutDashboard });
+    items.push({ to: '/services',        labelKey: 'nav.services',     Icon: Home });
+    items.push({ to: '/my-applications', labelKey: 'nav.myRequests',   Icon: FileText });
   }
   if (role === 'staff' || role === 'auditor' || role === 'admin') {
-    items.push({ to: '/review/queue',    ar: 'المراجعة',   en: 'Review',       Icon: ShieldCheck });
+    items.push({ to: '/review/queue',    labelKey: 'nav.review',       Icon: ShieldCheck });
   }
   if (role === 'admin' || role === 'superuser') {
-    items.push({ to: '/admin',                 ar: 'الإدارة',       en: 'Admin',       Icon: Settings });
-    items.push({ to: '/admin/services',        ar: 'إدارة الخدمات', en: 'Services',    Icon: ClipboardList });
-    items.push({ to: '/admin/services/new',    ar: 'خدمة جديدة',    en: 'New Service', Icon: PlusCircle });
-    items.push({ to: '/admin/integration',     ar: 'Nashmi',        en: 'Nashmi',      Icon: Zap });
+    items.push({ to: '/admin',                 labelKey: 'nav.admin',           Icon: Settings });
+    items.push({ to: '/admin/services',        labelKey: 'nav.servicesAdmin',   Icon: ClipboardList });
+    items.push({ to: '/admin/services/new',    labelKey: 'nav.newService',      Icon: PlusCircle });
+    items.push({ to: '/admin/integration',     labelKey: 'nav.integration',     Icon: Zap });
     // Both admin and superuser get the user-management lane. The backend
     // decides which roles the actor can act on inside the page.
-    items.push({ to: '/admin/users',           ar: 'إدارة المستخدمين', en: 'Users',    Icon: UserIcon });
+    items.push({ to: '/admin/users',           labelKey: 'nav.users',           Icon: UserIcon });
   }
   return items;
 }
 
-function pageTitleFor(pathname: string): { ar: string; en: string } {
-  if (pathname === '/dashboard') return { ar: 'الرئيسية', en: 'Dashboard' };
-  if (pathname === '/services' || pathname.startsWith('/services/') || pathname.startsWith('/apply/')) return { ar: 'الخدمات الإلكترونية', en: 'E-Services Portal' };
-  if (pathname.startsWith('/projects')) return { ar: 'مشاريعي', en: 'My Projects' };
-  if (pathname.startsWith('/my-applications')) return { ar: 'طلباتي', en: 'My Requests' };
-  if (pathname.startsWith('/review')) return { ar: 'المراجعة', en: 'Review' };
-  if (pathname === '/admin') return { ar: 'الإدارة', en: 'Admin Dashboard' };
-  if (pathname.startsWith('/admin/services/new')) return { ar: 'خدمة جديدة', en: 'New Service' };
-  if (pathname.startsWith('/admin/services')) return { ar: 'إدارة الخدمات', en: 'Services Admin' };
-  if (pathname.startsWith('/admin/integration')) return { ar: 'Nashmi', en: 'Integration Cycles' };
-  return { ar: 'الرئيسية', en: 'Home' };
+/**
+ * Route-to-title mapping. Returns an i18n key rather than the resolved
+ * string so <Header /> can rerender the title when the language flips
+ * without any extra plumbing.
+ */
+export function pageTitleKeyFor(pathname: string): string {
+  if (pathname === '/dashboard') return 'pageTitle.dashboard';
+  if (pathname === '/services' || pathname.startsWith('/services/') || pathname.startsWith('/apply/')) return 'pageTitle.services';
+  if (pathname.startsWith('/projects')) return 'pageTitle.projects';
+  if (pathname.startsWith('/my-applications')) return 'pageTitle.myRequests';
+  if (pathname.startsWith('/review')) return 'pageTitle.review';
+  if (pathname === '/admin') return 'pageTitle.admin';
+  if (pathname.startsWith('/admin/services/new')) return 'pageTitle.newService';
+  if (pathname.startsWith('/admin/services')) return 'pageTitle.servicesAdmin';
+  if (pathname.startsWith('/admin/integration')) return 'pageTitle.integration';
+  return 'pageTitle.home';
 }
 
 function isActivePath(pathname: string, to: string): boolean {
@@ -346,14 +359,16 @@ function isActivePath(pathname: string, to: string): boolean {
 
 function Header({ user, onMenuToggle }: { user: User | null; onMenuToggle: () => void }) {
   const location = useLocation();
-  const title = pageTitleFor(location.pathname);
+  const { t, i18n } = useTranslation();
+  const titleKey = pageTitleKeyFor(location.pathname);
   const initial = (user?.name ?? '').trim().charAt(0) || '?';
+  const isRtl = i18n.language.startsWith('ar');
 
   return (
-    <header className="bg-jea-topbar text-white h-14 flex items-center px-4 gap-4 shrink-0" dir="rtl">
+    <header className="bg-jea-topbar text-white h-14 flex items-center px-4 gap-4 shrink-0" dir={isRtl ? 'rtl' : 'ltr'}>
       <button
         onClick={onMenuToggle}
-        aria-label="فتح القائمة الجانبية · Open sidebar"
+        aria-label={t('layout.openSidebar')}
         aria-expanded={undefined}
         className="p-1 rounded hover:bg-white/10 transition-colors lg:hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
       >
@@ -362,18 +377,17 @@ function Header({ user, onMenuToggle }: { user: User | null; onMenuToggle: () =>
       <div className="flex items-center gap-2.5">
         <JEALogo size={38} dark />
         <div className="hidden sm:block">
-          <div className="font-bold text-sm leading-tight" lang="ar">نقابة المهندسين الأردنيين</div>
-          <div className="text-white/50 text-[10px] leading-tight" lang="en" dir="ltr">Jordan Engineers Association</div>
+          <div className="font-bold text-sm leading-tight">{t('org.name')}</div>
         </div>
       </div>
       <div className="flex-1 flex items-center gap-2 mx-4" aria-label="breadcrumb">
         <span className="text-white/40 text-xs" aria-hidden="true">›</span>
-        <span className="text-white/90 text-sm font-medium" lang="en" dir="ltr">{title.en}</span>
-        <span className="sr-only" lang="ar">{title.ar}</span>
+        <span className="text-white/90 text-sm font-medium">{t(titleKey)}</span>
       </div>
       <div className="flex items-center gap-2">
+        <LanguageSwitcher compact />
         <button
-          aria-label="الإشعارات · Notifications"
+          aria-label={t('layout.notifications')}
           className="p-1.5 rounded hover:bg-white/10 transition-colors relative focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
         >
           <Bell size={17} aria-hidden="true" />
@@ -381,7 +395,7 @@ function Header({ user, onMenuToggle }: { user: User | null; onMenuToggle: () =>
         </button>
         <div
           className="w-7 h-7 rounded-full bg-jea-primary flex items-center justify-center text-xs font-bold"
-          aria-label={user?.name ? `المستخدم: ${user.name}` : undefined}
+          aria-label={user?.name ? t('layout.userAvatar', { name: user.name }) : undefined}
           title={user?.name}
         >
           {initial}
@@ -402,6 +416,8 @@ function SidebarContent({
   onNavigate: (to: string) => void;
   onLogout: () => void;
 }) {
+  const { t, i18n } = useTranslation();
+  const isRtl = i18n.language.startsWith('ar');
   return (
     <>
       <div className="h-14 flex items-center px-4 border-b border-[#E0E0E0] gap-3">
@@ -409,12 +425,11 @@ function SidebarContent({
           <JEALogo size={36} dark />
         </div>
         <div>
-          <p className="text-xs font-bold text-jea-text">نقابة المهندسين الأردنيين</p>
-          <p className="text-[10px] text-jea-muted">Jordan Engineers Association</p>
+          <p className="text-xs font-bold text-jea-text">{t('org.name')}</p>
         </div>
       </div>
-      <nav className="flex-1 py-3 overflow-y-auto" aria-label="القائمة الرئيسية">
-        {items.map(({ to, ar, en, Icon }) => {
+      <nav className="flex-1 py-3 overflow-y-auto" aria-label={t('layout.mainMenu')}>
+        {items.map(({ to, labelKey, Icon }) => {
           const active = isActivePath(pathname, to);
           return (
             <button
@@ -423,14 +438,13 @@ function SidebarContent({
               aria-current={active ? 'page' : undefined}
               className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-jea-primary/40 focus-visible:ring-inset ${
                 active
-                  ? 'bg-jea-accent text-jea-primary font-semibold border-r-4 border-jea-primary'
+                  ? `bg-jea-accent text-jea-primary font-semibold ${isRtl ? 'border-r-4' : 'border-l-4'} border-jea-primary`
                   : 'text-[#444] hover:bg-gray-50 hover:text-jea-primary'
               }`}
             >
               <Icon size={16} className={active ? 'text-jea-primary' : 'text-[#999]'} />
-              <div className="flex-1 text-right">
-                <div lang="ar">{ar}</div>
-                <div className="text-[10px] opacity-60" dir="ltr" lang="en">{en}</div>
+              <div className={`flex-1 ${isRtl ? 'text-right' : 'text-left'}`}>
+                <div>{t(labelKey)}</div>
               </div>
             </button>
           );
@@ -442,7 +456,7 @@ function SidebarContent({
           className="w-full flex items-center gap-3 px-3 py-2 text-sm text-red-500 hover:bg-red-50 rounded-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
         >
           <LogOut size={15} aria-hidden="true" />
-          <span><span lang="ar">تسجيل الخروج</span> · <span lang="en" dir="ltr">Sign out</span></span>
+          <span>{t('auth.signOut')}</span>
         </button>
       </div>
     </>
@@ -453,6 +467,8 @@ function Layout({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const { t, i18n } = useTranslation();
+  const isRtl = i18n.language.startsWith('ar');
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const items = navItemsForRole(user?.role);
@@ -460,14 +476,14 @@ function Layout({ children }: { children: React.ReactNode }) {
   const handleNavigate = (to: string) => { navigate(to); setSidebarOpen(false); };
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden bg-jea-bg" dir="rtl">
+    <div className="h-screen flex flex-col overflow-hidden bg-jea-bg" dir={isRtl ? 'rtl' : 'ltr'}>
       <SkipToContent />
       <Header user={user} onMenuToggle={() => setSidebarOpen(o => !o)} />
 
       <div className="flex flex-1 overflow-hidden">
         <aside
-          className="hidden lg:flex w-60 shrink-0 bg-white border-l border-[#E0E0E0] flex-col h-full"
-          aria-label="القائمة الجانبية · Sidebar navigation"
+          className={`hidden lg:flex w-60 shrink-0 bg-white ${isRtl ? 'border-l' : 'border-r'} border-[#E0E0E0] flex-col h-full`}
+          aria-label={t('layout.sidebarLabel')}
         >
           <SidebarContent
             items={items}
@@ -485,10 +501,12 @@ function Layout({ children }: { children: React.ReactNode }) {
           />
         )}
         <aside
-          className={`fixed top-0 right-0 h-full w-60 bg-white border-l border-[#E0E0E0] z-30 flex flex-col transform transition-transform duration-300 lg:hidden ${
-            sidebarOpen ? 'translate-x-0' : 'translate-x-full'
+          className={`fixed top-0 ${isRtl ? 'right-0 border-l' : 'left-0 border-r'} h-full w-60 bg-white border-[#E0E0E0] z-30 flex flex-col transform transition-transform duration-300 lg:hidden ${
+            sidebarOpen
+              ? 'translate-x-0'
+              : (isRtl ? 'translate-x-full' : '-translate-x-full')
           }`}
-          aria-label="القائمة الجانبية · Sidebar navigation"
+          aria-label={t('layout.sidebarLabel')}
           aria-hidden={!sidebarOpen}
         >
           <SidebarContent
