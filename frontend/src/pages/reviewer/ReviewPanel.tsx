@@ -39,11 +39,14 @@ export function ReviewPanel() {
   const [app, setApp]             = useState<Application | null>(null);
   const [loading, setLoading]     = useState(true);
   const [claiming, setClaiming]   = useState(false);
+  const [releasing, setReleasing] = useState(false);
   const [deciding, setDeciding]   = useState(false);
   const [decision, setDecision]   = useState('');
   const [notes, setNotes]         = useState('');
   const [notesError, setNotesError] = useState('');
   const [pageError, setPageError]   = useState('');
+  const [paymentReference, setPaymentReference] = useState('');
+  const [confirmingPayment, setConfirmingPayment] = useState(false);  
 
   useEffect(() => {
     if (!id) return;
@@ -64,6 +67,20 @@ export function ReviewPanel() {
       setPageError((e as Error).message);
     } finally {
       setClaiming(false);
+    }
+  };
+  const handleRelease = async () =>{
+    if (!app) return;
+    if(!window.confirm('هل تريد التراجع عن استلام هذا الطلب؟ سيصبح متاحاً لمراجعين آخرين.')) return;
+    setReleasing(true);
+    setPageError('');
+    try{
+      const r = await reviewApi.release(app.id);
+      setApp(r.application);
+    } catch (e:unknown){
+      setPageError((e as Error).message);
+    }finally{
+      setReleasing(false);
     }
   };
 
@@ -93,6 +110,23 @@ export function ReviewPanel() {
       }
     } finally {
       setDeciding(false);
+    }
+  };
+const handleConfirmPayment = async () => {
+    if (!app) return;
+    if (!paymentReference.trim()) {
+      setPageError('مرجع الدفع مطلوب.');
+      return;
+    }
+    setConfirmingPayment(true);
+    setPageError('');
+    try {
+      const r = await applicationsApi.confirmPayment(app.id, paymentReference.trim());
+      setApp(r.application);
+    } catch (err: unknown) {
+      setPageError((err as Error).message);
+    } finally {
+      setConfirmingPayment(false);
     }
   };
 
@@ -158,9 +192,14 @@ export function ReviewPanel() {
           )}
 
           {isClaimed && app.status === 'under_review' && (
-            <span className="text-xs px-3 py-1.5 rounded-full bg-orange-100 text-orange-700 font-medium">
-              🔒 قيد مراجعتك
-            </span>
+            <button
+              onClick={handleRelease}
+              disabled={releasing}
+              title="التراجع عن الاستلام وإعادة الطلب لقائمة الانتظار"
+              className="text-xs px-3 py-1.5 rounded-full bg-orange-100 text-orange-700 font-medium hover:bg-orange-200 disabled:opacity-50 transition-colors"
+            >
+              {releasing ? 'جارٍ...' : '🔓 قيد مراجعتك — تحرير'}
+            </button>
           )}
         </div>
       </div>
@@ -243,16 +282,37 @@ export function ReviewPanel() {
             </div>
           )}
 
-          {/* Issue certificate (post-approval) */}
+          {/* Payment confirmation + issue certificate (post-approval) */}
           {app.status === 'approved' && (
             <div className="bg-green-50 border border-green-200 rounded-xl p-5">
               <p className="text-green-700 font-medium text-sm mb-3">✅ الطلب موافق عليه</p>
-              <button
-                onClick={handleIssueCert}
-                className="w-full py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium"
-              >
-                إصدار الشهادة
-              </button>
+
+              {app.payment_status !== 'paid' && app.payment_status !== 'waived' ? (
+                <div className="space-y-3">
+                  <p className="text-sm text-gray-600">يجب تأكيد الدفع أولاً قبل إصدار الشهادة.</p>
+                  <input
+                    type="text"
+                    value={paymentReference}
+                    onChange={e => setPaymentReference(e.target.value)}
+                    placeholder="مرجع الدفع (رقم الإيصال أو المعاملة)"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  />
+                  <button
+                    onClick={handleConfirmPayment}
+                    disabled={confirmingPayment}
+                    className="w-full py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm font-medium"
+                  >
+                    {confirmingPayment ? 'جارٍ التأكيد...' : '💳 تأكيد الدفع'}
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={handleIssueCert}
+                  className="w-full py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium"
+                >
+                  إصدار الشهادة
+                </button>
+              )}
             </div>
           )}
 
