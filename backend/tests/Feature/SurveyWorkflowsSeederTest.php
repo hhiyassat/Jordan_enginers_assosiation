@@ -33,17 +33,16 @@ class SurveyWorkflowsSeederTest extends TestCase
         $this->runSilently(new SurveyWorkflowsSeeder());
     }
 
-    public function test_slope_stability_service_is_added_by_the_seeder(): void
+    public function test_slope_stability_service_is_not_seeded(): void
     {
+        // SRV-015 (Slope Stability) was dropped from the JEA services plan.
+        // Its workflow + upsert helpers remain in the seeder for reference
+        // but the row is no longer produced.
         $slope = ServiceDefinition::where('organization_id', $this->org->id)
             ->where('code', 'SRV-015')
             ->first();
 
-        $this->assertNotNull($slope);
-        $this->assertSame('JEA-SURV', $slope->parent_code);
-        $this->assertSame('الحفريات', $slope->subcategory_ar);
-        $this->assertSame(1, $slope->phase);
-        $this->assertSame('active', $slope->status);
+        $this->assertNull($slope, 'SRV-015 must not be reintroduced without a plan update');
     }
 
     /**
@@ -60,7 +59,6 @@ class SurveyWorkflowsSeederTest extends TestCase
             'SRV-007 excavation support' => ['SRV-007', 7, 'office_submission', 'issue_documents', true],
             'SRV-012 excavation super'   => ['SRV-012', 5, 'office_submission', 'issue_documents', false],
             'SRV-014 visual inspection'  => ['SRV-014', 5, 'office_submission', 'additional_inspection_check', false],
-            'SRV-015 slope stability'    => ['SRV-015', 4, 'office_submission', 'issue_documents', true],
         ];
     }
 
@@ -157,7 +155,6 @@ class SurveyWorkflowsSeederTest extends TestCase
             'SRV-009 materials existing'     => ['SRV-009', ['الأول', 'المدقق الثاني', 'تجاوز'], ['first', 'override']],
             'SRV-012 excavation supervision' => ['SRV-012', ['الحفريات', 'التدعيم'],             ['excavation', 'support']],
             'SRV-014 visual inspection'      => ['SRV-014', ['كشف حسي', 'خارطة'],                 ['visual', 'inspection']],
-            'SRV-015 slope stability'        => ['SRV-015', ['استقرار المنحدرات', 'الربط'],       ['slope', 'linked']],
         ];
     }
 

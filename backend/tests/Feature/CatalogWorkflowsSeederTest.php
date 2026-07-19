@@ -74,7 +74,7 @@ class CatalogWorkflowsSeederTest extends TestCase
         // SurveyWorkflowsSeeder runs after CatalogWorkflowsSeeder in this
         // test's setUp — the 8 flowchart-backed services must keep their
         // flowchart_source annotations and not fall back to catalog:2026.
-        $srvWithFlowchart = ['SRV-001', 'SRV-002', 'SRV-007', 'SRV-008', 'SRV-009', 'SRV-012', 'SRV-014', 'SRV-015'];
+        $srvWithFlowchart = ['SRV-001', 'SRV-002', 'SRV-007', 'SRV-008', 'SRV-009', 'SRV-012', 'SRV-014'];
         foreach ($srvWithFlowchart as $code) {
             $svc = ServiceDefinition::where('organization_id', $this->org->id)
                 ->where('code', $code)
@@ -159,11 +159,11 @@ class CatalogWorkflowsSeederTest extends TestCase
             ->pluck('code')
             ->all();
 
-        // Survey (from SurveyWorkflowsSeeder): SRV-007, 008, 009, 015 (4)
+        // Survey (from SurveyWorkflowsSeeder): SRV-007, 008, 009 (3 — SRV-015 dropped from plan)
         // Catalog (from this seeder): DRW-P-008, 009, 010, SRV-010 (4)
-        // Total = 8
-        $this->assertCount(8, $withMod,
-            'Expected 8 services to expose a modification variant, got: ' . implode(', ', $withMod));
+        // Total = 7
+        $this->assertCount(7, $withMod,
+            'Expected 7 services to expose a modification variant, got: ' . implode(', ', $withMod));
     }
 
     private function runSilently(\Illuminate\Database\Seeder $seeder): void

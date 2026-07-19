@@ -18,9 +18,11 @@ use Illuminate\Database\Seeder;
  * can offer them as an alternative entry point without polluting the
  * default state machine.
  *
- * Also creates SRV-015 (استقرار المنحدرات · Slope Stability) which is
- * not in the 2026 services plan PDF but has its own flowchart —
- * treated as a phase-1 site-survey service under الحفريات subcategory.
+ * Historical note: this seeder previously created SRV-015 (Slope Stability)
+ * out of a standalone drawio flowchart. That row was dropped from the JEA
+ * services plan and is no longer seeded — the workflow and upsert helpers
+ * are kept for reference and can be reintroduced by re-adding the code to
+ * $mappings + calling $this->upsertSlopeStability() from run().
  *
  * Run: php artisan db:seed --class=SurveyWorkflowsSeeder
  */
@@ -34,10 +36,9 @@ class SurveyWorkflowsSeeder extends Seeder
             return;
         }
 
-        // 1. Ensure the slope-stability service exists (only referenced by the flowchart).
-        $this->upsertSlopeStability($org->id);
-
-        // 2. Replace the placeholder workflow on each service in scope.
+        // Replace the placeholder workflow on each service in scope.
+        // SRV-015 (Slope Stability) intentionally omitted — dropped from
+        // the JEA services plan. See historical note above.
         $mappings = [
             'SRV-001' => $this->soilProposedWorkflow(),
             'SRV-002' => $this->soilExistingWorkflow(),
@@ -46,7 +47,6 @@ class SurveyWorkflowsSeeder extends Seeder
             'SRV-009' => $this->materialsExistingWorkflow(),
             'SRV-012' => $this->excavationSupervisionWorkflow(),
             'SRV-014' => $this->visualInspectionWorkflow(),
-            'SRV-015' => $this->slopeStabilityWorkflow(),
         ];
 
         $updated = 0;

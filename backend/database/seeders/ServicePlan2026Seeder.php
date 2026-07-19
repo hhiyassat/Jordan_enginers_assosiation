@@ -456,7 +456,8 @@ class ServicePlan2026Seeder extends Seeder
             ['code' => 'CERT-003', 'parent_code' => 'JEA-CERT', 'phase' => 3, 'name_ar' => 'شهادة تصنيف مكتب',           'name_en' => 'Office Classification Certificate'],
             ['code' => 'CERT-004', 'parent_code' => 'JEA-CERT', 'phase' => 3, 'name_ar' => 'شهادة ملكية مكتب',           'name_en' => 'Office Ownership Certificate'],
             ['code' => 'CERT-005', 'parent_code' => 'JEA-CERT', 'phase' => 3, 'name_ar' => 'شهادة اختصاصات مكتب',        'name_en' => 'Office Specialisations Certificate'],
-            ['code' => 'CERT-006', 'parent_code' => 'JEA-CERT', 'phase' => 3, 'name_ar' => 'باقي الشهادات الرسمية',       'name_en' => 'Other Official Certificates'],
+            // CERT-006 "باقي الشهادات الرسمية" dropped as a vague catch-all
+            // that mapped to no concrete workflow.
 
             // ── 5. المهندسون في المكاتب (JEA-ENG) — 2 services ──
             ['code' => 'ENG-001', 'parent_code' => 'JEA-ENG', 'phase' => 5, 'name_ar' => 'تعيين / تحويل / إقالة مهندس (كادر المكتب)',  'name_en' => 'Assign / Transfer / Terminate Engineer (Office Staff)'],
@@ -481,7 +482,8 @@ class ServicePlan2026Seeder extends Seeder
             ['code' => 'MSC-010', 'parent_code' => 'JEA-MISC', 'phase' => 2, 'name_ar' => 'مخالصات المكاتب والمهندسين',        'name_en' => 'Office & Engineer Clearance'],
             ['code' => 'MSC-011', 'parent_code' => 'JEA-MISC', 'phase' => 5, 'name_ar' => 'مقابلة رؤساء الاختصاص',             'name_en' => 'Meeting with Discipline Heads'],
             ['code' => 'MSC-012', 'parent_code' => 'JEA-MISC', 'phase' => 5, 'name_ar' => 'الكشوفات الهندسية',                 'name_en' => 'Engineering Inspections'],
-            ['code' => 'MSC-013', 'parent_code' => 'JEA-MISC', 'phase' => 5, 'name_ar' => 'الكتب والنماذج المتاحة للمكاتب',    'name_en' => 'Office Documents & Templates Library'],
+            // MSC-013 "الكتب والنماذج المتاحة للمكاتب" dropped as a vague
+            // catch-all — the documents library isn't a workflow.
             ['code' => 'MSC-014', 'parent_code' => 'JEA-MISC', 'phase' => 5, 'name_ar' => 'منصة التوظيف',                       'name_en' => 'Recruitment Platform'],
         ];
     }

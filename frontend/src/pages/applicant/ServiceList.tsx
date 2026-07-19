@@ -112,10 +112,8 @@ function ServiceTile({ service, childCount }: { service: ServiceDefinition; chil
   const description = service.description_ar ?? service.name_en;
 
   const handleClick = () => {
-    // مشاريعي is special — it opens the user's projects list, not a services grid.
-    if (service.code === 'JEA-PROJ') navigate('/projects');
-    else if (isCategory)             navigate(`/services/${service.code}`);
-    else                             navigate(`/apply/${service.code}`);
+    if (isCategory) navigate(`/services/${service.code}`);
+    else            navigate(`/apply/${service.code}`);
   };
 
   return (

@@ -42,12 +42,14 @@ class ServicePlan2026SeederTest extends TestCase
             ->pluck('c', 'phase')
             ->toArray();
 
-        // Footer of service-plan-payment.pdf: 20 / 13 / 12 / 4 / 9 → total 58.
+        // Original plan PDF footer: 20 / 13 / 12 / 4 / 9 (58 total). The two
+        // vague catch-alls CERT-006 (phase 3) and MSC-013 (phase 5) were
+        // subsequently dropped, taking phase 3 → 11 and phase 5 → 8, total 56.
         $this->assertSame(20, $counts[1] ?? 0, 'Phase 1 must match plan');
         $this->assertSame(13, $counts[2] ?? 0, 'Phase 2 must match plan');
-        $this->assertSame(12, $counts[3] ?? 0, 'Phase 3 must match plan');
+        $this->assertSame(11, $counts[3] ?? 0, 'Phase 3 must match plan (post catch-all drop)');
         $this->assertSame(4,  $counts[4] ?? 0, 'Phase 4 must match plan');
-        $this->assertSame(9,  $counts[5] ?? 0, 'Phase 5 must match plan');
+        $this->assertSame(8,  $counts[5] ?? 0, 'Phase 5 must match plan (post catch-all drop)');
     }
 
     public function test_seeder_is_idempotent(): void
@@ -83,10 +85,10 @@ class ServicePlan2026SeederTest extends TestCase
             'JEA-PROJ' => 12,
             'JEA-SURV' => 14, // 13 numbered + شهادة الكشف الحسي which sits under survey per the plan
             'JEA-FIN'  => 6,
-            'JEA-CERT' => 6,
+            'JEA-CERT' => 5, // CERT-006 catch-all dropped
             'JEA-ENG'  => 2,
             'JEA-DEC'  => 4,
-            'JEA-MISC' => 14,
+            'JEA-MISC' => 13, // MSC-013 catch-all dropped
         ];
 
         foreach ($expected as $parent => $count) {

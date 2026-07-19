@@ -438,7 +438,7 @@ class CatalogWorkflowsSeeder extends Seeder
             'CERT-003' => $this->certificate(),
             'CERT-004' => $this->certificate(),
             'CERT-005' => $this->certificate(),
-            'CERT-006' => $this->certificate(),
+            // CERT-006 workflow retired with the catch-all row.
 
             // ── JEA-ENG Engineers ─────────────────────────────────────
             'ENG-001' => $this->engineer(),
@@ -474,7 +474,7 @@ class CatalogWorkflowsSeeder extends Seeder
             'MSC-010' => $this->contract(),
             'MSC-011' => $this->booking(),
             'MSC-012' => $this->inspection(),
-            'MSC-013' => $this->directResponse(),
+            // MSC-013 workflow retired with the catch-all row.
             'MSC-014' => $this->recruitment(),
         ];
     }
