@@ -31,6 +31,11 @@ export function Dashboard() {
   const [loading, setLoading]           = useState(true);
   const [quotaLoading, setQuotaLoading] = useState(true);
   const [quotaError, setQuotaError]     = useState('');
+  // JORD-48b: previously a fetch failure was silently swallowed via
+  // `.catch(() => [])`, which left the tiles showing "0 projects" while
+  // the real reason was a 500. Surface the failure so the user knows
+  // to reload — the counter tiles fall back to their skeleton state.
+  const [feedError, setFeedError]       = useState('');
 
   const loadQuota = () => {
     setQuotaLoading(true);
@@ -43,14 +48,16 @@ export function Dashboard() {
 
   useEffect(() => {
     setLoading(true);
+    setFeedError('');
     Promise.all([
-      projectsApi.list().then(r => r.projects).catch(() => [] as Project[]),
-      applicationsApi.list().then(r => r.applications).catch(() => [] as Application[]),
+      projectsApi.list().then(r => r.projects),
+      applicationsApi.list().then(r => r.applications),
     ])
       .then(([p, a]) => {
         setProjects(p);
         setApplications(a);
       })
+      .catch(e => setFeedError((e as Error).message))
       .finally(() => setLoading(false));
     loadQuota();
   }, []);
@@ -76,6 +83,11 @@ export function Dashboard() {
       />
 
       <div className="flex-1 overflow-y-auto bg-jea-bg p-6 flex flex-col gap-6">
+        {feedError && (
+          <div role="alert" className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-700">
+            {feedError}
+          </div>
+        )}
         {/* Row 1 — aggregate office quota + counter tiles */}
         <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_auto] gap-4 items-stretch">
           <QuotaCard

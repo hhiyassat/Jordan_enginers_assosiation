@@ -3,6 +3,42 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!--
+      JORD-31: Content-Security-Policy meta tag.
+
+      Rules picked to fit the current stack:
+        • default-src 'self'          — everything defaults to same-origin
+        • script-src 'self'           — no external scripts loaded
+        • style-src   'self' 'unsafe-inline'  — Vite emits inline
+                                        <style> blocks; Tailwind's runtime
+                                        also needs inline styles.
+        • img-src   'self' data: blob:  — QR codes render from data URLs;
+                                        blob covers document previews.
+        • font-src  'self' data:      — inline base64 fonts sneak in via
+                                        lucide-react + Tailwind resets.
+        • connect-src 'self'          — API + same-origin XHR only.
+        • frame-ancestors 'none'      — no one embeds us in an iframe.
+        • base-uri 'self'; form-action 'self'
+                                      — HTML injection defense.
+        • object-src 'none'           — no Flash / plugins.
+
+      Header-level CSP (via the reverse proxy) is still the belt; this
+      meta tag is the braces.
+    -->
+    <meta http-equiv="Content-Security-Policy" content="
+      default-src 'self';
+      script-src 'self';
+      style-src 'self' 'unsafe-inline';
+      img-src 'self' data: blob:;
+      font-src 'self' data:;
+      connect-src 'self';
+      frame-ancestors 'none';
+      base-uri 'self';
+      form-action 'self';
+      object-src 'none';
+    ">
+
     <title>منصة الخدمات الإلكترونية — Eqratech</title>
   </head>
   <body>

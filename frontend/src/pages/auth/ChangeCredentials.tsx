@@ -16,7 +16,7 @@ import { useAuth } from '../../auth/AuthContext';
  * flag but nothing else.
  */
 export function ChangeCredentials() {
-  const { user, logout } = useAuth();
+  const { user, token, login } = useAuth();
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const isRtl = i18n.language.startsWith('ar');
@@ -55,11 +55,18 @@ export function ChangeCredentials() {
         confirm,
         isSuperuser && newEmail.trim() !== user?.email ? newEmail.trim() : undefined,
       );
-      // Simplest way to refresh the session with the cleared flag is to
-      // sign out + back in via the normal flow. Log the user out and route
-      // them to /login so their next login lands them on the dashboard.
-      logout();
-      navigate('/login', { replace: true });
+      // JORD-47: previously we force-logged out + bounced to /login here,
+      // which meant every voluntary rotation cost the user a second sign-in
+      // (and every first-login user had to type their brand-new password
+      // twice in a row). Instead, re-fetch /auth/me — the server has just
+      // cleared must_change_password + rotated the token's password hash,
+      // so the fresh payload lets the AuthContext keep the session alive.
+      // The RequireAuth gate then unblocks the route the user actually
+      // wanted (home / dashboard).
+      if (!token) throw new Error('missing session token');
+      const me = await authApi.me();
+      login(token, me.user);
+      navigate('/', { replace: true });
     } catch (err) {
       const e = err as Error & { errors?: Record<string, string[]> };
       const first =

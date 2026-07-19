@@ -4,20 +4,23 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import type { User } from '../../types';
 
-// Mock BEFORE the ChangeCredentials import so its `useAuth` from ../App
-// resolves to the mocked module. logout()/navigate() get spies we assert on.
+// Mock BEFORE the ChangeCredentials import so useAuth resolves to the
+// mocked module. login()/logout() get spies we assert on.
 const mockChangePassword = vi.fn();
+const mockMe            = vi.fn();
+const mockLogin          = vi.fn();
 const mockLogout         = vi.fn();
 let mockUser: User | null = null;
 
 vi.mock('../../api/client', () => ({
   authApi: {
     changePassword: (...a: unknown[]) => mockChangePassword(...a),
+    me:             () => mockMe(),
   },
 }));
 
 vi.mock('../../auth/AuthContext', () => ({
-  useAuth: () => ({ user: mockUser, logout: mockLogout, token: 'x', login: vi.fn() }),
+  useAuth: () => ({ user: mockUser, logout: mockLogout, token: 'x', login: mockLogin }),
 }));
 
 import { ChangeCredentials } from './ChangeCredentials';
@@ -28,8 +31,12 @@ function renderPage() {
 
 beforeEach(() => {
   mockChangePassword.mockReset();
+  mockMe.mockReset();
+  mockLogin.mockReset();
   mockLogout.mockReset();
   mockUser = null;
+  // Default me() response — individual tests override.
+  mockMe.mockResolvedValue({ user: { id: 0, name: '', email: '', role: 'applicant', organization_id: 1, must_change_password: false } });
 });
 
 describe('ChangeCredentials — non-superuser', () => {
@@ -42,8 +49,9 @@ describe('ChangeCredentials — non-superuser', () => {
     expect(screen.queryByText('البريد الإلكتروني الدائم')).toBeNull();
   });
 
-  it('submits password only and then logs out', async () => {
+  it('submits password only and refreshes the session (JORD-47: no force-logout)', async () => {
     mockChangePassword.mockResolvedValue({ message: 'ok' });
+    mockMe.mockResolvedValue({ user: { ...mockUser!, must_change_password: false } });
     renderPage();
 
     await userEvent.type(screen.getByLabelText(/كلمة المرور الحالية/), 'OldPass1!');
@@ -52,9 +60,13 @@ describe('ChangeCredentials — non-superuser', () => {
     await userEvent.click(screen.getByRole('button', { name: /حفظ ومتابعة/ }));
 
     await waitFor(() => expect(mockChangePassword).toHaveBeenCalled());
-    // Signature: current, new, confirm, email(optional). Email must be undefined for non-superuser.
     expect(mockChangePassword).toHaveBeenCalledWith('OldPass1!', 'NewPass1!', 'NewPass1!', undefined);
-    expect(mockLogout).toHaveBeenCalled();
+    // JORD-47: the user is NOT force-logged out. Instead the session is
+    // refreshed via /auth/me + login(token, freshUser).
+    await waitFor(() => expect(mockLogin).toHaveBeenCalled());
+    expect(mockLogout).not.toHaveBeenCalled();
+    const [, freshUser] = mockLogin.mock.calls[0];
+    expect(freshUser.must_change_password).toBe(false);
   });
 });
 

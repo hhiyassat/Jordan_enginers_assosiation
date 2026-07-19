@@ -1,5 +1,7 @@
-import React, { useCallback, useEffect, useId, useState } from 'react';
+import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
+import DOMPurify from 'dompurify';
 import { RefreshCw } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Captcha — text captcha wrapper for public forms
@@ -28,6 +30,7 @@ interface CaptchaProps {
 }
 
 export function Captcha({ onChange, resetKey, error }: CaptchaProps) {
+  const { t } = useTranslation();
   const rawId  = useId();
   const inputId = `captcha-${rawId}`;
   const errId   = error ? `${inputId}-error` : undefined;
@@ -37,7 +40,15 @@ export function Captcha({ onChange, resetKey, error }: CaptchaProps) {
   const [loading,   setLoading]   = useState(false);
   const [loadErr,   setLoadErr]   = useState('');
 
+  // JORD-44: React StrictMode runs effects twice in dev, which used to
+  // fire two captcha requests back-to-back and burn the single-use
+  // challenge on the throwaway render. inFlight coalesces the pair so
+  // only one request actually hits the server per resetKey change.
+  const inFlight = useRef(false);
+
   const load = useCallback(async () => {
+    if (inFlight.current) return;
+    inFlight.current = true;
     setLoading(true);
     setLoadErr('');
     setAnswer('');
@@ -48,11 +59,12 @@ export function Captcha({ onChange, resetKey, error }: CaptchaProps) {
       setChallenge(data);
       onChange({ id: data.id, answer: '' });
     } catch (e: unknown) {
-      setLoadErr((e as Error).message || 'تعذّر تحميل رمز التحقق');
+      setLoadErr((e as Error).message || t('auth.captchaRequired'));
     } finally {
       setLoading(false);
+      inFlight.current = false;
     }
-  }, [onChange]);
+  }, [onChange, t]);
 
   // Initial load + on resetKey bump
   useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [resetKey]);
@@ -74,16 +86,24 @@ export function Captcha({ onChange, resetKey, error }: CaptchaProps) {
       </label>
 
       <div className="flex items-center gap-2" dir="ltr">
-        {/* SVG image. dangerouslySetInnerHTML on our own server response;
-            SVG carries no <script>/foreign elements. React forbids mixing
-            dangerouslySetInnerHTML with children, so branch on it. */}
+        {/* SVG image. JORD-45: even though the SVG comes from our own
+            server, we run it through DOMPurify with SVG profile ON as
+            defense-in-depth. If the server ever gets compromised or an
+            attacker finds a way to poison the response, the sanitizer
+            strips <script>, event handlers, and foreign HTML before it
+            reaches the DOM. useSVG lets the profile keep legitimate
+            captcha primitives (paths, text, gradients) intact. */}
         {challenge ? (
           <div
             className="rounded-lg border border-jea-border bg-jea-bg overflow-hidden shrink-0"
             style={{ width: 180, height: 60 }}
             aria-label="captcha challenge image"
             role="img"
-            dangerouslySetInnerHTML={{ __html: challenge.svg }}
+            dangerouslySetInnerHTML={{
+              __html: DOMPurify.sanitize(challenge.svg, {
+                USE_PROFILES: { svg: true, svgFilters: true },
+              }),
+            }}
           />
         ) : (
           <div
