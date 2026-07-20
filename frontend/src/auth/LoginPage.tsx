@@ -17,6 +17,14 @@ import { useAuth } from './AuthContext';
  * flash before authentication. The language switcher is pinned to the
  * top corner so the user can flip the whole page before signing in.
  */
+// JORD-55: captcha is off by default. Set VITE_CAPTCHA_ENABLED=true on
+// the frontend AND CAPTCHA_ENABLED=true on the backend to turn it back on.
+// Both sides must agree — turning it on in only one place either shows a
+// widget that the server ignores or accepts a login the widget still
+// demands. Reading the flag once at module scope so the login page
+// doesn't re-check it on every keystroke.
+const CAPTCHA_ENABLED = import.meta.env.VITE_CAPTCHA_ENABLED === 'true';
+
 export function LoginPage(): JSX.Element {
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -39,12 +47,15 @@ export function LoginPage(): JSX.Element {
       setError(t('auth.credentialsRequired'));
       return;
     }
-    if (!captcha.answer || captcha.answer.length < 6) {
+    if (CAPTCHA_ENABLED && (!captcha.answer || captcha.answer.length < 6)) {
       setCaptchaError(t('auth.captchaRequired'));
       return;
     }
     setLoading(true);
     try {
+      // When captcha is off we still send the (empty) captcha object;
+      // the middleware short-circuits on the server-side flag before it
+      // even looks at these fields, so an empty payload is harmless.
       const r = await authApi.login(email, password, captcha);
       login(r.token, r.user);
       navigate('/');
@@ -53,10 +64,13 @@ export function LoginPage(): JSX.Element {
       // Captcha is single-use — any failure invalidates the challenge on the
       // server. Bump the key so the widget fetches a fresh SVG and clears
       // the user's stale entry regardless of which validation failed.
-      setCaptchaKey(k => k + 1);
-      setCaptcha({ id: '', answer: '' });
+      // Only meaningful when the widget is visible.
+      if (CAPTCHA_ENABLED) {
+        setCaptchaKey(k => k + 1);
+        setCaptcha({ id: '', answer: '' });
+      }
       const captchaMsg = e.errors?.captcha_answer?.[0];
-      if (captchaMsg) {
+      if (captchaMsg && CAPTCHA_ENABLED) {
         setCaptchaError(captchaMsg);
       } else {
         setError(e.message || t('auth.loginError'));
@@ -145,11 +159,13 @@ export function LoginPage(): JSX.Element {
               }
             />
 
-            <Captcha
-              onChange={setCaptcha}
-              resetKey={captchaKey}
-              error={captchaError}
-            />
+            {CAPTCHA_ENABLED && (
+              <Captcha
+                onChange={setCaptcha}
+                resetKey={captchaKey}
+                error={captchaError}
+              />
+            )}
 
             {error && (
               <div role="alert" className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg px-3 py-2.5 text-sm text-red-700">

@@ -34,8 +34,12 @@ return [
     'audit_retention_years' => (int) env('AUDIT_LOG_RETENTION_YEARS', 7),
 
     // Text captcha — see App\Services\CaptchaService and app/Http/Middleware/VerifyCaptcha.
-    // Toggle CAPTCHA_ENABLED=false in dev/tests to bypass.
-    'captcha_enabled'     => filter_var(env('CAPTCHA_ENABLED', true), FILTER_VALIDATE_BOOLEAN),
+    // JORD-55: default flipped to false so dev / demo / friend-of-dev
+    // installs don't need to solve a captcha on every login. Any
+    // production deployment that wants the bot mitigation back should
+    // set CAPTCHA_ENABLED=true in its .env (and set VITE_CAPTCHA_ENABLED=true
+    // on the frontend so the widget renders again).
+    'captcha_enabled'     => filter_var(env('CAPTCHA_ENABLED', false), FILTER_VALIDATE_BOOLEAN),
     'captcha_ttl_minutes' => (int) env('CAPTCHA_TTL_MINUTES', 5),
 
     // Login rate limit (per IP per minute). Production keeps this at 5
