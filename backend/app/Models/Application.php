@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 
 /**
  * Application
@@ -129,6 +130,59 @@ class Application extends Model
     public function isFeePaid(): bool
     {
         return $this->payment_status === 'paid' || $this->payment_status === 'waived';
+    }
+
+    /**
+     * JORD-59: supervision-contract expiry per JEA 2025 manual p. 27.
+     *   "يكون عقد الاشراف ملزماً ... ستة اشهر من تاريخ اجازة المخططات"
+     *
+     * Returns the date by which supervision work must have started, or
+     * null when the rule doesn't apply. The rule applies iff:
+     *   • The service is under JEA-PROJ (drawings approval).
+     *   • The service's schema declares the supervision_services_agreement
+     *     document (which the JORD-54 shared-docs manifest gives every
+     *     DRW-P-*). Services that offload supervision to a separate
+     *     contract don't get an auto-expiry here.
+     *   • The application has at least one review with decision='approved' —
+     *     otherwise there's no clock to start.
+     *
+     * The anchor date is the LATEST approved-decision review, not
+     * status transitions or updated_at. Reasoning:
+     *   • Multi-stage flows can have several 'approved' reviews (one
+     *     per stage). The latest is the one that pushed the app into
+     *     STATUS_APPROVED / STATUS_CERTIFICATE_ISSUED. Anchoring off
+     *     status columns is fragile because status can move to
+     *     certificate_issued and updated_at shifts.
+     *   • ApplicationReview is append-only, so once written the
+     *     timestamp is stable for the retention window.
+     *
+     * The window is config-driven (SUPERVISION_WINDOW_MONTHS, default 6)
+     * so a policy change reaches production via .env without a code deploy.
+     */
+    public function getSupervisionExpiryAttribute(): ?Carbon
+    {
+        $svc = $this->serviceDefinition;
+        if (!$svc || $svc->parent_code !== 'JEA-PROJ') {
+            return null;
+        }
+
+        $documents = data_get($svc->schema, 'documents', []);
+        $hasSupervisionDoc = collect($documents)
+            ->contains(fn ($d) => ($d['id'] ?? null) === 'supervision_services_agreement');
+        if (!$hasSupervisionDoc) {
+            return null;
+        }
+
+        $approvedAt = $this->reviews()
+            ->where('decision', Application::STATUS_APPROVED)
+            ->latest('created_at')
+            ->value('created_at');
+        if (!$approvedAt) {
+            return null;
+        }
+
+        $windowMonths = (int) config('esp.supervision_window_months', 6);
+        return Carbon::parse($approvedAt)->addMonths($windowMonths);
     }
 
     // ── Reference number generation ────────────────────────────────────

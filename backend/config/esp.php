@@ -51,4 +51,12 @@ return [
     // because the suite performs a fresh login on every test's setUp.
     'login_rate_limit_per_minute' => (int) env('LOGIN_RATE_LIMIT_PER_MINUTE', 5),
 
+    // JORD-59: supervision-contract binding window in months from the
+    // date the drawings were approved. Per the JEA 2025 manual (p. 27):
+    //   "يكون عقد الاشراف ملزماً ... ستة اشهر من تاريخ اجازة المخططات"
+    // If work starts within this window the supervision period extends
+    // per the contract's stated period; if it lapses without work
+    // starting the contract is considered expired.
+    'supervision_window_months' => (int) env('SUPERVISION_WINDOW_MONTHS', 6),
+
 ];
