@@ -81,6 +81,34 @@ describe('Captcha — JORD-45 DOMPurify sanitization', () => {
   });
 });
 
+describe('Captcha — friendly error surface (JORD-43 regression)', () => {
+  it('shows the localized Arabic 5xx message instead of raw "HTTP 500"', async () => {
+    // Regression: previously Captcha called fetch() directly and threw
+    // `new Error("HTTP ${res.status}")`, so a 500 surfaced verbatim.
+    // Routing through the api client picks up friendlyMessage() which
+    // returns "حدث خطأ في الخادم..." for any 5xx.
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(
+      '', { status: 500, headers: { 'Content-Type': 'application/json' } }
+    )));
+    render(<Captcha onChange={onChange} resetKey={1} />);
+    // The error paragraph carries the localized message; "HTTP 500"
+    // must NOT appear anywhere in the widget.
+    await waitFor(() => expect(screen.getByText(/حدث خطأ في الخادم/)).toBeInTheDocument());
+    expect(screen.queryByText(/HTTP\s*500/)).toBeNull();
+  });
+
+  it('shows the localized 429 message when the throttle bucket is empty', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(
+      JSON.stringify({ message: '' }),
+      { status: 429, headers: { 'Content-Type': 'application/json' } }
+    )));
+    render(<Captcha onChange={onChange} resetKey={1} />);
+    // friendlyMessage() returns "عدد الطلبات كبير..." for 429.
+    await waitFor(() => expect(screen.getByText(/عدد الطلبات كبير/)).toBeInTheDocument());
+    expect(screen.queryByText(/HTTP\s*429/)).toBeNull();
+  });
+});
+
 describe('Captcha — user typing propagates', () => {
   it('reports uppercased trimmed input to the parent', async () => {
     stubFetch({ id: 'A', svg: '<svg xmlns="http://www.w3.org/2000/svg"></svg>' });

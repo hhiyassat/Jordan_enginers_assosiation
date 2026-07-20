@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
 import DOMPurify from 'dompurify';
 import { RefreshCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { request } from '../../api/http';
 
 /**
  * Captcha — text captcha wrapper for public forms
@@ -53,13 +54,21 @@ export function Captcha({ onChange, resetKey, error }: CaptchaProps) {
     setLoadErr('');
     setAnswer('');
     try {
-      const res = await fetch('/api/v1/captcha', { headers: { Accept: 'application/json' } });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = (await res.json()) as CaptchaChallenge;
+      // JORD-43 fix: previously this used raw fetch() and surfaced
+      // "HTTP 500" verbatim to the user on any 5xx. Routing through the
+      // shared api client picks up friendlyMessage() (localized Arabic
+      // for each status class), the 30s AbortController timeout
+      // (JORD-28), credentials: 'include' for the httpOnly cookie
+      // (JORD-30), and the central 401 handler (JORD-29).
+      const data = await request<CaptchaChallenge>('GET', '/captcha');
       setChallenge(data);
       onChange({ id: data.id, answer: '' });
     } catch (e: unknown) {
-      setLoadErr((e as Error).message || t('auth.captchaRequired'));
+      // The api client already returns a friendly localized message; if
+      // for any reason it's empty, fall back to the captcha-specific
+      // hint so the user isn't staring at a blank error region.
+      const msg = (e as Error).message?.trim();
+      setLoadErr(msg && msg.length > 0 ? msg : t('auth.captchaRequired'));
     } finally {
       setLoading(false);
       inFlight.current = false;
