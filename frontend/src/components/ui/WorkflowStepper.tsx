@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   User as UserIcon, ShieldCheck, Search, CreditCard, Award,
   Cog, GitBranch, RotateCw, CircleDot,
@@ -106,6 +107,9 @@ export function WorkflowStepper({
   dimForRole,
   className = '',
 }: WorkflowStepperProps) {
+  const { t, i18n } = useTranslation();
+  const isRtl = i18n.language.startsWith('ar');
+  const isArabic = isRtl;
   if (!stages || stages.length === 0) return null;
 
   const currentIdx = currentStageId
@@ -122,26 +126,28 @@ export function WorkflowStepper({
     <section
       aria-labelledby="workflow-stepper-title"
       className={`bg-white rounded-2xl border border-jea-border shadow-sm p-5 ${className}`}
-      dir="rtl"
+      dir={isRtl ? 'rtl' : 'ltr'}
     >
       <header className="mb-4 flex items-baseline justify-between gap-3">
         <h2 id="workflow-stepper-title" className="text-sm font-black text-jea-text">
-          <span lang="ar">{titleAr}</span>
-          <span className="text-jea-muted font-normal text-xs mx-1" lang="en" dir="ltr">· {titleEn}</span>
+          {titleAr}
         </h2>
         <span className="text-[11px] text-jea-muted">
-          <span lang="ar">{stages.length} مراحل</span>
+          {t('workflowStepper.totalStages', { count: stages.length })}
         </span>
       </header>
 
-      <ol className={listCls} aria-label={`${titleAr} · ${titleEn}`}>
+      <ol className={listCls} aria-label={titleAr}>
         {stages.map((stage, idx) => {
           const pos = positionOf(idx, activeIdx);
           const Icon = iconFor(stage);
           const isLast = idx === stages.length - 1;
-          const stageAria = `${stage.label_ar} · ${stage.label_en}`;
+          const stageLabel = isArabic
+            ? (stage.label_ar || stage.label_en)
+            : (stage.label_en || stage.label_ar);
           const isMine = dimForRole ? bucketOf(stage.role) === dimForRole : true;
           const dimCls = isMine ? '' : 'opacity-40';
+          const actions = stage.actions ?? [];
           return (
             <li
               key={stage.id}
@@ -156,7 +162,7 @@ export function WorkflowStepper({
                 <div className="flex-1 md:hidden" aria-hidden="true" />
                 <div
                   className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-all duration-200 ${MARKER_STYLES[pos]}`}
-                  aria-label={stageAria}
+                  aria-label={stageLabel}
                   role="img"
                 >
                   {pos === 'past' ? (
@@ -175,22 +181,33 @@ export function WorkflowStepper({
 
               {/* Label block */}
               <div className={`flex-1 md:text-center md:mt-2 ${LABEL_STYLES[pos]}`}>
-                <div className="text-xs font-bold leading-tight" lang="ar">
-                  {stage.label_ar}
-                </div>
-                <div className="text-[10px] mt-0.5 opacity-80" lang="en" dir="ltr">
-                  {stage.label_en}
+                <div className="text-xs font-bold leading-tight">
+                  {stageLabel}
                 </div>
                 <div className="text-[10px] mt-1 text-jea-muted">
-                  <span lang="ar">دور: </span>
-                  <span>{stage.role}</span>
+                  {t('workflowStepper.role')}: {stage.role}
                   {stage.sla_hours ? (
                     <>
                       <span className="mx-1" aria-hidden="true">·</span>
-                      <span lang="ar">{stage.sla_hours}س</span>
+                      <span>{stage.sla_hours}{t('workflowStepper.hoursShort')}</span>
                     </>
                   ) : null}
                 </div>
+                {/* JORD-19: surface the actions available at this stage
+                    so the applicant / reviewer sees WHAT can happen at
+                    each step, not just the label. */}
+                {actions.length > 0 && (
+                  <div className="mt-1.5 flex flex-wrap gap-1 md:justify-center" aria-label={t('workflowStepper.actions')}>
+                    {actions.map(a => (
+                      <span
+                        key={a}
+                        className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-jea-accent text-jea-primary border border-jea-border"
+                      >
+                        {t(`stageAction.${a}`, { defaultValue: a })}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
             </li>
           );

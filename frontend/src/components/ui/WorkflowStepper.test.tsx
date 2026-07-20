@@ -23,11 +23,15 @@ describe('WorkflowStepper', () => {
     expect(container.querySelectorAll('ol > li')).toHaveLength(STAGES.length);
   });
 
-  it('renders both AR and EN labels per stage', () => {
+  it('renders the language-appropriate label per stage', () => {
+    // After the JORD-5/6/7/13/16 i18n retrofit the stepper shows the
+    // ACTIVE-language label only (not both side-by-side). The test suite
+    // resets i18n to Arabic before each test in setup.ts, so we assert
+    // the Arabic labels here and cover the English side in the shell
+    // test (Dashboard.i18n.test.tsx).
     render(<WorkflowStepper stages={STAGES} />);
     for (const s of STAGES) {
       expect(screen.getByText(s.label_ar)).toBeInTheDocument();
-      expect(screen.getByText(s.label_en)).toBeInTheDocument();
     }
   });
 
@@ -43,23 +47,22 @@ describe('WorkflowStepper', () => {
     expect(document.querySelector('li[aria-current="step"]')).toBeNull();
   });
 
-  it('exposes a bilingual aria-label on each stage marker', () => {
+  it('exposes an aria-label on each stage marker', () => {
     render(<WorkflowStepper stages={STAGES} />);
-    // Each stage's marker is a role=img with aria-label containing "AR · EN".
+    // Post-i18n retrofit: marker aria-label carries the ACTIVE-language
+    // label only (was "AR · EN" concat before).
     const markers = screen.getAllByRole('img');
-    // At least one marker per stage (there may be extra role=img elsewhere,
-    // so we filter to those whose aria-label matches our stages).
-    const stageLabels = STAGES.map(s => `${s.label_ar} · ${s.label_en}`);
+    const stageLabels = STAGES.map(s => s.label_ar);
     const found = stageLabels.filter(label =>
       markers.some(m => m.getAttribute('aria-label') === label)
     );
     expect(found).toEqual(stageLabels);
   });
 
-  it('shows the header title in AR + EN', () => {
+  it('shows the header title (active language only)', () => {
     render(<WorkflowStepper stages={STAGES} titleAr="مسار مخصص" titleEn="Custom Path" />);
+    // Arabic locale is active in tests via setup.ts's beforeEach.
     expect(screen.getByText('مسار مخصص')).toBeInTheDocument();
-    expect(screen.getByText(/Custom Path/)).toBeInTheDocument();
   });
 
   it('renders SLA hours when the stage declares them', () => {

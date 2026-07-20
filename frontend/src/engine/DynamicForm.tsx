@@ -28,8 +28,24 @@ export function DynamicForm({ schema, values, errors = {}, onChange, disabled = 
     { id: '__default', label_ar: 'البيانات', label_en: 'Details' },
   ];
 
-  const fieldsBySection = (sectionId: string) =>
-    schema.fields.filter(f => (f.section || '__default') === sectionId);
+  /**
+   * JORD-48a: fields render in schema-array order by default; when a
+   * field carries an explicit display_order integer, that wins. Stable
+   * secondary sort by original index preserves current behaviour for
+   * schemas that haven't opted in yet.
+   */
+  const fieldsBySection = (sectionId: string) => {
+    const filtered = schema.fields
+      .map((f, i) => ({ field: f, idx: i }))
+      .filter(({ field }) => (field.section || '__default') === sectionId);
+    filtered.sort((a, b) => {
+      const oa = a.field.display_order ?? Number.POSITIVE_INFINITY;
+      const ob = b.field.display_order ?? Number.POSITIVE_INFINITY;
+      if (oa !== ob) return oa - ob;
+      return a.idx - b.idx;
+    });
+    return filtered.map(x => x.field);
+  };
 
   const isVisible = (field: SchemaField): boolean => {
     if (!field.conditional) return true;

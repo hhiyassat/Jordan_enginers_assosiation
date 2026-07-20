@@ -316,6 +316,33 @@
       "closed": "مغلق"
     }
   },
+  "stageAction": {
+    "submit":                "تقديم",
+    "approve":               "موافقة",
+    "reject":                "رفض",
+    "request_modifications": "طلب تعديل",
+    "confirm_payment":       "تأكيد الدفع",
+    "issue_certificate":     "إصدار الشهادة",
+    "override_first_auditor": "تجاوز رأي المدقق الأول",
+    "classify_technical":    "تصنيف فني",
+    "resubmit":              "إعادة التقديم"
+  },
+  "workflowStepper": {
+    "totalStages": "{{count}} مراحل",
+    "role": "الدور",
+    "actions": "الإجراءات",
+    "hoursShort": "س",
+    "noActions": "لا توجد إجراءات في هذه المرحلة"
+  },
+  "serviceInfo": {
+    "heading": "معلومات الخدمة",
+    "fee": "الرسوم",
+    "sla": "المدة",
+    "requiredDocs": "المستندات المطلوبة",
+    "docsCount": "{{count}} مستند",
+    "workflowStages": "عدد المراحل",
+    "stagesCount": "{{count}} مراحل"
+  },
   "apply": {
     "newApplication": "تقديم طلب جديد",
     "referenceAria": "رقم الطلب",

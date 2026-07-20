@@ -54,6 +54,13 @@ export interface SchemaField {
   max?: number;
   options?: SchemaFieldOption[];
   conditional?: { field: string; value: string };
+  /**
+   * JORD-48a: optional render order within a section. When set,
+   * fields sort by display_order ascending (nulls last). Absent =
+   * use the schema-array position — that's the current default so no
+   * existing schema needs a migration.
+   */
+  display_order?: number;
 }
 
 export interface SchemaSection {

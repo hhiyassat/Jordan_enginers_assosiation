@@ -316,6 +316,33 @@
       "closed": "Closed"
     }
   },
+  "stageAction": {
+    "submit":                "Submit",
+    "approve":               "Approve",
+    "reject":                "Reject",
+    "request_modifications": "Request modifications",
+    "confirm_payment":       "Confirm payment",
+    "issue_certificate":     "Issue certificate",
+    "override_first_auditor": "Override first auditor",
+    "classify_technical":    "Classify technical",
+    "resubmit":              "Resubmit"
+  },
+  "workflowStepper": {
+    "totalStages": "{{count}} stages",
+    "role": "Role",
+    "actions": "Actions",
+    "hoursShort": "h",
+    "noActions": "No actions at this stage"
+  },
+  "serviceInfo": {
+    "heading": "Service info",
+    "fee": "Fee",
+    "sla": "SLA",
+    "requiredDocs": "Required documents",
+    "docsCount": "{{count}} document(s)",
+    "workflowStages": "Workflow stages",
+    "stagesCount": "{{count}} stages"
+  },
   "apply": {
     "newApplication": "New application",
     "referenceAria": "Application reference",

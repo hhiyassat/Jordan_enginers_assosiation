@@ -6,6 +6,7 @@ import { DynamicForm } from '../../engine/DynamicForm';
 import { DocumentUploader } from '../../engine/DocumentUploader';
 import type { Application, Project, ServiceDefinition, SchemaWorkflowStage } from '../../types';
 import { WorkflowStepper } from '../../components/ui/WorkflowStepper';
+import { ServiceInfoCard } from '../../components/ui/ServiceInfoCard';
 import { ProjectContextHeader } from './ProjectContextHeader';
 import { normalizeApplyError, labelForOtherKey, type ApiError } from './applyErrorHelpers';
 
@@ -235,6 +236,10 @@ export function Apply() {
           </p>
         )}
       </header>
+
+      {/* JORD-18: service info card so the applicant sees fee/SLA/doc
+          count before starting the form, not just the service name. */}
+      <ServiceInfoCard service={service} />
 
       {/* Workflow stepper — read-only view of the schema's stages so the
           applicant sees the full path their application will take. */}
