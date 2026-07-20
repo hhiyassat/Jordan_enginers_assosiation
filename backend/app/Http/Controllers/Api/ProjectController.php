@@ -18,8 +18,14 @@ use Illuminate\Http\Request;
  * for service applications (e.g. drawing approvals).
  *
  * Business rule: every project is attributed to a specific Engineer under the
- * office. store() requires engineer_id and enforces that engineer's annual
- * m² quota. NULL quota on the engineer = unlimited for that engineer.
+ * office. store() requires engineer_id.
+ *
+ * JORD-12: the m² quota is now pooled at the OFFICE level (the owning
+ * user's annual_quota_m2), not divided per-engineer. Any engineer under
+ * the office draws from the same shared bucket. Individual
+ * Engineer.annual_quota_m2 is still displayed for informational purposes
+ * so a big office can see who's authored the most work, but nothing
+ * enforces per-engineer caps anymore. NULL quota on the office = unlimited.
  */
 class ProjectController extends Controller
 {
@@ -56,23 +62,30 @@ class ProjectController extends Controller
             ], 422);
         }
 
-        // Enforce the engineer's annual quota when both area and quota exist.
+        // JORD-12: enforce the OFFICE quota (pooled), not the engineer's.
+        // Any engineer under the office draws from the same bucket, and
+        // usage is summed across every project the office owns this year.
+        $office = $request->user();
         $newArea = (int) ($data['area_m2'] ?? 0);
-        if ($engineer->annual_quota_m2 !== null && $newArea > 0) {
-            $usedM2 = (int) Project::where('engineer_id', $engineer->id)
+        if ($office->annual_quota_m2 !== null && $newArea > 0) {
+            $usedM2 = (int) Project::where('owner_user_id', $office->id)
                 ->where('created_at', '>=', now()->startOfYear())
                 ->sum('area_m2');
-            if ($usedM2 + $newArea > $engineer->annual_quota_m2) {
-                $remaining = max(0, $engineer->annual_quota_m2 - $usedM2);
+            if ($usedM2 + $newArea > $office->annual_quota_m2) {
+                $remaining = max(0, $office->annual_quota_m2 - $usedM2);
                 return response()->json([
-                    'message' => "المشروع يتجاوز رصيد المهندس {$engineer->name_ar}. الرصيد المتبقي {$remaining} م² من أصل {$engineer->annual_quota_m2} م² للسنة الحالية.",
+                    'message' => "المشروع يتجاوز رصيد المكتب. الرصيد المتبقي {$remaining} م² من أصل {$office->annual_quota_m2} م² للسنة الحالية.",
                     'errors'  => ['area_m2' => [
-                        "الرصيد المتبقي للمهندس {$remaining} م² فقط للسنة الحالية.",
+                        "الرصيد المتبقي للمكتب {$remaining} م² فقط للسنة الحالية.",
                     ]],
                     'quota_exceeded' => true,
+                    // Kept for backward compat with any consumer that
+                    // reads these on the 422 payload; engineer_id + name
+                    // now identify the engineer that TRIED to spend the
+                    // quota, not the one that owns it.
                     'engineer_id'    => $engineer->id,
                     'engineer_name'  => $engineer->name_ar,
-                    'quota'          => $engineer->annual_quota_m2,
+                    'quota'          => $office->annual_quota_m2,
                     'used'           => $usedM2,
                     'remaining'      => $remaining,
                     'attempted'      => $newArea,
@@ -102,14 +115,20 @@ class ProjectController extends Controller
     /**
      * GET /api/v1/projects/quota
      *
-     * Aggregate view for the whole office: per-engineer breakdown plus a
-     * summed totals row so the dashboard can show one big number or list.
+     * JORD-12: `totals` now comes from the OFFICE user's annual_quota_m2
+     * and the sum of every project the office owns this year — the
+     * authoritative pool. Per-engineer breakdown is still returned so
+     * the UI can show who's spent how much of the shared budget, but
+     * those rows are informational only; enforcement runs against the
+     * office totals in store().
      *
      * @return JsonResponse with { year, totals, engineers[] }
      */
     public function quota(Request $request): JsonResponse
     {
-        $engineers = Engineer::where('office_user_id', $request->user()->id)
+        $office = $request->user();
+
+        $engineers = Engineer::where('office_user_id', $office->id)
             ->where('is_active', true)
             ->orderBy('name_ar')
             ->get();
@@ -118,27 +137,31 @@ class ProjectController extends Controller
             ->map(fn(Engineer $e) => EngineerController::buildQuota($e))
             ->values();
 
-        $totalQuota = 0;
-        $totalUsed  = 0;
-        $hasUnlim   = false;
-        $projects   = 0;
-        foreach ($breakdown as $row) {
-            $totalUsed += $row['used_m2'];
-            $projects  += $row['projects_count'];
-            if ($row['unlimited']) $hasUnlim = true;
-            else $totalQuota += (int) $row['quota_m2'];
-        }
-        $totalRemaining = $hasUnlim ? null : max(0, $totalQuota - $totalUsed);
-        $totalPercent   = $hasUnlim ? null : ($totalQuota > 0 ? min(100, (int) round(($totalUsed / $totalQuota) * 100)) : 0);
+        // JORD-12: office pool = user.annual_quota_m2 + SUM(all projects).
+        // Engineers[] is informational; do NOT sum from it (that gave
+        // an artificially high total when engineers had their own
+        // legacy per-engineer quotas set).
+        $officeQuota = $office->annual_quota_m2;
+        $officeUsed  = (int) Project::where('owner_user_id', $office->id)
+            ->where('created_at', '>=', now()->startOfYear())
+            ->sum('area_m2');
+        $officeProjects = (int) Project::where('owner_user_id', $office->id)
+            ->where('created_at', '>=', now()->startOfYear())
+            ->count();
+        $hasUnlim = $officeQuota === null;
+        $officeRemaining = $hasUnlim ? null : max(0, $officeQuota - $officeUsed);
+        $officePercent   = $hasUnlim
+            ? null
+            : ($officeQuota > 0 ? min(100, (int) round(($officeUsed / $officeQuota) * 100)) : 0);
 
         return response()->json([
             'year'      => (int) now()->year,
             'totals'    => [
-                'quota_m2'       => $hasUnlim ? null : $totalQuota,
-                'used_m2'        => $totalUsed,
-                'remaining_m2'   => $totalRemaining,
-                'percent_used'   => $totalPercent,
-                'projects_count' => $projects,
+                'quota_m2'       => $officeQuota,
+                'used_m2'        => $officeUsed,
+                'remaining_m2'   => $officeRemaining,
+                'percent_used'   => $officePercent,
+                'projects_count' => $officeProjects,
                 'unlimited'      => $hasUnlim,
                 'engineers_count' => $breakdown->count(),
             ],

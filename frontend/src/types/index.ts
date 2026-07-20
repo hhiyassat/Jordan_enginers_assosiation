@@ -248,6 +248,12 @@ export interface Certificate {
 export interface Application {
   id: number;
   reference_number: string;
+  /**
+   * JORD-14: contract identifier inherited from the linked project
+   * at create time. Same contract_no across every application under
+   * the same project; null for standalone (project-less) applications.
+   */
+  contract_no?: string | null;
   status: ApplicationStatus;
   current_stage?: string;
   data?: Record<string, unknown>;

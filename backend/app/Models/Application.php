@@ -37,7 +37,7 @@ class Application extends Model
     use SoftDeletes, BelongsToOrganization;
 
     protected $fillable = [
-        'reference_number', 'organization_id', 'service_definition_id', 'project_id', 'applicant_id',
+        'reference_number', 'contract_no', 'organization_id', 'service_definition_id', 'project_id', 'applicant_id',
         'assigned_reviewer_id', 'status', 'current_stage', 'data', 'fee_amount',
         'payment_status', 'payment_reference', 'payment_confirmed_at',
         'sla_deadline', 'sla_breached_at', 'review_round',

@@ -108,6 +108,7 @@
     }
   },
   "myApplications": {
+    "contractNo": "Contract",
     "title": "My Requests",
     "tabs": {
       "ongoing": "Ongoing",

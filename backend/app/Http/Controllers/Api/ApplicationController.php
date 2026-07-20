@@ -119,7 +119,12 @@ class ApplicationController extends Controller
         // vector we close at the controller boundary — the FormRequest's
         // `exists:` rule only proves the row exists globally, not that this
         // user may read it.
-        $projectId = null;
+        $projectId  = null;
+        // JORD-14: applications inherit the project's contract_no at
+        // create time. Prior to this, contract_no lived only on the
+        // Project row and the applicant couldn't see it on their
+        // application detail without cross-referencing.
+        $contractNo = null;
         if ($request->filled('project_id')) {
             $project = \App\Models\Project::where('id', (int) $request->project_id)
                 ->where('organization_id', $request->user()->organization_id)
@@ -131,13 +136,15 @@ class ApplicationController extends Controller
                     'errors'  => ['project_id' => ['المشروع غير موجود أو لا يخصك.']],
                 ], 422);
             }
-            $projectId = $project->id;
+            $projectId  = $project->id;
+            $contractNo = $project->contract_no;
         }
 
         $fee = (new FeeCalculator($service))->calculate($request->data);
 
         $app = Application::create([
             'reference_number'      => Application::generateReference($service),
+            'contract_no'           => $contractNo,
             'organization_id'       => $request->user()->organization_id,
             'service_definition_id' => $service->id,
             'project_id'            => $projectId,

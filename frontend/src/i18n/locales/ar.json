@@ -108,6 +108,7 @@
     }
   },
   "myApplications": {
+    "contractNo": "عقد",
     "title": "طلباتي",
     "tabs": {
       "ongoing": "قيد التنفيذ",

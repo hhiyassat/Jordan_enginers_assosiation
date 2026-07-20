@@ -38,6 +38,8 @@ class EngineerQuotaTest extends TestCase
             'role'                => 'applicant',
             'is_active'           => true,
             'password_changed_at' => now(),
+            // JORD-12: office pool holds the quota now, not the engineer.
+            'annual_quota_m2'     => 1000,
         ]);
         $this->eng = Engineer::create([
             'organization_id'   => $this->org->id,
@@ -199,13 +201,17 @@ class EngineerQuotaTest extends TestCase
 
     public function test_null_engineer_quota_means_unlimited(): void
     {
+        // JORD-12: office quota now enforces. Test the same "unlimited"
+        // semantic at the OFFICE level, and separately verify that
+        // engineer-level unlimited is still reported to the UI.
         $this->eng->update(['annual_quota_m2' => null]);
+        $this->office->update(['annual_quota_m2' => null]);
 
         Sanctum::actingAs($this->office);
         $res = $this->getJson("/api/v1/engineers/{$this->eng->id}/quota");
         $res->assertJson(['unlimited' => true, 'quota_m2' => null]);
 
-        // And a large project is allowed.
+        // With no office cap, a large project is allowed.
         $create = $this->postJson('/api/v1/projects', [
             'engineer_id' => $this->eng->id,
             'name_ar'     => 'unlimited',
