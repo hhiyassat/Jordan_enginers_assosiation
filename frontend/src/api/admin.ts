@@ -76,9 +76,16 @@ export const adminApi = {
 
   auditLogs: () => request<{ data: unknown[] }>('GET', '/admin/audit-logs'),
 
-  /** List all services including drafts */
+  /**
+   * List every actual service (excludes the 7 top-level category tiles).
+   * `categories` gives the group headers in canonical plan order so the
+   * UI can render section headings without hardcoding Arabic names.
+   */
   listServices: () =>
-    request<{ services: ServiceDefinition[] }>('GET', '/admin/services'),
+    request<{
+      services: ServiceDefinition[];
+      categories: Array<{ code: string; name_ar: string; name_en: string }>;
+    }>('GET', '/admin/services'),
 
   /** Get single service with full schema */
   getService: (id: number) =>

@@ -26,15 +26,73 @@ use Illuminate\Http\Request;
  */
 class ServiceCatalogController extends Controller
 {
+    /**
+     * Canonical category display order — mirrors ServicePlan2026Seeder's
+     * services() array so the admin page groups the same way the plan
+     * PDF does. Keep in sync with the seeder if the plan ever reorders.
+     */
+    private const CATEGORY_ORDER = [
+        'JEA-PROJ',   // خدمات تصديق المخططات الهندسية
+        'JEA-SURV',   // استطلاع الموقع
+        'JEA-FIN',    // الخدمات المالية
+        'JEA-CERT',   // الشهادات
+        'JEA-ENG',    // المهندسون في المكاتب
+        'JEA-DEC',    // قرارات هيئة المكاتب
+        'JEA-MISC',   // خدمات أخرى
+    ];
+
     // ── Admin: all services (active + draft + inactive) ──────────────────
 
+    /**
+     * List every actual service in the org, grouped by parent category
+     * and ordered canonically. We exclude parent_code=NULL rows because
+     * those are the seven category "tiles" (JEA-PROJ, JEA-SURV, …) —
+     * they are folders in the taxonomy, not bookable services, so they
+     * inflated the admin count from 56 → 63 and appeared as junk cards
+     * on the management page. The tiles are still returned separately
+     * as `categories` so the frontend can render group headers.
+     */
     public function adminIndex(Request $request): JsonResponse
     {
-        $services = ServiceDefinition::where('organization_id', $request->user()->organization_id)
-            ->orderByDesc('created_at')
-            ->get(['id', 'code', 'name_ar', 'name_en', 'status', 'currency', 'created_at', 'updated_at']);
+        $orgId = $request->user()->organization_id;
 
-        return response()->json(['services' => $services]);
+        // Sort inside SQL by the canonical category order (FIELD/CASE),
+        // then by code within the category. Ordering client-side would
+        // require the frontend to know the plan order too, which we
+        // avoid by making it the API contract.
+        $orderCases = collect(self::CATEGORY_ORDER)
+            ->map(fn (string $code, int $i) => "WHEN '{$code}' THEN {$i}")
+            ->implode(' ');
+        $orderExpr = "CASE parent_code {$orderCases} ELSE 99 END";
+
+        $services = ServiceDefinition::where('organization_id', $orgId)
+            ->whereNotNull('parent_code')
+            ->orderByRaw($orderExpr)
+            ->orderBy('code')
+            ->get([
+                'id', 'code', 'parent_code',
+                'subcategory_ar', 'subcategory_en',
+                'name_ar', 'name_en',
+                'status', 'currency', 'base_fee', 'sla_hours',
+                'phase', 'is_locked',
+                'created_at', 'updated_at',
+            ]);
+
+        // Category tiles for group headers — same canonical order as above.
+        $tiles = ServiceDefinition::where('organization_id', $orgId)
+            ->whereNull('parent_code')
+            ->whereIn('code', self::CATEGORY_ORDER)
+            ->get(['code', 'name_ar', 'name_en'])
+            ->keyBy('code');
+        $categories = collect(self::CATEGORY_ORDER)
+            ->map(fn (string $code) => $tiles->get($code))
+            ->filter()
+            ->values();
+
+        return response()->json([
+            'services'   => $services,
+            'categories' => $categories,
+        ]);
     }
 
     public function adminShow(Request $request, int $id): JsonResponse
