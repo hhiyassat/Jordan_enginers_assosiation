@@ -31,7 +31,11 @@ return [
 
     // Audit log retention (NFR-006) — audit:prune command deletes rows
     // older than now()->subYears(this).
-    'audit_retention_years' => (int) env('AUDIT_LOG_RETENTION_YEARS', 7),
+    // JORD-57: bumped 7 → 10 to match the JEA 2025 technical-instructions
+    // manual (p. 20 & 44 / Art.23-e): "الاحتفاظ بأصول عقود الخدمات الهندسية
+    // ومرفقاتها ... لمدة لا تقل عن عشر سنوات". Also aligns with A-02
+    // (10-yr window on issuable project reports).
+    'audit_retention_years' => (int) env('AUDIT_LOG_RETENTION_YEARS', 10),
 
     // Text captcha — see App\Services\CaptchaService and app/Http/Middleware/VerifyCaptcha.
     // JORD-55: default flipped to false so dev / demo / friend-of-dev

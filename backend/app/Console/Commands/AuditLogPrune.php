@@ -8,8 +8,10 @@ use Illuminate\Console\Command;
 /**
  * AuditLogPrune — NFR-006
  *
- * Enforces the 7-year audit log retention policy. Deletes rows older than
- * AUDIT_LOG_RETENTION_YEARS (default 7). Scheduled monthly in routes/console.php.
+ * Enforces the audit log retention policy. Deletes rows older than
+ * AUDIT_LOG_RETENTION_YEARS (default 10, per JEA 2025 manual p. 20 & 44 —
+ * "الاحتفاظ ... لمدة لا تقل عن عشر سنوات"). Scheduled monthly in
+ * routes/console.php.
  *
  * DATA-003 note: audit_logs is append-only for the retention window. Pruning
  * beyond that window is an intentional, policy-driven deletion (retention
@@ -23,13 +25,13 @@ class AuditLogPrune extends Command
 {
     protected $signature = 'audit:prune {--dry-run : Preview without deleting}';
 
-    protected $description = 'Prune audit_logs older than AUDIT_LOG_RETENTION_YEARS (NFR-006, default 7 years)';
+    protected $description = 'Prune audit_logs older than AUDIT_LOG_RETENTION_YEARS (NFR-006 / JORD-57, default 10 years)';
 
     public function handle(): int
     {
         // config('esp.audit_retention_years') resolves the env var inside config/esp.php.
         // Calling env() here directly is disallowed (PHPStan larastan.noEnvCallsOutsideOfConfig).
-        $years  = (int) config('esp.audit_retention_years', 7);
+        $years  = (int) config('esp.audit_retention_years', 10);
         $cutoff = now()->subYears($years);
         $dryRun = $this->option('dry-run');
 
