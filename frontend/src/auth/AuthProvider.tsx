@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { authApi, setUnauthorizedHandler } from '../api/client';
 import type { User } from '../types';
 import { AuthContext } from './AuthContext';
@@ -12,22 +13,51 @@ import { AuthContext } from './AuthContext';
  * backend-managed httpOnly + SameSite=Strict cookie, so JavaScript
  * can no longer see it (which was the XSS-exposure the review flagged).
  *
- * Provider responsibilities:
- *   • On mount, blind-call /auth/me. If the cookie is present the
- *     browser attaches it automatically and we get a user; if not,
- *     the 401 handler (registered below) clears state.
- *   • Re-verify on tab focus so a role change in another tab lands
- *     here on the next window-focus event.
- *   • Register a 401 invalidator with the api client (JORD-29) so any
- *     request that comes back unauthorized clears state exactly once.
- *
- * The context still exposes a `token` field for backward compatibility
- * (some legacy tests + the ChangeCredentials profile-refresh path
- * pass it back through login()). Its value is always null now.
+ * JORD-50: cross-tab session-swap guard
+ * -------------------------------------
+ * Cookies are shared across every tab on the same origin, so logging
+ * in as user B in tab 2 silently rewrites tab 1's session. Previously
+ * tab 1 kept rendering user A's UI (own name, own permissions, own
+ * cached data) even though every next request would hit the API as
+ * user B — a real hazard on a mixed superuser + engineering-office
+ * machine. We now broadcast a message on every login/logout and, in
+ * peer tabs, re-verify /auth/me. If the identity actually changed we
+ * lock the tab behind a modal that forces a manual reload — never a
+ * silent auto-reload, so any half-typed form is not thrown away
+ * without the user's consent.
  */
+const AUTH_CHANNEL = 'esp:auth';
+
+interface AuthMessage {
+  type: 'auth-changed';
+  userId: number | null;
+}
+
+/** True when the runtime exposes a working BroadcastChannel (all
+ *  modern browsers do; jsdom's default test env does not, so we
+ *  degrade gracefully — the on-focus /auth/me path from JORD-30 is
+ *  still there as a fallback). */
+function hasBroadcast(): boolean {
+  return typeof BroadcastChannel !== 'undefined';
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }): JSX.Element {
+  const { t } = useTranslation();
+
   const [user, setUser]   = useState<User | null>(null);
   const [ready, setReady] = useState(false);
+  // When another tab swaps the session out from under us we don't
+  // mutate `user` — we surface a lock-screen instead and wait for a
+  // manual reload. Storing the incoming identity lets the modal name
+  // the new user so the reader understands what just happened.
+  const [staleTabNotice, setStaleTabNotice] = useState<{ newUser: User | null } | null>(null);
+
+  // Keep the latest user in a ref so the BroadcastChannel handler
+  // (installed once) can compare against the current identity without
+  // re-subscribing on every user change (which would race with the
+  // very message that changes the user).
+  const userRef = useRef<User | null>(null);
+  useEffect(() => { userRef.current = user; }, [user]);
 
   useEffect(() => {
     // Blind /auth/me — cookie either exists or doesn't. The 401 handler
@@ -54,17 +84,56 @@ export function AuthProvider({ children }: { children: React.ReactNode }): JSX.E
     return () => window.removeEventListener('focus', onFocus);
   }, [user]);
 
+  // JORD-50: subscribe to cross-tab auth messages. Any peer's login/
+  // logout triggers a re-verify here; if the resulting identity
+  // differs from our cached one, freeze the tab behind the modal.
+  useEffect(() => {
+    if (!hasBroadcast()) return;
+    const ch = new BroadcastChannel(AUTH_CHANNEL);
+    ch.addEventListener('message', (ev: MessageEvent<AuthMessage>) => {
+      const msg = ev.data;
+      if (!msg || msg.type !== 'auth-changed') return;
+      const current = userRef.current;
+      // Fast path: the broadcast matches who we already are — nothing
+      // to reconcile, no network trip.
+      if ((current?.id ?? null) === (msg.userId ?? null)) return;
+      // Something diverged — ask the server who we actually are now
+      // and lock this tab if the answer differs from our cache.
+      authApi.me()
+        .then(r => {
+          if (r.user.id !== current?.id) {
+            setStaleTabNotice({ newUser: r.user });
+          }
+        })
+        .catch(() => {
+          // Cookie is gone (logout in the other tab). Only surface
+          // the lock if we thought we were logged in.
+          if (current) setStaleTabNotice({ newUser: null });
+        });
+    });
+    return () => ch.close();
+  }, []);
+
+  const broadcastAuthChange = useCallback((userId: number | null): void => {
+    if (!hasBroadcast()) return;
+    const ch = new BroadcastChannel(AUTH_CHANNEL);
+    ch.postMessage({ type: 'auth-changed', userId } satisfies AuthMessage);
+    ch.close();
+  }, []);
+
   const login = (_ignoredToken: string | null, u: User): void => {
     // Token argument is intentionally ignored — the backend has
     // already set the httpOnly cookie on the /auth/login response.
     // The signature stays (t, u) so existing callers don't break.
     void _ignoredToken;
     setUser(u);
+    broadcastAuthChange(u.id);
   };
 
   const logout = (): void => {
     authApi.logout().catch(() => {});
     setUser(null);
+    broadcastAuthChange(null);
   };
 
   // JORD-29: give the api client a way to invalidate the session when it
@@ -85,6 +154,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }): JSX.E
   return (
     <AuthContext.Provider value={{ user, token: null, login, logout }}>
       {children}
+      {staleTabNotice && (
+        <div
+          className="fixed inset-0 z-[9999] bg-black/60 flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="stale-tab-title"
+          data-testid="stale-tab-modal"
+        >
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 text-center" dir="rtl">
+            <h2 id="stale-tab-title" className="text-lg font-bold text-jea-text mb-2">
+              {t('auth.sessionChangedTitle')}
+            </h2>
+            <p className="text-sm text-jea-muted mb-5 leading-relaxed">
+              {staleTabNotice.newUser
+                ? t('auth.sessionChangedToUser', { name: staleTabNotice.newUser.name })
+                : t('auth.sessionChangedLoggedOut')}
+            </p>
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="px-6 py-2.5 rounded-lg bg-jea-primary text-white text-sm font-bold hover:opacity-90"
+            >
+              {t('auth.sessionChangedReload')}
+            </button>
+          </div>
+        </div>
+      )}
     </AuthContext.Provider>
   );
 }

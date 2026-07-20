@@ -32,7 +32,11 @@
     "captchaRequired": "Please enter the full captcha code",
     "credentialsRequired": "Please enter your email and password",
     "loginError": "Login failed",
-    "demoAccountsTitle": "Demo accounts (Demo1234!)"
+    "demoAccountsTitle": "Demo accounts (Demo1234!)",
+    "sessionChangedTitle": "Session changed",
+    "sessionChangedToUser": "Another tab signed in as {{name}}. Reload this page to continue.",
+    "sessionChangedLoggedOut": "You were signed out in another tab. Reload this page to continue.",
+    "sessionChangedReload": "Reload page"
   },
   "language": {
     "switchTo": "Switch to {{lang}}",
