@@ -19,6 +19,10 @@ class DatabaseSeeder extends Seeder
             ServicePlan2026Seeder::class,
             CatalogWorkflowsSeeder::class,
             SurveyWorkflowsSeeder::class,
+            // JORD-54: shared 15-document manifest for every DRW-P-* row.
+            // Runs after CatalogWorkflowsSeeder because that seeder only
+            // writes schema['workflow']; documents live on their own key.
+            DrawingsDocumentsSeeder::class,
             // JeaDrawingsSeeder omitted — its 7 DRW-* rows duplicate the
             // richer DRW-P-* set produced by ServicePlan2026Seeder + the
             // real workflows attached by CatalogWorkflowsSeeder.
