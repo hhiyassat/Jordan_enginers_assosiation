@@ -83,6 +83,71 @@ class SchemaStructureValidatorTest extends TestCase
      * "role يجب أن يكون: staff, auditor, admin" even when the workflow
      * itself wasn't touched. The fix adds 'applicant' to the allowlist.
      */
+    /**
+     * JORD-63: matrix fee validation — the shape has four required
+     * pieces (keys / rates / basis / default) and a failure to name
+     * a real form field in `keys` silently produces zero fees. Pin
+     * the errors here so schema authoring stays honest.
+     */
+    public function test_matrix_fee_without_keys_is_rejected(): void
+    {
+        $schema = $this->baseSchema();
+        $schema['fee'] = ['type' => 'matrix', 'rates' => ['a|b' => 5]];
+        $errors = (new SchemaStructureValidator())->validate($schema);
+        $this->assertIsArray($errors);
+        $this->assertArrayHasKey('schema.fee.keys', $errors);
+    }
+
+    public function test_matrix_fee_without_rates_is_rejected(): void
+    {
+        $schema = $this->baseSchema();
+        $schema['fields'] = [
+            ['id' => 'gov', 'label_ar' => 'م', 'type' => 'text'],
+            ['id' => 'cls', 'label_ar' => 'م', 'type' => 'text'],
+        ];
+        $schema['fee'] = ['type' => 'matrix', 'keys' => ['gov', 'cls']];
+        $errors = (new SchemaStructureValidator())->validate($schema);
+        $this->assertIsArray($errors);
+        $this->assertArrayHasKey('schema.fee.rates', $errors);
+    }
+
+    public function test_matrix_key_referencing_undeclared_field_is_rejected(): void
+    {
+        // The whole point of `keys` is that the applicant fills them.
+        // A typo pointing at a field that doesn't exist on the schema
+        // means the matrix always collapses to default — silent 0 fee.
+        $schema = $this->baseSchema();
+        $schema['fields'] = [['id' => 'governorate', 'label_ar' => 'م', 'type' => 'text']];
+        $schema['fee'] = [
+            'type'  => 'matrix',
+            'keys'  => ['governorate', 'building_class'], // building_class not declared
+            'rates' => ['amman|private' => 5],
+        ];
+        $errors = (new SchemaStructureValidator())->validate($schema);
+        $this->assertIsArray($errors);
+        $this->assertArrayHasKey('schema.fee.keys[1]', $errors);
+    }
+
+    public function test_valid_matrix_fee_passes(): void
+    {
+        $schema = $this->baseSchema();
+        $schema['fields'] = [
+            ['id' => 'governorate',    'label_ar' => 'المحافظة', 'type' => 'text'],
+            ['id' => 'building_class', 'label_ar' => 'الصنف',    'type' => 'text'],
+            ['id' => 'area_m2',        'label_ar' => 'المساحة',  'type' => 'number'],
+        ];
+        $schema['fee'] = [
+            'type'    => 'matrix',
+            'keys'    => ['governorate', 'building_class'],
+            'rates'   => ['amman|private' => 5.0, 'other|private' => 4.0],
+            'basis'   => 'area_m2',
+            'default' => 0,
+        ];
+        $errors = (new SchemaStructureValidator())->validate($schema);
+        $this->assertNull($errors,
+            'A well-formed matrix (keys reference real fields, rates non-empty) must pass');
+    }
+
     public function test_applicant_role_is_accepted_on_submission_stage(): void
     {
         $schema = $this->baseSchema();

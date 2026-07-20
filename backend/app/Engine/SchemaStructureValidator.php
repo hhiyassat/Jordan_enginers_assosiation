@@ -250,7 +250,7 @@ class SchemaStructureValidator
             return;
         }
 
-        $validTypes = ['fixed', 'tiered', 'formula'];
+        $validTypes = ['fixed', 'tiered', 'formula', 'matrix'];
         $feeType = $schema['fee']['type'] ?? null;
 
         if ($feeType && ! in_array($feeType, $validTypes)) {
@@ -259,6 +259,37 @@ class SchemaStructureValidator
 
         if ($feeType === 'fixed' && ! isset($schema['fee']['amount'])) {
             $this->errors['schema.fee.amount'] = 'الرسوم الثابتة (fixed) تتطلب حقل amount.';
+        }
+
+        // JORD-63: matrix — validate the four required shape fields so a
+        // typo doesn't silently collapse every lookup to the default.
+        if ($feeType === 'matrix') {
+            if (!isset($schema['fee']['keys']) || !is_array($schema['fee']['keys']) || $schema['fee']['keys'] === []) {
+                $this->errors['schema.fee.keys'] = 'مصفوفة الرسوم (matrix) تتطلب قائمة keys غير فارغة.';
+            } else {
+                // Every key must be a form field id declared elsewhere in
+                // the schema — otherwise the applicant has no way to fill
+                // the value and the matrix collapses to default.
+                $fieldIds = [];
+                if (isset($schema['fields']) && is_array($schema['fields'])) {
+                    foreach ($schema['fields'] as $f) {
+                        if (isset($f['id']) && is_string($f['id'])) $fieldIds[] = $f['id'];
+                    }
+                }
+                foreach ($schema['fee']['keys'] as $i => $k) {
+                    if (!is_string($k) || $k === '') {
+                        $this->errors["schema.fee.keys[$i]"] = 'كل عنصر في keys يجب أن يكون معرف حقل نصياً.';
+                    } elseif (!in_array($k, $fieldIds, true)) {
+                        $this->errors["schema.fee.keys[$i]"] = "keys[$i]='{$k}' يشير إلى حقل غير معرف في fields.";
+                    }
+                }
+            }
+            if (!isset($schema['fee']['rates']) || !is_array($schema['fee']['rates']) || $schema['fee']['rates'] === []) {
+                $this->errors['schema.fee.rates'] = 'مصفوفة الرسوم (matrix) تتطلب جدول rates غير فارغ.';
+            }
+            if (isset($schema['fee']['basis']) && !is_string($schema['fee']['basis'])) {
+                $this->errors['schema.fee.basis'] = 'حقل basis يجب أن يكون معرف حقل نصياً.';
+            }
         }
 
         // JORD-8: fee-amount sanity checks. A schema slip putting the

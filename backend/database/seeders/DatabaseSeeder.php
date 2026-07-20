@@ -31,6 +31,10 @@ class DatabaseSeeder extends Seeder
             // SRV-008/009 per JEA 2025 manual p. 36. Writes only
             // schema.compliance_notes[] — a new opt-in schema field.
             MaterialsSampleRetentionSeeder::class,
+            // JORD-63: JEA 2025 fee matrix (p. 92) on every DRW-P-*.
+            // Adds 3 required form fields (governorate, building_class,
+            // area_m2) and replaces the fee block with a matrix lookup.
+            DrawingFeeMatrixSeeder::class,
             // JeaDrawingsSeeder omitted — its 7 DRW-* rows duplicate the
             // richer DRW-P-* set produced by ServicePlan2026Seeder + the
             // real workflows attached by CatalogWorkflowsSeeder.

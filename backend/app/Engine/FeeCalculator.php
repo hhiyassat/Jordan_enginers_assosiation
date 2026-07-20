@@ -57,10 +57,79 @@ class FeeCalculator
         $amount = match ($fee['type'] ?? 'fixed') {
             'tiered'  => $this->tiered($fee, $formData),
             'formula' => $this->formula($fee, $formData),
+            'matrix'  => $this->matrix($fee, $formData),
             default   => $this->toDecimal($fee['amount'] ?? 0),
         };
 
         return $this->finalize($amount);
+    }
+
+    /**
+     * JORD-63: matrix lookup fee — rate = table[key1|key2|...] × basis.
+     *
+     * Handles the JEA 2025 manual p. 92 fee grid (governorate × building
+     * class → JOD/m²). The applicant fills their actual governorate (one
+     * of 12) plus building_class; the schema declares a `buckets` map
+     * that reduces those to the 2 rate zones the manual actually pins
+     * (Amman greater municipality vs. rest of country) before the
+     * table lookup.
+     *
+     * Schema shape:
+     *   fee: {
+     *     type:    "matrix",
+     *     keys:    ["governorate", "building_class"],   // form field ids
+     *     buckets: { governorate: { amman: "amman", irbid: "other", ... } },
+     *     rates:   { "amman|green_commercial": 3.5, ..., "other|rural_shaabi": 1.5 },
+     *     basis:   "area_m2",                            // multiplier field
+     *     default: 0                                     // rate if lookup misses
+     *   }
+     *
+     * Missing keys / unknown values fall back to `default` (not to
+     * a partial match) — an incomplete form must not silently produce
+     * a wrong bill. The submit path enforces `required` on the form
+     * fields separately, so this branch only runs on well-formed input.
+     */
+    private function matrix(array $fee, array $formData): string
+    {
+        $keys    = is_array($fee['keys'] ?? null)    ? $fee['keys']    : [];
+        $rates   = is_array($fee['rates'] ?? null)   ? $fee['rates']   : [];
+        $buckets = is_array($fee['buckets'] ?? null) ? $fee['buckets'] : [];
+        $basis   = is_string($fee['basis'] ?? null)  ? $fee['basis']   : null;
+        $default = $this->toDecimal($fee['default'] ?? 0);
+
+        // Compose the lookup key by joining the (optionally-bucketed) form
+        // values with `|`. Any missing / non-scalar value collapses the
+        // whole lookup to default — safer than partial-key matching.
+        $parts = [];
+        foreach ($keys as $key) {
+            if (!is_string($key)) return $default;
+            $raw = $formData[$key] ?? null;
+            if (!is_string($raw) && !is_int($raw)) return $default;
+            $bucketMap = is_array($buckets[$key] ?? null) ? $buckets[$key] : [];
+            $parts[] = (string) ($bucketMap[$raw] ?? $raw);
+        }
+        $lookup = implode('|', $parts);
+
+        $rate = array_key_exists($lookup, $rates)
+            ? $this->toDecimal($rates[$lookup])
+            : $default;
+
+        // Multiply by the basis field (typically area_m2). Missing basis
+        // field → 0 fee (design intent: "matrix rate × 0 area = 0", not
+        // an error, because a project with 0 area is either a draft or
+        // an admin previewing before entering size).
+        $basisValue = $basis && (is_numeric($formData[$basis] ?? null))
+            ? $this->toDecimal($formData[$basis])
+            : '0';
+
+        $total = bcmul($rate, $basisValue, self::CALC_SCALE);
+
+        // Same negative-floor guard as formula() — a schema-authored
+        // negative rate * positive area would otherwise refund-shape.
+        if (bccomp($total, '0', self::CALC_SCALE) < 0) {
+            return '0';
+        }
+        return $total;
     }
 
     private function tiered(array $fee, array $formData): string
