@@ -5,6 +5,7 @@ import { useMyApplications } from '../../api/hooks';
 import type { Application } from '../../types';
 import { isOngoing, orderForApplicant } from './applicationStatus';
 import { MiniStageTimeline } from './MiniStageTimeline';
+import { ExpiryBadge } from '../../components/ui/ExpiryBadge';
 
 // Colour + emoji are language-agnostic; the label comes from i18n at
 // render time via t('status.<key>').
@@ -179,6 +180,11 @@ function ApplicationRow({ app }: { app: Application }) {
             {(app.fee_amount ?? 0) > 0 && (
               <span>💰 {app.fee_amount} {app.service_definition?.currency ?? 'JOD'}</span>
             )}
+            {/* JORD-62: expiry badges for approved apps. Both render
+                nothing when the underlying date is null (rule doesn't
+                apply / not yet approved), so no conditional wrapper. */}
+            <ExpiryBadge kind="validity"    iso={app.output_validity_expiry} />
+            <ExpiryBadge kind="supervision" iso={app.supervision_expiry} />
             {/* Certificate download — only when the case actually issued
                 a cert. Signed URL carries the qr_token so no session
                 needed. stopPropagation keeps the outer <Link to

@@ -297,6 +297,18 @@ export interface Application {
    * session. Same security posture as the QR on the printed cert.
    */
   certificate_pdf_url?: string | null;
+  /**
+   * JORD-62: dates the applicant needs to see once the app is approved.
+   *   • supervision_expiry: 6 months after final approval. Only set for
+   *     DRW-P-* services that carry the supervision-services agreement.
+   *   • output_validity_expiry: certificate.validity_months after final
+   *     approval. Set for any service with a non-zero validity_months.
+   * Both are ISO strings emitted by Laravel's Carbon serializer.
+   * Null when the application is not yet approved or the rule doesn't
+   * apply to this service.
+   */
+  supervision_expiry?: string | null;
+  output_validity_expiry?: string | null;
   created_at: string;
   updated_at: string;
 }

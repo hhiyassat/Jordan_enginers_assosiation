@@ -44,10 +44,18 @@ class ApplicationController extends Controller
         // the signed PDF download URL inline (see MyApplications row).
         // The token is only exposed to the applicant themselves — the
         // applicant-scoped where-clause below is what makes that safe.
+        // JORD-62: eager-load `reviews` (just id + decision + created_at)
+        // so the supervision_expiry / output_validity_expiry accessors
+        // (in $appends on Application) can read from an already-loaded
+        // collection instead of firing one extra query per row.
+        // `parent_code` is also required — the supervision accessor
+        // gates on parent_code === 'JEA-PROJ'; omitting it silently
+        // returned null for every drawing app on the list endpoint.
         $query = Application::forOrganization($request->user()->organization_id)
             ->with([
-                'serviceDefinition:id,code,name_ar,name_en,schema',
+                'serviceDefinition:id,code,parent_code,name_ar,name_en,schema',
                 'certificate:id,application_id,certificate_number,qr_token,status',
+                'reviews:id,application_id,decision,created_at',
             ])
             ->orderByDesc('created_at');
 

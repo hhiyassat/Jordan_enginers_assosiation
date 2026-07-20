@@ -133,6 +133,42 @@ class Application extends Model
     }
 
     /**
+     * JORD-62: expose both expiry accessors on JSON responses so the
+     * applicant UI can render "صالحة حتى" badges without a follow-up
+     * round-trip. Callers that serialize a list of applications MUST
+     * eager-load `reviews` — the accessors query the reviews table.
+     */
+    protected $appends = ['supervision_expiry', 'output_validity_expiry'];
+
+    /**
+     * JORD-62: generic output-validity accessor. Returns the date by
+     * which the approved output (stamped drawings or certificate)
+     * expires and needs re-approval.
+     *
+     * Anchor date is the latest approved review (same logic as
+     * supervisionExpiry — see below). Window comes from
+     * schema.certificate.validity_months, which JORD-58 seeded at 60
+     * for every DRW-P-* and pre-existing seeders set to varying
+     * values for CERT-* rows. Returns null when the window is 0/absent
+     * (services with no expiry concept) or no approval exists yet.
+     */
+    public function getOutputValidityExpiryAttribute(): ?Carbon
+    {
+        $svc = $this->serviceDefinition;
+        if (!$svc) return null;
+        $months = (int) (data_get($svc->schema, 'certificate.validity_months') ?? 0);
+        if ($months <= 0) return null;
+
+        $approvedAt = $this->reviews
+            ->where('decision', Application::STATUS_APPROVED)
+            ->sortByDesc('created_at')
+            ->first()?->created_at;
+        if (!$approvedAt) return null;
+
+        return Carbon::parse($approvedAt)->addMonths($months);
+    }
+
+    /**
      * JORD-59: supervision-contract expiry per JEA 2025 manual p. 27.
      *   "يكون عقد الاشراف ملزماً ... ستة اشهر من تاريخ اجازة المخططات"
      *
@@ -173,10 +209,13 @@ class Application extends Model
             return null;
         }
 
-        $approvedAt = $this->reviews()
+        // Read from the loaded collection when reviews are eager-loaded
+        // (JORD-62 index/show controller path) — the ->reviews() builder
+        // would fire an extra query every serialization otherwise.
+        $approvedAt = $this->reviews
             ->where('decision', Application::STATUS_APPROVED)
-            ->latest('created_at')
-            ->value('created_at');
+            ->sortByDesc('created_at')
+            ->first()?->created_at;
         if (!$approvedAt) {
             return null;
         }
