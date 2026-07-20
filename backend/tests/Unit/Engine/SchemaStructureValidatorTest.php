@@ -65,10 +65,46 @@ class SchemaStructureValidatorTest extends TestCase
     public function test_unknown_role_is_rejected(): void
     {
         $schema = $this->baseSchema();
-        $schema['workflow']['stages'][0]['role'] = 'applicant'; // not in staff/auditor/admin
+        // 'office' is not a real role — the seeder never emits it and the
+        // User model doesn't recognise it. Any other genuinely-unknown token
+        // works here; we just need something outside the allowlist.
+        $schema['workflow']['stages'][0]['role'] = 'office';
         $errors = (new SchemaStructureValidator())->validate($schema);
         $this->assertIsArray($errors);
         $this->assertArrayHasKey('schema.workflow.stages[0].role', $errors);
+    }
+
+    /**
+     * JORD-52 regression: the validator used to reject 'applicant' as a
+     * stage role, which broke every attempt to save an edit on the 50/57
+     * services whose stage[0] is an office_submission stage with
+     * role='applicant' (per ServicePlan2026Seeder). Every AI-assistant
+     * change on DRW-P-001, CERT-*, SRV-*, etc. was refused with
+     * "role يجب أن يكون: staff, auditor, admin" even when the workflow
+     * itself wasn't touched. The fix adds 'applicant' to the allowlist.
+     */
+    public function test_applicant_role_is_accepted_on_submission_stage(): void
+    {
+        $schema = $this->baseSchema();
+        $schema['workflow']['stages'] = [
+            [
+                'id'        => 'office_submission',
+                'label_ar'  => 'تقديم الطلب من المكتب الهندسي',
+                'role'      => 'applicant',
+                'sla_hours' => 72,
+                'actions'   => ['submit'],
+            ],
+            [
+                'id'        => 'first_review',
+                'label_ar'  => 'المراجعة الأولى',
+                'role'      => 'staff',
+                'sla_hours' => 48,
+                'actions'   => ['approve', 'reject'],
+            ],
+        ];
+        $errors = (new SchemaStructureValidator())->validate($schema);
+        $this->assertNull($errors,
+            'applicant is a legitimate role for stage[0] submission — the seeder produces it on 50/57 services');
     }
 
     public function test_missing_sla_hours_is_rejected(): void

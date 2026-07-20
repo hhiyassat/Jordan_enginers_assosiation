@@ -53,7 +53,16 @@ class SchemaStructureValidator
             return;
         }
 
-        $validRoles = ['staff', 'auditor', 'admin'];
+        // 'applicant' is the correct role for the submission stage (stage[0]
+        // on 50 of the 57 seeded services follows this pattern:
+        // office_submission → first_review → auditor_review → …). Without it
+        // in this allowlist, any admin edit of a submission-first schema is
+        // rejected with "role must be staff/auditor/admin" even when the
+        // stages themselves are untouched (JORD-52). The engine's
+        // WorkflowEngine::claim() only enforces role on stages a reviewer
+        // *claims*; applicants never claim their own submission stage, so
+        // allowing 'applicant' here does not open a review path to them.
+        $validRoles = ['applicant', 'staff', 'auditor', 'admin'];
         // Actions must be ids the platform knows how to render + dispatch.
         // StageActions::REGISTRY is the single source of truth — reviewer
         // console, seeders, and the reviewer decide endpoint all consult it.
