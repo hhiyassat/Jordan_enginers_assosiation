@@ -23,6 +23,10 @@ class DatabaseSeeder extends Seeder
             // Runs after CatalogWorkflowsSeeder because that seeder only
             // writes schema['workflow']; documents live on their own key.
             DrawingsDocumentsSeeder::class,
+            // JORD-58: 5-year approval validity on every DRW-P-* per the
+            // JEA 2025 manual p. 26. Writes only schema.certificate.
+            // validity_months so it's safe alongside earlier seeders.
+            DrawingValiditySeeder::class,
             // JeaDrawingsSeeder omitted — its 7 DRW-* rows duplicate the
             // richer DRW-P-* set produced by ServicePlan2026Seeder + the
             // real workflows attached by CatalogWorkflowsSeeder.
