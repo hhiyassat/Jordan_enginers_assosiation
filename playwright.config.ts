@@ -53,7 +53,10 @@ export default defineConfig({
       // http://localhost:8002 resolves cleanly. Explicitly pinning to
       // 127.0.0.1 broke on IPv6-preferring hosts (GitHub runners resolve
       // `localhost` to ::1 first; --host=127.0.0.1 would bind IPv4 only).
-      command: 'cd backend && APP_ENV=testing CAPTCHA_ENABLED=false php artisan serve --port=8002',
+      // LOGIN_RATE_LIMIT_PER_MINUTE=1000 lifts the 5/min prod cap for
+      // the E2E suite — every test logs in on beforeEach and easily
+      // blows past the prod limit from a single IP.
+      command: 'cd backend && APP_ENV=testing CAPTCHA_ENABLED=false LOGIN_RATE_LIMIT_PER_MINUTE=1000 php artisan serve --port=8002',
       // /up is Laravel's built-in health route (see bootstrap/app.php).
       // Do NOT use /api/v1/captcha here — it's rate-limited at 30/min,
       // and Playwright's poll-until-200 loop would burn through the

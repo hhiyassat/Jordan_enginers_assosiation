@@ -62,8 +62,8 @@ export function ChangeCredentials() {
       // cleared must_change_password + rotated the token's password hash,
       // so the fresh payload lets the AuthContext keep the session alive.
       // The RequireAuth gate then unblocks the route the user actually
-      // wanted (home / dashboard).
-      if (!token) throw new Error('missing session token');
+      // wanted (home / dashboard). Token arg is ignored post-JORD-30
+      // (session lives in a httpOnly cookie); passing null is fine.
       const me = await authApi.me();
       login(token, me.user);
       navigate('/', { replace: true });

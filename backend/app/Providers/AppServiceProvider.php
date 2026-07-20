@@ -74,10 +74,15 @@ class AppServiceProvider extends ServiceProvider
      */
     private function registerRateLimiters(): void
     {
-        // Public login attempts — 5/min per IP. Matches the pre-existing
-        // throttle:5,1 semantics but adds structured logging.
+        // Public login attempts — 5/min per IP in production. Matches the
+        // pre-existing throttle:5,1 semantics but adds structured logging.
+        // E2E / testing bypass: the Playwright suite logs in on every
+        // test's beforeEach, easily blowing past 5/min from a single IP.
+        // config('esp.login_rate_limit_per_minute') defaults to 5; the
+        // .env.testing / e2e webServer env override it to 1000.
         RateLimiter::for('login', function (Request $request) {
-            return Limit::perMinute(5)
+            $perMinute = (int) config('esp.login_rate_limit_per_minute', 5);
+            return Limit::perMinute($perMinute)
                 ->by((string) $request->ip())
                 ->response($this->logHitAndReply('login', $request));
         });

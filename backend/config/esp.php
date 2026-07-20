@@ -38,4 +38,9 @@ return [
     'captcha_enabled'     => filter_var(env('CAPTCHA_ENABLED', true), FILTER_VALIDATE_BOOLEAN),
     'captcha_ttl_minutes' => (int) env('CAPTCHA_TTL_MINUTES', 5),
 
+    // Login rate limit (per IP per minute). Production keeps this at 5
+    // to blunt brute-force attacks. E2E / Playwright bumps it via env
+    // because the suite performs a fresh login on every test's setUp.
+    'login_rate_limit_per_minute' => (int) env('LOGIN_RATE_LIMIT_PER_MINUTE', 5),
+
 ];

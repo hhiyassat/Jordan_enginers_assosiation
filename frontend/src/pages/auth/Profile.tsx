@@ -34,7 +34,7 @@ export function Profile(): JSX.Element {
 
   const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
-    if (!user || !token) return;
+    if (!user) return;
     setSaving(true);
     setError('');
     setSaved(false);
@@ -45,6 +45,8 @@ export function Profile(): JSX.Element {
       });
       // Refresh AuthContext with the new payload so the header avatar +
       // any consumer that reads `useAuth().user` sees the updated name.
+      // Token arg is ignored post-JORD-30 (httpOnly cookie) but the
+      // signature stays (token, user) for callsite compatibility.
       login(token, r.user);
       setSaved(true);
     } catch (err: unknown) {
