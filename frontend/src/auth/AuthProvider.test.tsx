@@ -95,18 +95,27 @@ describe('AuthProvider — JORD-50 cross-tab session guard', () => {
     expect(screen.getByTestId('who')).toHaveTextContent('Applicant A');
   });
 
-  it('locks the tab when another tab signs out', async () => {
+  it('silently clears the user when another tab signs out (no lock modal)', async () => {
+    // JORD-53: peer logout is an intentional symmetric signal — showing a
+    // scary lock modal for it is disproportionate and reads as confusing
+    // ("why does clicking Sign Out over there give me an error over here?").
+    // We just clear the user; RequireAuth will bounce this tab to /login
+    // the same as any other unauthenticated visit.
     await bootAs(USER_A);
-    (authApi.me as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('HTTP 401'));
+    (authApi.me as ReturnType<typeof vi.fn>).mockClear();
     const peer = new BroadcastChannel(AUTH_CHANNEL);
     await act(async () => {
       peer.postMessage({ type: 'auth-changed', userId: null });
       await new Promise(r => setTimeout(r, 0));
     });
     peer.close();
-    await waitFor(() => expect(screen.getByTestId('stale-tab-modal')).toBeInTheDocument());
-    // The signed-out variant of the message is used, not the named-user one.
-    expect(screen.getByText(/signed out|تسجيل الخروج/)).toBeInTheDocument();
+    // User is cleared → the Consumer renders 'anon'.
+    await waitFor(() => expect(screen.getByTestId('who')).toHaveTextContent('anon'));
+    // No lock modal for the logout path.
+    expect(screen.queryByTestId('stale-tab-modal')).toBeNull();
+    // We didn't need /auth/me for this — the peer's logout claim is
+    // already the correct outcome (the cookie is gone).
+    expect(authApi.me).not.toHaveBeenCalled();
   });
 
   it('ignores a broadcast whose userId matches ours (no unnecessary /auth/me trip)', async () => {

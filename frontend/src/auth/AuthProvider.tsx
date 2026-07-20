@@ -84,9 +84,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }): JSX.E
     return () => window.removeEventListener('focus', onFocus);
   }, [user]);
 
-  // JORD-50: subscribe to cross-tab auth messages. Any peer's login/
-  // logout triggers a re-verify here; if the resulting identity
-  // differs from our cached one, freeze the tab behind the modal.
+  // JORD-50 / JORD-53: subscribe to cross-tab auth messages. The two
+  // cases have very different UX weight:
+  //   • Peer signed in as a DIFFERENT user (identity swap): dangerous.
+  //     This tab's cached user is now wrong; any click here mutates
+  //     the peer's account. Freeze behind the lock modal and demand a
+  //     manual reload so the user consents to losing local state.
+  //   • Peer signed OUT (or was signed out): symmetric intentional
+  //     signal. Just clear our state — RequireAuth will bounce this
+  //     tab to /login the same as any other unauthenticated visit.
+  //     No modal — the lock screen was disproportionate for the
+  //     "user hit logout" path and read as scary/confusing.
   useEffect(() => {
     if (!hasBroadcast()) return;
     const ch = new BroadcastChannel(AUTH_CHANNEL);
@@ -97,8 +105,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }): JSX.E
       // Fast path: the broadcast matches who we already are — nothing
       // to reconcile, no network trip.
       if ((current?.id ?? null) === (msg.userId ?? null)) return;
-      // Something diverged — ask the server who we actually are now
-      // and lock this tab if the answer differs from our cache.
+
+      // Peer explicitly signed out — clear our session in-line, no
+      // /auth/me trip (the cookie is gone anyway). This is symmetric
+      // with the peer's intent.
+      if (msg.userId === null) {
+        if (current) setUser(null);
+        return;
+      }
+
+      // Peer signed in as someone else — verify with the server (the
+      // broadcast is untrusted for identity claims) and lock the tab
+      // only if the answer really is a different user.
       authApi.me()
         .then(r => {
           if (r.user.id !== current?.id) {
@@ -106,9 +124,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }): JSX.E
           }
         })
         .catch(() => {
-          // Cookie is gone (logout in the other tab). Only surface
-          // the lock if we thought we were logged in.
-          if (current) setStaleTabNotice({ newUser: null });
+          // Server says we're not logged in either. Treat as a silent
+          // logout — no lock modal.
+          if (current) setUser(null);
         });
     });
     return () => ch.close();
