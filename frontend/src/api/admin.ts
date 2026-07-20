@@ -48,7 +48,14 @@ function toQuery(filters: AllApplicationsFilters): string {
 }
 
 export const adminApi = {
-  dashboard:       () => request<{ stats: DashboardStats }>('GET', '/admin/dashboard'),
+  // JORD-11: dashboard endpoint returns stats + by_status + recent so
+  // the admin page can render more than counter tiles. `unknown` for
+  // recent — the shape is validated inside the consumer.
+  dashboard:       () => request<{
+    stats: DashboardStats;
+    by_status?: Record<string, number>;
+    recent?: Array<Record<string, unknown>>;
+  }>('GET', '/admin/dashboard'),
   listUsers:       () => request<{ users: User[] }>('GET', '/admin/users'),
   createUser:      (data: unknown) => request<{ user: User }>('POST', '/admin/users', data),
   updateUser:      (id: number, data: unknown) => request<{ user: User }>('PUT', `/admin/users/${id}`, data),

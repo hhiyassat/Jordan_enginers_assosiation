@@ -143,6 +143,11 @@
     "showing": "Showing {{from}}–{{to}} of {{total}} applications"
   },
   "adminDashboard": {
+    "recentApplications": "Recent applications",
+    "recentEmpty": "No recent applications",
+    "byStatus": "Applications by status",
+    "byStatusEmpty": "No data to display",
+    "viewAllApps": "View all applications",
     "title": "Admin Dashboard",
     "subtitle": "System overview",
     "stat": {

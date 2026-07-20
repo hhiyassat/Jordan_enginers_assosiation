@@ -143,6 +143,11 @@
     "showing": "عرض {{from}}–{{to}} من {{total}} طلب"
   },
   "adminDashboard": {
+    "recentApplications": "أحدث الطلبات",
+    "recentEmpty": "لا توجد طلبات حديثة",
+    "byStatus": "الطلبات حسب الحالة",
+    "byStatusEmpty": "لا توجد بيانات لعرضها",
+    "viewAllApps": "عرض كل الطلبات",
     "title": "لوحة التحكم",
     "subtitle": "نظرة عامة على النظام",
     "stat": {

@@ -40,6 +40,25 @@ class AdminController extends Controller
     {
         $orgId = $request->user()->organization_id;
 
+        // JORD-11: real dashboard — beyond the six stat tiles, the admin
+        // wants to see WHAT is happening on the platform. Add a status
+        // breakdown and the 5 most recent applications so the page can
+        // link deep into the review + admin surfaces without the admin
+        // having to hunt through filters.
+        $byStatus = Application::forOrganization($orgId)
+            ->selectRaw('status, count(*) as count')
+            ->groupBy('status')
+            ->pluck('count', 'status');
+
+        $recent = Application::forOrganization($orgId)
+            ->with(['serviceDefinition:id,code,name_ar,name_en', 'applicant:id,name'])
+            // Tie-break on id desc — bulk-created rows share the same
+            // created_at second and would otherwise fall back to
+            // database-dependent ordering.
+            ->orderByDesc('created_at')->orderByDesc('id')
+            ->limit(5)
+            ->get(['id', 'reference_number', 'status', 'created_at', 'service_definition_id', 'applicant_id']);
+
         return response()->json([
             'stats' => [
                 'total_applications'  => Application::forOrganization($orgId)->count(),
@@ -55,6 +74,8 @@ class AdminController extends Controller
                     ->where('status', 'active')->count(),
                 'total_users'         => User::where('organization_id', $orgId)->count(),
             ],
+            'by_status' => $byStatus,
+            'recent'    => $recent,
         ]);
     }
 

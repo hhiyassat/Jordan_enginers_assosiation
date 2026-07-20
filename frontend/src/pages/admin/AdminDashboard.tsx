@@ -16,13 +16,33 @@ type Stats = DashboardStats & Partial<{
   total_users: number;
 }>;
 
+// JORD-11: /admin/dashboard now returns by_status + recent alongside
+// stats. Type these here as the frontend view — the hook still returns
+// only `.stats` so we cast the raw payload once.
+interface RecentApp {
+  id: number;
+  reference_number: string;
+  status: string;
+  created_at: string;
+  service_definition?: { name_ar?: string; name_en?: string } | null;
+  applicant?: { name?: string } | null;
+}
+interface EnrichedDashboardResponse {
+  stats: Stats;
+  by_status?: Record<string, number>;
+  recent?: RecentApp[];
+}
+
 export function AdminDashboard() {
   const { user } = useAuth();
   const { t, i18n } = useTranslation();
   const isRtl = i18n.language.startsWith('ar');
   const numLocale = isRtl ? 'ar' : 'en';
   const { data, isPending, error } = useAdminDashboardStats();
-  const stats = data as Stats | undefined;
+  const payload = data as EnrichedDashboardResponse | undefined;
+  const stats = payload?.stats as Stats | undefined;
+  const byStatus = payload?.by_status ?? {};
+  const recent   = (payload?.recent ?? []) as unknown as RecentApp[];
   const loading = isPending;
   // Defense in depth — the /admin route is gated at the SPA layer, but if
   // that gate ever slips this still hides user-mgmt affordances from an
@@ -70,6 +90,24 @@ export function AdminDashboard() {
         </div>
       )}
 
+      {/* JORD-11: Recent applications + by-status breakdown */}
+      {!loading && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          <RecentApplicationsCard
+            recent={recent}
+            isArabic={isRtl}
+            viewAllLabel={t('adminDashboard.viewAllApps')}
+            heading={t('adminDashboard.recentApplications')}
+            emptyLabel={t('adminDashboard.recentEmpty')}
+          />
+          <ByStatusCard
+            byStatus={byStatus}
+            heading={t('adminDashboard.byStatus')}
+            emptyLabel={t('adminDashboard.byStatusEmpty')}
+          />
+        </div>
+      )}
+
       {/* Quick links */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="bg-white rounded-xl border border-gray-200 p-6">
@@ -103,6 +141,90 @@ export function AdminDashboard() {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+/**
+ * JORD-11: 5 most recent applications with a link to the full list.
+ * Takes up two grid columns to give the rows breathing room.
+ */
+function RecentApplicationsCard({ recent, isArabic, heading, emptyLabel, viewAllLabel }: {
+  recent: RecentApp[];
+  isArabic: boolean;
+  heading: string;
+  emptyLabel: string;
+  viewAllLabel: string;
+}) {
+  return (
+    <div className="md:col-span-2 bg-white rounded-xl border border-gray-200 p-6">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="font-semibold text-gray-800">{heading}</h3>
+        <Link to="/admin/applications" className="text-xs text-blue-600 hover:underline">
+          {viewAllLabel}
+        </Link>
+      </div>
+      {recent.length === 0 ? (
+        <p className="text-sm text-gray-400 text-center py-6">{emptyLabel}</p>
+      ) : (
+        <ul className="divide-y divide-gray-100">
+          {recent.map(app => (
+            <li key={app.id} className="py-2 flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="font-mono text-xs text-blue-700">{app.reference_number}</p>
+                <p className="text-sm text-gray-800 truncate">
+                  {(isArabic
+                    ? (app.service_definition?.name_ar || app.service_definition?.name_en)
+                    : (app.service_definition?.name_en || app.service_definition?.name_ar)) ?? '—'}
+                </p>
+                <p className="text-xs text-gray-500">{app.applicant?.name ?? '—'}</p>
+              </div>
+              <span className="text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-600 shrink-0">
+                {app.status}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+/**
+ * JORD-11: status breakdown as a compact horizontal bar list.
+ * Each row is a labelled bar whose width is proportional to the max.
+ */
+function ByStatusCard({ byStatus, heading, emptyLabel }: {
+  byStatus: Record<string, number>;
+  heading: string;
+  emptyLabel: string;
+}) {
+  const entries = Object.entries(byStatus).sort((a, b) => b[1] - a[1]);
+  const max = entries.reduce((m, [, v]) => Math.max(m, v), 0);
+
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 p-6">
+      <h3 className="font-semibold text-gray-800 mb-4">{heading}</h3>
+      {entries.length === 0 ? (
+        <p className="text-sm text-gray-400 text-center py-6">{emptyLabel}</p>
+      ) : (
+        <ul className="space-y-2">
+          {entries.map(([status, count]) => (
+            <li key={status}>
+              <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
+                <span>{status}</span>
+                <span className="font-mono">{count}</span>
+              </div>
+              <div className="h-2 rounded-full bg-gray-100 overflow-hidden" aria-hidden="true">
+                <div
+                  className="h-full bg-jea-primary rounded-full"
+                  style={{ width: `${max > 0 ? (count / max) * 100 : 0}%` }}
+                />
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

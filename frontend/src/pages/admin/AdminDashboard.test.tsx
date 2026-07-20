@@ -30,6 +30,16 @@ beforeEach(() => {
       total_applications: 3, pending_review: 1, approved_today: 0,
       certificates_issued: 2, active_services: 56, total_users: 5,
     },
+    // JORD-11: endpoint now returns by_status + recent alongside stats.
+    by_status: { submitted: 2, approved: 1 },
+    recent: [
+      {
+        id: 1, reference_number: 'A-DASH-1', status: 'submitted',
+        created_at: '2026-07-20T00:00:00Z',
+        service_definition: { name_ar: 'مخطط', name_en: 'Plan' },
+        applicant: { name: 'حسين' },
+      },
+    ],
   });
   mockUser = null;
 });
@@ -93,6 +103,25 @@ describe('AdminDashboard — user management affordances', () => {
     renderPage();
     await waitFor(() => expect(screen.getByText('سجل العمليات')).toBeInTheDocument());
     expect(screen.getByRole('link', { name: /سجل العمليات/ })).toHaveAttribute('href', '/admin/audit-logs');
+  });
+
+  it('renders the recent-applications card populated from the API', async () => {
+    mockUser = { id: 1, name: 'admin', email: 'admin@t.esp', role: 'admin', organization_id: 1, can_manage_users: true };
+    renderPage();
+    await waitFor(() => expect(screen.getByText('A-DASH-1')).toBeInTheDocument());
+    // The seeded row shows the applicant name + Arabic service label.
+    expect(screen.getByText('حسين')).toBeInTheDocument();
+    expect(screen.getByText('مخطط')).toBeInTheDocument();
+  });
+
+  it('renders the by-status bars from the API', async () => {
+    mockUser = { id: 1, name: 'admin', email: 'admin@t.esp', role: 'admin', organization_id: 1, can_manage_users: true };
+    renderPage();
+    await waitFor(() => expect(screen.getByText(/الطلبات حسب الحالة/)).toBeInTheDocument());
+    // "submitted" appears in both the recent-app status pill and the
+    // status-breakdown bars, so use getAllByText for presence.
+    expect(screen.getAllByText('submitted').length).toBeGreaterThan(0);
+    expect(screen.getByText('approved')).toBeInTheDocument();
   });
 
   it('surfaces the API error when the dashboard endpoint fails', async () => {

@@ -82,7 +82,9 @@ export function useReviewQueue() {
 export function useAdminDashboardStats() {
   return useQuery({
     queryKey: ['admin', 'dashboard'],
-    queryFn:  async () => (await adminApi.dashboard()).stats,
+    // JORD-11: return the full payload — stats + by_status + recent.
+    // Consumers narrow which slice they need.
+    queryFn:  () => adminApi.dashboard(),
   });
 }
 
