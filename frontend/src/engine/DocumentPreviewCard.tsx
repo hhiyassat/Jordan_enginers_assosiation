@@ -15,10 +15,27 @@ import type { SchemaDocument } from '../types';
  * preview after the AI added a document, saw no upload button, and
  * concluded the change hadn't taken. Rendering the real widget (in
  * disabled form) makes the schema's intent immediately verifiable.
+ *
+ * JORD-54: pass `onToggleRequired` to expose an inline checkbox that
+ * flips the document's `required` flag. When the callback is omitted
+ * the card stays read-only (the previous behavior, still used by the
+ * NewService creation preview and any consumer that shouldn't mutate
+ * the schema from this surface).
  */
-export function DocumentPreviewCard({ doc, locale = 'ar' }: { doc: SchemaDocument; locale?: 'ar' | 'en' }) {
+export function DocumentPreviewCard({
+  doc,
+  locale = 'ar',
+  onToggleRequired,
+}: {
+  doc: SchemaDocument;
+  locale?: 'ar' | 'en';
+  /** When provided, renders an inline checkbox that flips `required`
+   *  and calls back with the new value. Absent = read-only preview. */
+  onToggleRequired?: (docId: string, nextRequired: boolean) => void;
+}) {
   const label     = locale === 'ar' ? doc.label_ar : doc.label_en;
   const borderCls = doc.required ? 'border-gray-300' : 'border-dashed border-gray-300';
+  const editable  = typeof onToggleRequired === 'function';
 
   return (
     <div
@@ -30,7 +47,7 @@ export function DocumentPreviewCard({ doc, locale = 'ar' }: { doc: SchemaDocumen
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-sm font-medium text-gray-800">{label}</span>
-            {doc.required && (
+            {doc.required && !editable && (
               <span className="text-xs text-red-500 bg-red-50 px-1.5 py-0.5 rounded">
                 {locale === 'ar' ? 'إلزامي' : 'Required'}
               </span>
@@ -52,6 +69,33 @@ export function DocumentPreviewCard({ doc, locale = 'ar' }: { doc: SchemaDocumen
             {' · '}
             {locale === 'ar' ? 'الحد الأقصى:' : 'Max:'} {doc.max_size_mb}MB
           </p>
+
+          {/* Inline required toggle — only when onToggleRequired is passed.
+              Kept in the "info" column (not the button column) so it reads
+              as a *setting for this row* rather than an action to perform.
+              We also swap the plain badge above for this control when
+              editable, since showing both would be visual noise. */}
+          {editable && (
+            <label
+              className="inline-flex items-center gap-2 mt-2 text-xs text-gray-700 cursor-pointer select-none"
+              data-testid={`toggle-required-${doc.id}`}
+            >
+              <input
+                type="checkbox"
+                checked={!!doc.required}
+                onChange={e => onToggleRequired!(doc.id, e.target.checked)}
+                className="w-4 h-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
+                aria-label={locale === 'ar'
+                  ? `إلزامي: ${doc.label_ar}`
+                  : `Required: ${doc.label_en}`}
+              />
+              <span className={doc.required ? 'text-red-600 font-semibold' : 'text-gray-500'}>
+                {locale === 'ar'
+                  ? (doc.required ? 'إلزامي — يمنع تجاوز المرحلة قبل الإرفاق' : 'اختياري')
+                  : (doc.required ? 'Required — blocks stage advance until uploaded' : 'Optional')}
+              </span>
+            </label>
+          )}
         </div>
 
         <div className="flex-shrink-0">

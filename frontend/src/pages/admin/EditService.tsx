@@ -368,10 +368,32 @@ export function EditService() {
               <h3 className="text-sm font-semibold text-gray-800 mb-3">المستندات المطلوبة</h3>
               <p className="text-xs text-gray-500 mb-3">
                 هذه هي واجهة رفع المستندات كما ستظهر للمتقدم في خطوة "المستندات". الرفع معطّل هنا لأنّه محرّر ومعاينة فقط.
+                استخدم مربع الاختيار أدناه لتحديد أي المستندات إلزامي — الإلزامي يمنع المتقدم من تجاوز المرحلة حتى يرفعه.
               </p>
               <div className="space-y-3">
                 {parsedSchema.documents.map(doc => (
-                  <DocumentPreviewCard key={doc.id} doc={doc} />
+                  <DocumentPreviewCard
+                    key={doc.id}
+                    doc={doc}
+                    onToggleRequired={(docId, nextRequired) => {
+                      // Mutate the schema in-place: replace the target doc
+                      // with a version that has required flipped, then
+                      // re-serialize into the JSON textarea so the Save
+                      // path (which reads schemaJson → validate → PUT)
+                      // picks up the new value. This keeps the JSON tab
+                      // and the Preview toggle in sync — no duplicate
+                      // sources of truth. The service is not re-fetched;
+                      // the admin still has to click حفظ التعديلات to
+                      // persist, matching how every other Preview change
+                      // (via the AI tab) already behaves.
+                      const nextDocs = parsedSchema.documents.map(d =>
+                        d.id === docId ? { ...d, required: nextRequired } : d
+                      );
+                      const nextSchema = { ...parsedSchema, documents: nextDocs };
+                      setParsedSchema(nextSchema);
+                      setSchemaJson(JSON.stringify(nextSchema, null, 2));
+                    }}
+                  />
                 ))}
               </div>
             </div>
