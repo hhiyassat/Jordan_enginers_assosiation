@@ -27,6 +27,10 @@ class DatabaseSeeder extends Seeder
             // JEA 2025 manual p. 26. Writes only schema.certificate.
             // validity_months so it's safe alongside earlier seeders.
             DrawingValiditySeeder::class,
+            // JORD-60: 10-day materials-samples retention notice on
+            // SRV-008/009 per JEA 2025 manual p. 36. Writes only
+            // schema.compliance_notes[] — a new opt-in schema field.
+            MaterialsSampleRetentionSeeder::class,
             // JeaDrawingsSeeder omitted — its 7 DRW-* rows duplicate the
             // richer DRW-P-* set produced by ServicePlan2026Seeder + the
             // real workflows attached by CatalogWorkflowsSeeder.
