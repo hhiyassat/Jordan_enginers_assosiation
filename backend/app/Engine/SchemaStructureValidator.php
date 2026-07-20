@@ -250,7 +250,7 @@ class SchemaStructureValidator
             return;
         }
 
-        $validTypes = ['fixed', 'tiered', 'formula', 'matrix'];
+        $validTypes = ['fixed', 'tiered', 'formula', 'matrix', 'per_unit'];
         $feeType = $schema['fee']['type'] ?? null;
 
         if ($feeType && ! in_array($feeType, $validTypes)) {
@@ -289,6 +289,28 @@ class SchemaStructureValidator
             }
             if (isset($schema['fee']['basis']) && !is_string($schema['fee']['basis'])) {
                 $this->errors['schema.fee.basis'] = 'حقل basis يجب أن يكون معرف حقل نصياً.';
+            }
+        }
+
+        // JORD-64: per_unit — must declare basis (form field) + rate.
+        // Missing either produces silent zero fees, so require both.
+        if ($feeType === 'per_unit') {
+            if (empty($schema['fee']['basis']) || !is_string($schema['fee']['basis'])) {
+                $this->errors['schema.fee.basis'] = 'رسوم per_unit تتطلب basis كمعرف حقل نصي.';
+            } else {
+                // basis must reference a real form field.
+                $fieldIds = [];
+                if (isset($schema['fields']) && is_array($schema['fields'])) {
+                    foreach ($schema['fields'] as $f) {
+                        if (isset($f['id']) && is_string($f['id'])) $fieldIds[] = $f['id'];
+                    }
+                }
+                if (!in_array($schema['fee']['basis'], $fieldIds, true)) {
+                    $this->errors['schema.fee.basis'] = "basis='{$schema['fee']['basis']}' يشير إلى حقل غير معرف في fields.";
+                }
+            }
+            if (!isset($schema['fee']['rate']) || !is_numeric($schema['fee']['rate'])) {
+                $this->errors['schema.fee.rate'] = 'رسوم per_unit تتطلب rate رقمياً.';
             }
         }
 

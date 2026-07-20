@@ -55,10 +55,11 @@ class FeeCalculator
         }
 
         $amount = match ($fee['type'] ?? 'fixed') {
-            'tiered'  => $this->tiered($fee, $formData),
-            'formula' => $this->formula($fee, $formData),
-            'matrix'  => $this->matrix($fee, $formData),
-            default   => $this->toDecimal($fee['amount'] ?? 0),
+            'tiered'   => $this->tiered($fee, $formData),
+            'formula'  => $this->formula($fee, $formData),
+            'matrix'   => $this->matrix($fee, $formData),
+            'per_unit' => $this->perUnit($fee, $formData),
+            default    => $this->toDecimal($fee['amount'] ?? 0),
         };
 
         return $this->finalize($amount);
@@ -164,6 +165,61 @@ class FeeCalculator
         // Floor at zero — a schema-authored negative rate * positive value
         // would otherwise produce a refund-shaped fee, which the
         // certificate-issuance flow can't act on.
+        if (bccomp($total, '0', self::CALC_SCALE) < 0) {
+            return '0';
+        }
+        return $total;
+    }
+
+    /**
+     * JORD-64: per-unit metric fee — rate × form_value with optional
+     * min/max caps.
+     *
+     * Handles JEA 2025 manual rules F-02 (solar 4 JOD/kW) and F-03
+     * (excavation shoring 3.5 JOD/m² with the review-fee cap of
+     * 5000 JOD at 500 fils/m²). Simpler than matrix (single-axis),
+     * gains min/max caps which the manual uses for review fees to
+     * prevent runaway pricing on very large projects.
+     *
+     * Schema shape:
+     *   fee: {
+     *     type:  "per_unit",
+     *     basis: "capacity_kw",   // form field id (any numeric)
+     *     rate:  4.0,              // JOD per unit
+     *     min:   0,                // optional lower cap
+     *     max:   null              // optional upper cap (null = uncapped)
+     *   }
+     *
+     * Missing / non-numeric basis → 0 (same rationale as matrix()).
+     */
+    private function perUnit(array $fee, array $formData): string
+    {
+        $basis = is_string($fee['basis'] ?? null) ? $fee['basis'] : null;
+        $rate  = $this->toDecimal($fee['rate'] ?? 0);
+
+        $basisValue = $basis && is_numeric($formData[$basis] ?? null)
+            ? $this->toDecimal($formData[$basis])
+            : '0';
+
+        $total = bcmul($rate, $basisValue, self::CALC_SCALE);
+
+        // min/max caps AFTER the rate multiplication. Skipping when
+        // the key is absent (not merely null-valued) lets an author
+        // omit the cap without accidentally setting it to 0.
+        if (array_key_exists('max', $fee) && is_numeric($fee['max'])) {
+            $max = $this->toDecimal($fee['max']);
+            if (bccomp($total, $max, self::CALC_SCALE) > 0) {
+                $total = $max;
+            }
+        }
+        if (array_key_exists('min', $fee) && is_numeric($fee['min'])) {
+            $min = $this->toDecimal($fee['min']);
+            if (bccomp($total, $min, self::CALC_SCALE) < 0) {
+                $total = $min;
+            }
+        }
+
+        // Negative-floor guard, same as formula() / matrix().
         if (bccomp($total, '0', self::CALC_SCALE) < 0) {
             return '0';
         }

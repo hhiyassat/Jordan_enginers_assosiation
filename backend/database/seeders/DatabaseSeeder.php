@@ -35,6 +35,14 @@ class DatabaseSeeder extends Seeder
             // Adds 3 required form fields (governorate, building_class,
             // area_m2) and replaces the fee block with a matrix lookup.
             DrawingFeeMatrixSeeder::class,
+            // JORD-64: solar per-kW fee (JEA p. 71-72) on DRW-P-006.
+            // Runs after the matrix seeder — overrides its fee block
+            // for the one drawing service whose fee scales with
+            // capacity, not area.
+            SolarFeeSeeder::class,
+            // JORD-64: excavation shoring per-m² fee (JEA p. 40) on
+            // SRV-007/012. Independent of drawings — different services.
+            ExcavationFeeSeeder::class,
             // JeaDrawingsSeeder omitted — its 7 DRW-* rows duplicate the
             // richer DRW-P-* set produced by ServicePlan2026Seeder + the
             // real workflows attached by CatalogWorkflowsSeeder.

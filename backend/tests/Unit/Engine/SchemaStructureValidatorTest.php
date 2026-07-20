@@ -148,6 +148,55 @@ class SchemaStructureValidatorTest extends TestCase
             'A well-formed matrix (keys reference real fields, rates non-empty) must pass');
     }
 
+    /**
+     * JORD-64: per_unit fee validation. basis must name a real field,
+     * rate must be numeric.
+     */
+    public function test_per_unit_without_basis_is_rejected(): void
+    {
+        $schema = $this->baseSchema();
+        $schema['fee'] = ['type' => 'per_unit', 'rate' => 4.0];
+        $errors = (new SchemaStructureValidator())->validate($schema);
+        $this->assertIsArray($errors);
+        $this->assertArrayHasKey('schema.fee.basis', $errors);
+    }
+
+    public function test_per_unit_without_rate_is_rejected(): void
+    {
+        $schema = $this->baseSchema();
+        $schema['fields'] = [['id' => 'capacity_kw', 'label_ar' => 'م', 'type' => 'number']];
+        $schema['fee'] = ['type' => 'per_unit', 'basis' => 'capacity_kw'];
+        $errors = (new SchemaStructureValidator())->validate($schema);
+        $this->assertIsArray($errors);
+        $this->assertArrayHasKey('schema.fee.rate', $errors);
+    }
+
+    public function test_per_unit_basis_referencing_undeclared_field_is_rejected(): void
+    {
+        $schema = $this->baseSchema();
+        $schema['fields'] = [['id' => 'other', 'label_ar' => 'م', 'type' => 'number']];
+        $schema['fee'] = ['type' => 'per_unit', 'basis' => 'capacity_kw', 'rate' => 4.0];
+        $errors = (new SchemaStructureValidator())->validate($schema);
+        $this->assertIsArray($errors);
+        $this->assertArrayHasKey('schema.fee.basis', $errors);
+    }
+
+    public function test_valid_per_unit_fee_passes(): void
+    {
+        $schema = $this->baseSchema();
+        $schema['fields'] = [
+            ['id' => 'capacity_kw', 'label_ar' => 'الاستطاعة', 'type' => 'number'],
+        ];
+        $schema['fee'] = [
+            'type'  => 'per_unit',
+            'basis' => 'capacity_kw',
+            'rate'  => 4.0,
+            'max'   => 5000,
+        ];
+        $errors = (new SchemaStructureValidator())->validate($schema);
+        $this->assertNull($errors);
+    }
+
     public function test_applicant_role_is_accepted_on_submission_stage(): void
     {
         $schema = $this->baseSchema();
