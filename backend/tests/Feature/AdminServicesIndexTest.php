@@ -62,10 +62,10 @@ class AdminServicesIndexTest extends TestCase
         $res->assertOk();
 
         $services = collect($res->json('services'));
-        // 56 actual services per ServicePlan2026SeederTest's per-parent
-        // breakdown (12+14+6+5+2+4+13). If the plan gains or drops one,
+        // 57 actual services per ServicePlan2026SeederTest's per-parent
+        // breakdown (12+14+6+6+2+4+13). If the plan gains or drops one,
         // update this alongside ServicePlan2026SeederTest.
-        $this->assertSame(56, $services->count(),
+        $this->assertSame(57, $services->count(),
             'Only actual services (not category tiles) should be returned');
         $this->assertTrue($services->every(fn ($s) => !empty($s['parent_code'])),
             'No response row should have a null parent_code');

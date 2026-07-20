@@ -10,7 +10,10 @@ use Illuminate\Database\Seeder;
  * ServicePlan2026Seeder
  *
  * Seeds the full JEA services catalog per service-plan-payment.pdf (2026):
- * 58 services across 7 categories with delivery phase (1..5) set on each.
+ * 57 services across 7 categories with delivery phase (1..5) set on each.
+ * (Plan PDF footer lists 58; MSC-013 "الكتب والنماذج المتاحة للمكاتب"
+ *  remains dropped as a vague catch-all — it's a documents library,
+ *  not a workflow. CERT-006 was restored per JEA product decision.)
  *
  * The seeder is idempotent (updateOrCreate on code) and safe to re-run
  * after schema tweaks. It also:
@@ -20,8 +23,8 @@ use Illuminate\Database\Seeder;
  *     JeaDrawingsSeeder demo data) which are superseded by the plan's
  *     12 drawing services under the same parent.
  *
- * Phase counts should match the plan footer (20/13/12/4/9):
- *   phase 1 = 20, phase 2 = 13, phase 3 = 12, phase 4 = 4, phase 5 = 9.
+ * Phase counts (post CERT-006 restore, MSC-013 still dropped): 57 total
+ *   phase 1 = 20, phase 2 = 13, phase 3 = 12, phase 4 = 4, phase 5 = 8.
  */
 class ServicePlan2026Seeder extends Seeder
 {
@@ -50,7 +53,7 @@ class ServicePlan2026Seeder extends Seeder
             'phase' => null,
         ]);
 
-        // 3. Bulk-seed the 58 services.
+        // 3. Bulk-seed the 57 services.
         foreach ($this->services() as $svc) {
             $this->upsert($org->id, $svc);
         }
@@ -456,8 +459,7 @@ class ServicePlan2026Seeder extends Seeder
             ['code' => 'CERT-003', 'parent_code' => 'JEA-CERT', 'phase' => 3, 'name_ar' => 'شهادة تصنيف مكتب',           'name_en' => 'Office Classification Certificate'],
             ['code' => 'CERT-004', 'parent_code' => 'JEA-CERT', 'phase' => 3, 'name_ar' => 'شهادة ملكية مكتب',           'name_en' => 'Office Ownership Certificate'],
             ['code' => 'CERT-005', 'parent_code' => 'JEA-CERT', 'phase' => 3, 'name_ar' => 'شهادة اختصاصات مكتب',        'name_en' => 'Office Specialisations Certificate'],
-            // CERT-006 "باقي الشهادات الرسمية" dropped as a vague catch-all
-            // that mapped to no concrete workflow.
+            ['code' => 'CERT-006', 'parent_code' => 'JEA-CERT', 'phase' => 3, 'name_ar' => 'باقي الشهادات الرسمية',      'name_en' => 'Other Official Certificates'],
 
             // ── 5. المهندسون في المكاتب (JEA-ENG) — 2 services ──
             ['code' => 'ENG-001', 'parent_code' => 'JEA-ENG', 'phase' => 5, 'name_ar' => 'تعيين / تحويل / إقالة مهندس (كادر المكتب)',  'name_en' => 'Assign / Transfer / Terminate Engineer (Office Staff)'],

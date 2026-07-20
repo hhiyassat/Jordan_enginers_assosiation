@@ -438,7 +438,11 @@ class CatalogWorkflowsSeeder extends Seeder
             'CERT-003' => $this->certificate(),
             'CERT-004' => $this->certificate(),
             'CERT-005' => $this->certificate(),
-            // CERT-006 workflow retired with the catch-all row.
+            // CERT-006 "باقي الشهادات الرسمية" — catch-all for miscellaneous
+            // certificates. Uses the same review-and-issue flow as the other
+            // JEA-CERT rows; the specific certificate type is captured in the
+            // application form so reviewers can route it to the right desk.
+            'CERT-006' => $this->certificate(),
 
             // ── JEA-ENG Engineers ─────────────────────────────────────
             'ENG-001' => $this->engineer(),
