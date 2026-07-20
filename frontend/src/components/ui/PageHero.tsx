@@ -34,7 +34,7 @@ export function PageHero({
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-xl font-black text-white" lang="ar">{titleAr}</h1>
-          <p className="text-white/50 text-xs mt-0.5">
+          <p className="text-white/70 text-xs mt-0.5">
             <span lang="en" dir="ltr">{titleEn}</span>
             {subtitleAr && (
               <>

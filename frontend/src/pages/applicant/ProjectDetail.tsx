@@ -53,7 +53,7 @@ export function ProjectDetail() {
   return (
     <div className="flex flex-col h-full" dir={isRtl ? 'rtl' : 'ltr'}>
       <div className="bg-jea-topbar px-6 py-4 shrink-0">
-        <div className="flex items-center gap-2 text-xs text-white/50 mb-2">
+        <div className="flex items-center gap-2 text-xs text-white/70 mb-2">
           <Link to="/services" className="hover:text-white transition-colors">{t('category.backToServices')}</Link>
           <span aria-hidden="true">/</span>
           <Link to="/projects" className="hover:text-white transition-colors">{t('projects.title')}</Link>
@@ -66,7 +66,7 @@ export function ProjectDetail() {
               </div>
               <div>
                 <h1 className="text-lg font-black text-white">{projectName}</h1>
-                <p className="text-white/50 text-[10px]">
+                <p className="text-white/70 text-[10px]">
                   {[project.city, project.area_m2 ? `${project.area_m2} m²` : null].filter(Boolean).join(' · ')}
                 </p>
               </div>

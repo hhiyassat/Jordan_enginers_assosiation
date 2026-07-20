@@ -97,6 +97,30 @@ interface FieldProps {
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+/**
+ * JORD-16: exported so callers (e.g. Apply's handleSaveDraft) can
+ * re-validate every visible field client-side before hitting the
+ * backend. Returns a { fieldId → error } map with only failing rows,
+ * plus a computed .valid boolean for convenience.
+ */
+export function validateAll(
+  schema: ServiceSchema,
+  values: Record<string, unknown>,
+  locale: 'ar' | 'en' = 'ar',
+): { valid: boolean; errors: Record<string, string> } {
+  const errors: Record<string, string> = {};
+  for (const field of schema.fields) {
+    // Skip fields hidden by a conditional guard — you can't require
+    // the applicant to fill a field they can't see.
+    if (field.conditional && values[field.conditional.field] !== field.conditional.value) {
+      continue;
+    }
+    const msg = validateField(field, values[field.id], locale);
+    if (msg) errors[field.id] = msg;
+  }
+  return { valid: Object.keys(errors).length === 0, errors };
+}
+
 function validateField(field: SchemaField, value: unknown, locale: 'ar' | 'en'): string {
   const ar = locale === 'ar';
 

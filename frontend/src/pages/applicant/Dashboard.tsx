@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -62,15 +62,11 @@ export function Dashboard() {
     loadQuota();
   }, []);
 
-  const certificatesCount = useMemo(
-    () => applications.filter(a => a.status === 'certificate_issued').length,
-    [applications],
-  );
-
-  const activeAppsCount = useMemo(
-    () => applications.filter(a => !['rejected', 'certificate_issued'].includes(a.status)).length,
-    [applications],
-  );
+  // JORD-49: these were previously wrapped in useMemo but the filter
+  // + length runs on typically <20 rows. Inlining is faster than the
+  // useMemo bookkeeping and keeps the code straightforward.
+  const certificatesCount = applications.filter(a => a.status === 'certificate_issued').length;
+  const activeAppsCount   = applications.filter(a => !['rejected', 'certificate_issued'].includes(a.status)).length;
 
   const recentProjects = projects.slice(0, 3);
 
@@ -249,7 +245,7 @@ function QuickAction({ to, title, desc, Icon }: {
         <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center shrink-0" aria-hidden="true">
           <Icon size={20} className="text-white" />
         </div>
-        <ArrowLeft size={14} className="text-white/40 mt-1" aria-hidden="true" />
+        <ArrowLeft size={14} className="text-white/70 mt-1" aria-hidden="true" />
       </div>
       <div>
         <h3 className="text-sm font-black text-white leading-snug">{title}</h3>

@@ -67,7 +67,7 @@ export function ServiceList() {
     <div className="flex flex-col h-full" dir={isRtl ? 'rtl' : 'ltr'}>
       <div className="bg-jea-topbar px-6 py-5 shrink-0">
         <h1 className="text-xl font-black text-white">{t('pageTitle.services')}</h1>
-        <p className="text-white/50 text-xs mt-0.5">{t('org.name')}</p>
+        <p className="text-white/70 text-xs mt-0.5">{t('org.name')}</p>
       </div>
 
       <div className="flex-1 overflow-y-auto bg-jea-bg p-6">
@@ -131,7 +131,7 @@ function ServiceTile({ service, childCount }: { service: ServiceDefinition; chil
         <div className="w-11 h-11 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
           <Icon size={22} className="text-white" />
         </div>
-        <ArrowLeft size={16} className={`text-white/40 mt-1 ${isArabic ? '' : 'rotate-180'}`} />
+        <ArrowLeft size={16} className={`text-white/70 mt-1 ${isArabic ? '' : 'rotate-180'}`} />
       </div>
       <div>
         <h3 className="text-base font-black text-white leading-snug">{title}</h3>

@@ -179,7 +179,7 @@ export function LoginPage(): JSX.Element {
           </form>
         </div>
 
-        <p className="text-center text-white/40 text-[11px] mt-6">
+        <p className="text-center text-white/70 text-[11px] mt-6">
           {t('copyright', { year: new Date().getFullYear() })}
         </p>
       </div>

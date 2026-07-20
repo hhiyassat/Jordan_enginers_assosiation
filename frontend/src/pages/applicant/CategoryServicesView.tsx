@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ArrowRight, Plus, Clock, Edit3 } from 'lucide-react';
@@ -62,7 +62,11 @@ export function CategoryServicesView() {
 
   const category = all.find(s => s.code === categoryCode);
   const children = all.filter(s => s.parent_code === categoryCode);
-  const groups = useMemo(() => groupBySubcategory(children), [children]);
+  // JORD-49: `children` gets a fresh array reference from filter() on
+  // every render, so the previous useMemo(groups, [children]) never
+  // hit — inlining is honest about the cost. groupBySubcategory runs
+  // over typically <10 items.
+  const groups = groupBySubcategory(children);
   // Only render subcategory headers when at least one non-empty subcategory
   // exists — otherwise we get a redundant empty header before every card.
   const useGroupedLayout = groups.some(g => g.ar !== '');

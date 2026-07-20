@@ -51,7 +51,7 @@ export function ProjectsList() {
           <nav aria-label="breadcrumb" className="flex items-center gap-3 text-xs">
             <Link
               to="/services"
-              className="flex items-center gap-1.5 text-white/60 hover:text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60 rounded"
+              className="flex items-center gap-1.5 text-white/80 hover:text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60 rounded"
             >
               <ArrowRight size={14} aria-hidden="true" className={isRtl ? '' : 'rotate-180'} />
               <span>{t('category.backToServices')}</span>

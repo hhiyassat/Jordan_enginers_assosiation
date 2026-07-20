@@ -43,7 +43,7 @@ export function Bilingual({
     return (
       <Tag className={className}>
         <span className={`block ${arClassName}`} lang="ar">{ar}</span>
-        <span className={`block text-white/50 text-xs mt-0.5 ${enClassName}`} lang="en" dir="ltr">{en}</span>
+        <span className={`block text-white/70 text-xs mt-0.5 ${enClassName}`} lang="en" dir="ltr">{en}</span>
       </Tag>
     );
   }

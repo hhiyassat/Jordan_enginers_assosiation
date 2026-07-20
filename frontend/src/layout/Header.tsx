@@ -39,7 +39,7 @@ export function Header({ user, onMenuToggle }: {
         </div>
       </div>
       <div className="flex-1 flex items-center gap-2 mx-4" aria-label="breadcrumb">
-        <span className="text-white/40 text-xs" aria-hidden="true">›</span>
+        <span className="text-white/70 text-xs" aria-hidden="true">›</span>
         <span className="text-white/90 text-sm font-medium">{t(titleKey)}</span>
       </div>
       <div className="flex items-center gap-2">

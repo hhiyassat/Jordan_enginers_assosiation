@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { applicationsApi, projectsApi, servicesApi } from '../../api/client';
-import { DynamicForm } from '../../engine/DynamicForm';
+import { DynamicForm, validateAll } from '../../engine/DynamicForm';
 import { DocumentUploader } from '../../engine/DocumentUploader';
 import type { Application, Project, ServiceDefinition, SchemaWorkflowStage } from '../../types';
 import { WorkflowStepper } from '../../components/ui/WorkflowStepper';
@@ -118,7 +118,26 @@ export function Apply() {
   };
 
   const handleSaveDraft = async () => {
-    if (!service) return;
+    if (!service || !service.schema) return;
+
+    // JORD-16: client-side sweep of every visible field BEFORE we hit
+    // the network. Cuts the "user hit Next without filling required
+    // fields" round-trip and shows every field's problem at once
+    // instead of just the first one the backend rejected. Backend
+    // still validates on submit — this is an early exit, not a
+    // replacement.
+    const preflight = validateAll(service.schema, formData, 'ar');
+    if (!preflight.valid) {
+      setErrors(preflight.errors);
+      setOtherErrors({});
+      setErrorSummary(t('apply.errorHeading'));
+      setTimeout(() => {
+        const firstError = document.querySelector('[data-field-error]') as HTMLElement | null;
+        firstError?.focus();
+      }, 100);
+      return;
+    }
+
     setSaving(true);
     // Fresh save clears any previous error state.
     setErrors({});
