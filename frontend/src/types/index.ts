@@ -125,6 +125,27 @@ export interface ServiceSchema {
     title_en: string;
     fields_on_cert: string[];
   };
+  /**
+   * JORD-60/61: policy / compliance callouts attached to the service by
+   * seeders (e.g. MaterialsSampleRetentionSeeder). Rendered by the
+   * ComplianceNotesBanner on Apply.tsx so applicants see the obligation
+   * before they submit. Optional — most services have none.
+   */
+  compliance_notes?: ComplianceNote[];
+}
+
+export interface ComplianceNote {
+  /** Rule id from KITAB_TALIMAT_2025_ESP_MAPPING.md (e.g. "S-03"). */
+  code: string;
+  source?: string;
+  page?: number;
+  category?: 'retention' | 'fee' | 'eligibility' | 'conduct' | string;
+  label_ar: string;
+  label_en: string;
+  body_ar: string;
+  body_en: string;
+  /** Drives banner color + icon. Blocker doesn't gate submit yet (Phase 2). */
+  severity: 'info' | 'warning' | 'blocker';
 }
 
 // ── Service Definition ──────────────────────────────────────────────

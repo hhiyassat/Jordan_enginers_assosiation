@@ -7,6 +7,7 @@ import { DocumentUploader } from '../../engine/DocumentUploader';
 import type { Application, Project, ServiceDefinition, SchemaWorkflowStage } from '../../types';
 import { WorkflowStepper } from '../../components/ui/WorkflowStepper';
 import { ServiceInfoCard } from '../../components/ui/ServiceInfoCard';
+import { ComplianceNotesBanner } from '../../components/ui/ComplianceNotesBanner';
 import { ProjectContextHeader } from './ProjectContextHeader';
 import { normalizeApplyError, labelForOtherKey, type ApiError } from './applyErrorHelpers';
 
@@ -298,6 +299,16 @@ export function Apply() {
               {t('apply.errorDraftSaved')}
             </p>
           )}
+        </div>
+      )}
+
+      {/* JORD-61: policy / compliance callouts that the platform can't
+          gate mechanically but the applicant must see before submit
+          (e.g. JORD-60's 10-day materials-sample retention). Renders
+          nothing when schema.compliance_notes is empty. */}
+      {schema.compliance_notes && schema.compliance_notes.length > 0 && (
+        <div className="mb-6">
+          <ComplianceNotesBanner notes={schema.compliance_notes} />
         </div>
       )}
 
