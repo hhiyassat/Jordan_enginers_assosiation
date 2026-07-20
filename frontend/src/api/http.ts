@@ -16,13 +16,21 @@ export const BASE = '/api/v1';
  */
 export const DEFAULT_TIMEOUT_MS = 30_000;
 
+/**
+ * JORD-30: token was moved from sessionStorage to a backend-managed
+ * httpOnly + SameSite=Strict cookie so JavaScript (and any XSS) can't
+ * reach it. The browser attaches the cookie automatically on every
+ * same-origin request, so the client no longer touches the token at
+ * all. `credentials: 'include'` on every fetch tells the browser to
+ * carry the cookie.
+ *
+ * The setToken/getToken pair below is kept as a stub because some
+ * legacy consumers (tests, the multi-tab demo flow) still look up a
+ * token; returning null now signals "no in-JS token; rely on the
+ * cookie" which is exactly the right behaviour post-migration.
+ */
 function getToken(): string | null {
-  // sessionStorage is per-tab. localStorage is shared across every tab on
-  // the same origin, which meant logging in as a different user in tab 2
-  // silently clobbered tab 1's admin session and every subsequent request
-  // used the newer token. Per-tab isolation lets a demo/dev workflow keep
-  // admin + staff + applicant sessions open side by side.
-  return sessionStorage.getItem('esp_token');
+  return null;
 }
 
 /**
@@ -97,6 +105,10 @@ export async function request<T>(
   let res: Response;
   try {
     res = await fetch(`${BASE}${path}`, {
+      // JORD-30: send the httpOnly session cookie on every same-origin
+      // request. Without this, the browser drops the cookie and every
+      // request 401s.
+      credentials: 'include',
       method,
       headers,
       body: isFormData ? (body as FormData) : body ? JSON.stringify(body) : undefined,

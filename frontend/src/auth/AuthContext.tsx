@@ -11,8 +11,18 @@ import type { User } from '../types';
  */
 export interface AuthContextType {
   user: User | null;
+  /**
+   * JORD-30: token is always null now — it lives in a httpOnly cookie
+   * the browser attaches automatically. Kept on the interface for
+   * backward compat with existing consumers; new code should ignore it.
+   */
   token: string | null;
-  login: (token: string, user: User) => void;
+  /**
+   * Refresh the session cache with the given user. The `token` argument
+   * is preserved for backward compat but ignored — the auth cookie is
+   * already on the response that produced this user payload.
+   */
+  login: (token: string | null, user: User) => void;
   logout: () => void;
 }
 

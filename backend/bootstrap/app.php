@@ -36,6 +36,12 @@ return Application::configure(basePath: dirname(__DIR__))
         // Global middleware — applied to every request
         $middleware->append(SecurityHeaders::class);
         $middleware->append(LogApiAccess::class);
+        // JORD-30: read the Sanctum token from the httpOnly session
+        // cookie and promote it to the Authorization header before the
+        // Sanctum guard runs. Global (not per-route) so every /api/v1
+        // endpoint that uses auth:sanctum picks it up. Non-authenticated
+        // routes (login, captcha) are a no-op.
+        $middleware->append(\App\Http\Middleware\ReadTokenFromCookie::class);
 
         // Named middleware aliases (used in routes)
         $middleware->alias([

@@ -9,20 +9,16 @@ import { setUnauthorizedHandler } from './client';
  * themselves.
  */
 describe('api client — 401 central handler', () => {
-  beforeEach(() => {
-    sessionStorage.setItem('esp_token', 'stale-token');
-  });
-
   afterEach(() => {
     setUnauthorizedHandler(null);
-    sessionStorage.removeItem('esp_token');
     vi.restoreAllMocks();
   });
 
   it('invokes the registered handler on a 401 response', async () => {
-    const invalidator = vi.fn(() => {
-      sessionStorage.removeItem('esp_token');
-    });
+    // Post JORD-30 the invalidator just clears in-memory user state
+    // (the httpOnly cookie is cleared by the backend on logout / by
+    // the browser on expiry). No sessionStorage side-effect to check.
+    const invalidator = vi.fn();
     setUnauthorizedHandler(invalidator);
 
     vi.stubGlobal('fetch', vi.fn(async () => new Response(
@@ -34,7 +30,6 @@ describe('api client — 401 central handler', () => {
     const { authApi } = await import('./client');
     await expect(authApi.me()).rejects.toThrow();
     expect(invalidator).toHaveBeenCalledTimes(1);
-    expect(sessionStorage.getItem('esp_token')).toBeNull();
   });
 
   it('surfaces a localized message instead of raw HTTP status', async () => {

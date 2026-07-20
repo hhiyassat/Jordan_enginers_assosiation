@@ -5,12 +5,15 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Middleware\ReadTokenFromCookie;
 use App\Models\AuditLog;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
+use Symfony\Component\HttpFoundation\Cookie as SymfonyCookie;
 
 /**
  * AuthController — authentication endpoints
@@ -41,10 +44,17 @@ class AuthController extends Controller
 
         $token = $user->createToken('esp-token')->plainTextToken;
 
-        return response()->json([
-            'token' => $token,
-            'user'  => $this->userPayload($user),
-        ]);
+        // JORD-30: token still returned in JSON for backward compat
+        // with any lingering bearer-header consumer, but the CANONICAL
+        // storage is now a httpOnly + SameSite=Strict cookie that the
+        // browser sends automatically. AuthProvider.tsx no longer reads
+        // this JSON token.
+        return response()
+            ->json([
+                'token' => $token,
+                'user'  => $this->userPayload($user),
+            ])
+            ->withCookie($this->buildSessionCookie($token));
     }
 
     public function me(Request $request): JsonResponse
@@ -55,7 +65,40 @@ class AuthController extends Controller
     public function logout(Request $request): JsonResponse
     {
         $request->user()->currentAccessToken()->delete();
-        return response()->json(['message' => 'تم تسجيل الخروج.']);
+        return response()
+            ->json(['message' => 'تم تسجيل الخروج.'])
+            // JORD-30: clear the httpOnly cookie so a stolen browser
+            // tab can't replay against the (now-revoked) token row.
+            ->withCookie(Cookie::forget(ReadTokenFromCookie::COOKIE_NAME, '/'));
+    }
+
+    /**
+     * JORD-30: build the httpOnly session cookie.
+     *   • name:      esp_session (COOKIE_NAME on the reader middleware)
+     *   • value:     the Sanctum plain-text token
+     *   • lifetime:  8 hours — matches typical office-day sessions;
+     *                short enough to bound stolen-cookie damage
+     *   • path:      '/' so both /api and the SPA see it
+     *   • domain:    null → current host (subdomain-safe)
+     *   • secure:    true in production, false in local http:// dev
+     *   • httpOnly:  true — invisible to JavaScript, defeats XSS
+     *   • sameSite:  'strict' — browser refuses to attach on cross-
+     *                site navigations, so classic CSRF POSTs from
+     *                evil.com don't forge authenticated requests
+     */
+    private function buildSessionCookie(string $token): SymfonyCookie
+    {
+        return Cookie::make(
+            name:     ReadTokenFromCookie::COOKIE_NAME,
+            value:    $token,
+            minutes:  60 * 8,
+            path:     '/',
+            domain:   null,
+            secure:   app()->environment('production'),
+            httpOnly: true,
+            raw:      false,
+            sameSite: 'strict',
+        );
     }
 
     public function register(Request $request): JsonResponse
@@ -79,10 +122,13 @@ class AuthController extends Controller
 
         $token = $user->createToken('esp-token')->plainTextToken;
 
-        return response()->json([
-            'token' => $token,
-            'user'  => $this->userPayload($user),
-        ], 201);
+        // JORD-30: same cookie treatment as login().
+        return response()
+            ->json([
+                'token' => $token,
+                'user'  => $this->userPayload($user),
+            ], 201)
+            ->withCookie($this->buildSessionCookie($token));
     }
 
     /**
