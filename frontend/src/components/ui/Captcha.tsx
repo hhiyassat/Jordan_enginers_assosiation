@@ -3,6 +3,7 @@ import DOMPurify from 'dompurify';
 import { RefreshCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { request } from '../../api/http';
+import { errorMessage } from '../../utils/errorMessage';
 
 /**
  * Captcha — text captcha wrapper for public forms
@@ -63,20 +64,22 @@ export function Captcha({ onChange, resetKey, error }: CaptchaProps) {
       const data = await request<CaptchaChallenge>('GET', '/captcha');
       setChallenge(data);
       onChange({ id: data.id, answer: '' });
-    } catch (e: unknown) {
+    } catch (err: unknown) {
       // The api client already returns a friendly localized message; if
       // for any reason it's empty, fall back to the captcha-specific
       // hint so the user isn't staring at a blank error region.
-      const msg = (e as Error).message?.trim();
-      setLoadErr(msg && msg.length > 0 ? msg : t('auth.captchaRequired'));
+      const msg = errorMessage(err, '').trim();
+      setLoadErr(msg.length > 0 ? msg : t('auth.captchaRequired'));
     } finally {
       setLoading(false);
       inFlight.current = false;
     }
   }, [onChange, t]);
 
-  // Initial load + on resetKey bump
-  useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [resetKey]);
+  // Initial load + on resetKey bump. JORD-72: `load` is stable
+  // (useCallback), so we can put it in the deps array honestly
+  // instead of muting the exhaustive-deps rule.
+  useEffect(() => { load(); }, [resetKey, load]);
 
   const onInput = (v: string) => {
     // Uppercase + strip whitespace; server compares case-insensitively but

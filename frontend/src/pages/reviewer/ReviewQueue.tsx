@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { reviewApi } from '../../api/client';
 import type { Application } from '../../types';
+import { errorMessage } from '../../utils/errorMessage';
 
 export function ReviewQueue() {
   const { t, i18n } = useTranslation();
@@ -16,7 +17,7 @@ export function ReviewQueue() {
   useEffect(() => {
     reviewApi.queue()
       .then(r => setQueue(r.applications))
-      .catch(e => setError((e as Error).message))
+      .catch(e => setError(errorMessage(e)))
       .finally(() => setLoading(false));
   }, []);
 

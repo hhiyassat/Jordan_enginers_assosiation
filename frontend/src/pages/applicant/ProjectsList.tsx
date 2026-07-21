@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, ArrowRight, Plus, Building2, MapPin } from 'lucide-react';
@@ -9,6 +9,7 @@ import { Button } from '../../components/ui/Button';
 import { Modal } from '../../components/ui/Modal';
 import { TextField, FormField } from '../../components/ui/FormField';
 import { QuotaCard } from '../../components/ui/QuotaCard';
+import { errorMessage } from '../../utils/errorMessage';
 
 export function ProjectsList() {
   const { t, i18n } = useTranslation();
@@ -22,25 +23,29 @@ export function ProjectsList() {
   const [quotaError, setQuotaError]     = useState('');
   const navigate = useNavigate();
 
-  const loadQuota = () => {
+  const loadQuota = useCallback(() => {
     setQuotaLoading(true);
     setQuotaError('');
     projectsApi.quota()
       .then(setQuota)
-      .catch(e => setQuotaError((e as Error).message))
+      .catch(err => setQuotaError(errorMessage(err)))
       .finally(() => setQuotaLoading(false));
-  };
+  }, []);
 
-  const reload = () => {
+  // JORD-69 / JORD-77: wrap in useCallback so `reload` is stable and
+  // can safely land in useEffect's dependency array (no stale
+  // closure on re-render). Errors go through errorMessage() so
+  // non-Error rejections don't crash the setter.
+  const reload = useCallback(() => {
     setLoading(true);
     projectsApi.list()
       .then(r => setProjects(r.projects))
-      .catch(e => setError(e.message))
+      .catch(err => setError(errorMessage(err)))
       .finally(() => setLoading(false));
     loadQuota();
-  };
+  }, [loadQuota]);
 
-  useEffect(reload, []);
+  useEffect(() => { reload(); }, [reload]);
 
   return (
     <div className="flex flex-col h-full" dir={isRtl ? 'rtl' : 'ltr'}>
@@ -198,6 +203,13 @@ function AddProjectModal({
   const [saving,  setSaving]     = useState(false);
   const [error,   setError]      = useState('');
 
+  // JORD-72/73: `engineerId` is read here as an "auto-select first"
+  // guard, not as reactive input — the effect must not re-fire on
+  // every keystroke. Read the current value from a ref so lint's
+  // exhaustive-deps check is satisfied without pulling engineerId
+  // into the deps array (the disable-next-line was a smell).
+  const engineerIdRef = React.useRef(engineerId);
+  useEffect(() => { engineerIdRef.current = engineerId; }, [engineerId]);
   useEffect(() => {
     if (!open) return;
     setEngLoading(true);
@@ -205,13 +217,12 @@ function AddProjectModal({
       .then(r => {
         setEngineers(r.engineers);
         // Auto-select first engineer if none chosen yet.
-        if (r.engineers.length > 0 && !engineerId) {
+        if (r.engineers.length > 0 && !engineerIdRef.current) {
           setEngineerId(String(r.engineers[0].id));
         }
       })
       .catch(() => setEngineers([]))
       .finally(() => setEngLoading(false));
-    /* eslint-disable-next-line react-hooks/exhaustive-deps */
   }, [open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -231,7 +242,7 @@ function AddProjectModal({
       });
       onCreated();
     } catch (err: unknown) {
-      setError((err as Error).message || t('projects.form.saveError'));
+      setError(errorMessage(err) || t('projects.form.saveError'));
     } finally {
       setSaving(false);
     }

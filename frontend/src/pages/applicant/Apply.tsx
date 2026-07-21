@@ -107,7 +107,7 @@ export function Apply() {
   useEffect(() => {
     if (!serviceCode) return;
     servicesApi.get(serviceCode)
-      .then(r => setService((r as { service: ServiceDefinition }).service))
+      .then(r => setService(r.service))
       .catch(() => navigate('/services'))
       .finally(() => setLoading(false));
   }, [serviceCode, navigate]);
@@ -135,7 +135,7 @@ export function Apply() {
   useEffect(() => {
     if (!projectId) { setProject(null); return; }
     projectsApi.get(projectId)
-      .then(r => setProject((r as { project: Project }).project))
+      .then(r => setProject(r.project))
       .catch(() => setProject(null));
   }, [projectId]);
 
@@ -181,12 +181,12 @@ export function Apply() {
     try {
       if (application) {
         const r = await applicationsApi.update(application.id, formData);
-        setApplication((r as { application: Application }).application);
+        setApplication(r.application);
       } else {
         // Pass through the project link — the controller re-checks
         // ownership + org so a spoofed URL can't cross-attach.
         const r = await applicationsApi.create(service.code, formData, projectId ?? undefined);
-        setApplication((r as { application: Application }).application);
+        setApplication(r.application);
       }
       setStep('documents');
     } catch (err: unknown) {
@@ -289,7 +289,13 @@ export function Apply() {
           firstError?.focus();
         }, 100);
       } else {
-        alert(summary || t('apply.submitError'));
+        // JORD-71: don't block the tab with window.alert(); surface
+        // the summary inline via the same banner used for field-level
+        // failures. `otherErrors` stays empty because we already
+        // established there are none — the banner degrades to a
+        // one-line message.
+        setErrorSummary(summary || t('apply.submitError'));
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     } finally {
       setSubmitting(false);

@@ -6,6 +6,7 @@ import { adminApi } from '../../api/client';
 import { useSortableRows } from '../../utils/useSortableRows';
 import { downloadCsv } from '../../utils/csv';
 import { SortHeader } from '../../utils/SortHeader';
+import { errorMessage } from '../../utils/errorMessage';
 
 /**
  * OfficeDues — JORD-79 UI
@@ -77,7 +78,7 @@ export function OfficeDues() {
         setObligations(r.obligations);
         setRateTable(r.rate_table);
       })
-      .catch(e => setError((e as Error).message))
+      .catch(e => setError(errorMessage(e)))
       .finally(() => setLoading(false));
   };
   useEffect(load, [officeId]);
@@ -124,7 +125,7 @@ export function OfficeDues() {
       setFlash(isArabic ? 'تم إنشاء رسوم التسجيل.' : 'Registration fee created.');
       load();
     } catch (e) {
-      setError((e as Error).message);
+      setError(errorMessage(e));
     } finally {
       setSeeding(false);
     }
@@ -145,7 +146,7 @@ export function OfficeDues() {
       setPayReference('');
       load();
     } catch (e) {
-      setError((e as Error).message);
+      setError(errorMessage(e));
     } finally {
       setPaying(false);
     }

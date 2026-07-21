@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Bell, Check } from 'lucide-react';
@@ -57,7 +57,12 @@ export function NotificationBell(): JSX.Element {
     setOpen(false);
   };
 
-  const timeAgo = (iso: string): string => {
+  // JORD-81: memoised so the identity is stable across renders. The
+  // function only depends on `t`, and `t` is stable per language, so
+  // subcomponents that receive `timeAgo` as a prop no longer thrash
+  // memoisation. Also cheaper for a bell that re-renders on every
+  // notification poll.
+  const timeAgo = useCallback((iso: string): string => {
     const ms = Date.now() - new Date(iso).getTime();
     const mins = Math.floor(ms / 60_000);
     if (mins < 1)  return t('notifications.just_now');
@@ -66,7 +71,7 @@ export function NotificationBell(): JSX.Element {
     if (hours < 24) return t('notifications.hours_ago', { count: hours });
     const days = Math.floor(hours / 24);
     return t('notifications.days_ago', { count: days });
-  };
+  }, [t]);
 
   return (
     <div className="relative" ref={containerRef}>

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Lock, Unlock } from 'lucide-react';
 import { adminApi } from '../../api/client';
 import type { ServiceDefinition } from '../../types';
+import { errorMessage } from '../../utils/errorMessage';
 
 const STATUS_COLOR: Record<string, string> = {
   active:   'bg-green-100 text-green-700',
@@ -39,7 +40,7 @@ export function ServicesList() {
         // section instead of crashing.
         setCategories(r.categories ?? []);
       })
-      .catch(e => setError((e as Error).message))
+      .catch(e => setError(errorMessage(e)))
       .finally(() => setLoading(false));
   };
 
@@ -65,7 +66,7 @@ export function ServicesList() {
       await adminApi.updateServiceStatus(service.id, 'active');
       setServices(prev => prev.map(s => s.id === service.id ? { ...s, status: 'active' } : s));
     } catch (e: unknown) {
-      setError((e as Error).message);
+      setError(errorMessage(e));
     } finally {
       setActivating(null);
     }
@@ -77,7 +78,7 @@ export function ServicesList() {
       await adminApi.updateServiceStatus(service.id, 'inactive');
       setServices(prev => prev.map(s => s.id === service.id ? { ...s, status: 'inactive' } : s));
     } catch (e: unknown) {
-      setError((e as Error).message);
+      setError(errorMessage(e));
     } finally {
       setActivating(null);
     }
@@ -91,7 +92,7 @@ export function ServicesList() {
         : await adminApi.lockService(service.id);
       setServices(prev => prev.map(s => s.id === service.id ? { ...s, is_locked: r.service.is_locked } : s));
     } catch (e: unknown) {
-      setError((e as Error).message);
+      setError(errorMessage(e));
     } finally {
       setActivating(null);
     }

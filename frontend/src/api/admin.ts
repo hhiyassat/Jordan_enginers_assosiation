@@ -1,4 +1,4 @@
-import type { Application, DashboardStats, ServiceDefinition, User } from '../types';
+import type { Application, DashboardStats, ServiceDefinition, ServiceSchema, User } from '../types';
 import { request } from './http';
 
 /**
@@ -54,7 +54,17 @@ export const adminApi = {
   dashboard:       () => request<{
     stats: DashboardStats;
     by_status?: Record<string, number>;
-    recent?: Array<Record<string, unknown>>;
+    // JORD-74: tightened from Array<Record<string, unknown>> so
+    // consumers don't have to cast the payload to render the
+    // "recent applications" list.
+    recent?: Array<{
+      id: number;
+      reference_number: string;
+      status: string;
+      created_at: string;
+      service_definition?: { name_ar?: string; name_en?: string } | null;
+      applicant?: { name?: string } | null;
+    }>;
   }>('GET', '/admin/dashboard'),
   listUsers:       () => request<{ users: User[] }>('GET', '/admin/users'),
   createUser:      (data: unknown) => request<{ user: User }>('POST', '/admin/users', data),
@@ -127,10 +137,11 @@ export const adminApi = {
       | { type: 'free'; notes?: string }
   ) => request<{ service: ServiceDefinition }>('PATCH', `/admin/services/${id}/fee`, payload),
 
-  /** Update service schema/metadata */
+  /** Update service schema/metadata. JORD-75/76: `schema` is now typed
+   *  as ServiceSchema so callers stop double-casting parsedSchema. */
   updateService: (id: number, data: Partial<{
     name_ar: string; name_en: string; description_ar: string;
-    description_en: string; schema: Record<string, unknown>; status: string;
+    description_en: string; schema: ServiceSchema; status: string;
   }>) => request<{ service: ServiceDefinition }>('PUT', `/services/${id}`, data),
 
   /** Lock / unlock a service. Every content mutation is refused with 423
@@ -140,8 +151,9 @@ export const adminApi = {
   unlockService: (id: number) =>
     request<{ service: ServiceDefinition; message: string }>('POST', `/admin/services/${id}/unlock`),
 
-  /** FR-019: Apply a natural-language change to an existing schema via Claude */
-  chatUpdateSchema: (current_schema: Record<string, unknown>, message: string) =>
+  /** FR-019: Apply a natural-language change to an existing schema via Claude.
+   *  JORD-75/76: `current_schema` accepts ServiceSchema so callers don't cast. */
+  chatUpdateSchema: (current_schema: ServiceSchema, message: string) =>
     request<{ updated_schema: Record<string, unknown>; explanation: string; changes: string[]; tokens_used: number }>(
       'POST', '/admin/services/chat-schema', { current_schema, message }
     ),
@@ -151,12 +163,15 @@ export const adminApi = {
    *  blockers, hukm_ir, and generation_audit alongside the schema. */
   generateSchema: (srs_text: string, service_code?: string, mode: 'azimah' | 'rukhsa' = 'azimah', cycle_id?: number) =>
     request<{
-      schema:             Record<string, unknown>;
+      // JORD-76: schema is a ServiceSchema; the two Hukm payloads are
+      // typed as unknown so the caller narrows to its own view type
+      // instead of double-casting through unknown.
+      schema:             ServiceSchema;
       verdict:            'sahih' | 'fasid' | 'batil';
-      validation_report:  Record<string, unknown>;
+      validation_report:  unknown;
       blockers:           Array<{ type: string; severity: string; decision: string; message: string; resolution: string }>;
-      hukm_ir:            Array<Record<string, unknown>> | null;
-      generation_audit:   Record<string, unknown>;
+      hukm_ir:            unknown[] | null;
+      generation_audit:   unknown;
       mode:               'azimah' | 'rukhsa';
       tokens_used:        number;
       model:              string;
@@ -170,23 +185,26 @@ export const adminApi = {
     fd.append('mode', mode);
     if (cycle_id) fd.append('cycle_id', String(cycle_id));
     return request<{
-      schema:             Record<string, unknown>;
+      // JORD-76: match generateSchema's tightened shape so callers
+      // consume both endpoints with the same typing.
+      schema:             ServiceSchema;
       verdict:            'sahih' | 'fasid' | 'batil';
-      validation_report:  Record<string, unknown>;
+      validation_report:  unknown;
       blockers:           Array<{ type: string; severity: string; decision: string; message: string; resolution: string }>;
-      hukm_ir:            Array<Record<string, unknown>> | null;
-      generation_audit:   Record<string, unknown>;
+      hukm_ir:            unknown[] | null;
+      generation_audit:   unknown;
       mode:               'azimah' | 'rukhsa';
       tokens_used:        number;
       model:              string;
     }>('POST', '/admin/services/generate-schema-from-file', fd, true);
   },
 
-  /** Save a generated schema as a new ServiceDefinition */
+  /** Save a generated schema as a new ServiceDefinition.
+   *  JORD-76: `schema` typed as ServiceSchema so callers don't cast. */
   saveService: (data: {
     code: string; name_ar: string; name_en: string;
     description_ar?: string; description_en?: string;
-    currency?: string; schema: Record<string, unknown>;
+    currency?: string; schema: ServiceSchema;
     status: 'draft' | 'active';
   }) => request<{ service: ServiceDefinition }>('POST', '/services', data),
 

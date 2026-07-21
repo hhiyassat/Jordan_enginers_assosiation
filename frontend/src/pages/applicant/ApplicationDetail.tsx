@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { applicationsApi } from '../../api/client';
 import type { Application, ApplicationReview } from '../../types';
+import { errorMessage } from '../../utils/errorMessage';
 
 /**
  * ApplicationDetail — JORD-59 / JORD-62
@@ -66,7 +67,7 @@ export function ApplicationDetail() {
         setApplication(r.application);
         setCertificateUrl(r.certificate_pdf_url ?? null);
       })
-      .catch(e => setError((e as Error).message))
+      .catch(e => setError(errorMessage(e)))
       .finally(() => setLoading(false));
   }, [applicationId, isArabic]);
 

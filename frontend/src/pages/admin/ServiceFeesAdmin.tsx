@@ -5,6 +5,7 @@ import { adminApi } from '../../api/client';
 import { useSortableRows } from '../../utils/useSortableRows';
 import { downloadCsv } from '../../utils/csv';
 import { SortHeader } from '../../utils/SortHeader';
+import { errorMessage } from '../../utils/errorMessage';
 
 /**
  * ServiceFeesAdmin — JORD-85
@@ -84,7 +85,7 @@ export function ServiceFeesAdmin() {
         r.fees.forEach(row => { initial[row.id] = draftFromRow(row); });
         setDrafts(initial);
       })
-      .catch(e => setError((e as Error).message))
+      .catch(e => setError(errorMessage(e)))
       .finally(() => setLoading(false));
   };
   useEffect(load, []);
@@ -165,7 +166,7 @@ export function ServiceFeesAdmin() {
       setFlash((isArabic ? 'تم حفظ رسوم ' : 'Saved fee for ') + row.code);
       load();
     } catch (e) {
-      setError((e as Error).message);
+      setError(errorMessage(e));
     } finally {
       setSavingId(null);
     }

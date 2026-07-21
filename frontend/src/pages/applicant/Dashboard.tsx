@@ -10,6 +10,7 @@ import type { Application, Project } from '../../types';
 import { useAuth } from '../../auth/AuthContext';
 import { PageHero } from '../../components/ui/PageHero';
 import { QuotaCard } from '../../components/ui/QuotaCard';
+import { errorMessage } from '../../utils/errorMessage';
 
 /**
  * Dashboard — landing page for the engineering-office (applicant) role.
@@ -42,7 +43,7 @@ export function Dashboard() {
     setQuotaError('');
     projectsApi.quota()
       .then(setQuota)
-      .catch(e => setQuotaError((e as Error).message))
+      .catch(e => setQuotaError(errorMessage(e)))
       .finally(() => setQuotaLoading(false));
   };
 
@@ -57,7 +58,7 @@ export function Dashboard() {
         setProjects(p);
         setApplications(a);
       })
-      .catch(e => setFeedError((e as Error).message))
+      .catch(e => setFeedError(errorMessage(e)))
       .finally(() => setLoading(false));
     loadQuota();
   }, []);

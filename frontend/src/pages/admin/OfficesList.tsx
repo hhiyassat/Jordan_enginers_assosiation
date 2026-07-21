@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Building2, Users, ChevronLeft, ChevronRight, Award, Star, ShieldCheck } from 'lucide-react';
 import { adminApi } from '../../api/client';
+import { errorMessage } from '../../utils/errorMessage';
 
 /**
  * OfficesList — JORD-77
@@ -40,7 +41,7 @@ export function OfficesList() {
   useEffect(() => {
     adminApi.listOffices()
       .then(r => setOffices(r.offices))
-      .catch(e => setError((e as Error).message))
+      .catch(e => setError(errorMessage(e)))
       .finally(() => setLoading(false));
   }, []);
 

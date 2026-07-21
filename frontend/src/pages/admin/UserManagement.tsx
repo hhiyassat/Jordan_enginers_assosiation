@@ -1,8 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Trash2, Edit3, UserPlus, X } from 'lucide-react';
 import { userManagementApi } from '../../api/client';
 import type { User } from '../../types';
+import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
+import { errorMessage } from '../../utils/errorMessage';
 import { useAuth } from '../../auth/AuthContext';
 
 /**
@@ -43,25 +45,40 @@ export function UserManagement() {
   const [error, setError]     = useState('');
   const [editing, setEditing] = useState<User | 'new' | null>(null);
   const [banner, setBanner]   = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
+  // JORD-70: replaces the blocking window.confirm() with the in-app
+  // ConfirmDialog. Stashing the target user keeps the confirm flow
+  // out of a callback closure — the dialog reads from state, not
+  // from the click handler.
+  const [pendingDelete, setPendingDelete] = useState<User | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
-  const reload = () => {
+  // JORD-77: useCallback + errorMessage so the effect can honestly
+  // list `reload` as a dependency and non-Error rejections don't
+  // crash the setter.
+  const reload = useCallback(() => {
     setLoading(true);
     userManagementApi.list()
       .then(r => setUsers(r.users))
-      .catch(e => setError((e as Error).message))
+      .catch(err => setError(errorMessage(err)))
       .finally(() => setLoading(false));
-  };
+  }, []);
 
-  useEffect(() => { reload(); }, []);
+  useEffect(() => { reload(); }, [reload]);
 
-  const handleDelete = async (u: User) => {
-    if (!window.confirm(t('userManagement.deleteConfirm', { email: u.email }))) return;
+  const handleDelete = (u: User) => setPendingDelete(u);
+
+  const confirmDelete = async () => {
+    if (!pendingDelete) return;
+    setDeleting(true);
     try {
-      await userManagementApi.destroy(u.id);
-      setBanner({ type: 'ok', text: t('userManagement.deletedBanner', { email: u.email }) });
+      await userManagementApi.destroy(pendingDelete.id);
+      setBanner({ type: 'ok', text: t('userManagement.deletedBanner', { email: pendingDelete.email }) });
+      setPendingDelete(null);
       reload();
-    } catch (e) {
-      setBanner({ type: 'err', text: (e as Error).message });
+    } catch (err) {
+      setBanner({ type: 'err', text: errorMessage(err) });
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -156,6 +173,18 @@ export function UserManagement() {
           onSaved={() => { setEditing(null); reload(); setBanner({ type: 'ok', text: t('userManagement.savedBanner') }); }}
         />
       )}
+
+      {/* JORD-70: accessible in-app confirmation for destructive delete
+          instead of the browser's blocking window.confirm(). */}
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title={t('userManagement.deleteDialogTitle', { defaultValue: 'حذف المستخدم' })}
+        message={t('userManagement.deleteConfirm', { email: pendingDelete?.email ?? '' })}
+        destructive
+        busy={deleting}
+        onConfirm={confirmDelete}
+        onCancel={() => setPendingDelete(null)}
+      />
     </div>
   );
 }
@@ -221,26 +250,35 @@ function UserEditor({ user, assignableRoles, onClose, onSaved }: {
         await userManagementApi.update(user!.id, body);
       }
       onSaved();
-    } catch (e) {
-      const apiErr = e as Error & { errors?: Record<string, string | string[]> };
+    } catch (err) {
+      const apiErr = err as { errors?: Record<string, string | string[]> };
       const firstField = apiErr.errors ? Object.values(apiErr.errors)[0] : undefined;
-      const firstMsg   = Array.isArray(firstField) ? firstField[0] : (firstField ?? apiErr.message);
-      setErr(firstMsg ?? t('userManagement.genericError'));
+      const firstMsg   = Array.isArray(firstField) ? firstField[0] : firstField;
+      setErr(firstMsg ?? errorMessage(err, t('userManagement.genericError')));
     } finally {
       setSaving(false);
     }
   };
+
+  const editorTitle = isNew
+    ? t('userManagement.editorTitle')
+    : t('userManagement.editorTitleEdit', { email: user?.email });
 
   return (
     <div
       className="fixed inset-0 bg-black/40 flex items-center justify-center z-40 p-4"
       role="dialog"
       aria-modal="true"
+      // JORD-79: screen readers previously announced the dialog with no
+      // name because neither aria-label nor aria-labelledby was set.
+      // Wire aria-labelledby to the heading below so the announcement
+      // carries the actual editor title (new vs. editing which email).
+      aria-labelledby="user-editor-title"
     >
       <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-lg w-full max-w-md p-5" dir={isRtl ? 'rtl' : 'ltr'}>
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-bold">
-            {isNew ? t('userManagement.editorTitle') : t('userManagement.editorTitleEdit', { email: user?.email })}
+          <h2 id="user-editor-title" className="text-lg font-bold">
+            {editorTitle}
           </h2>
           <button type="button" onClick={onClose} aria-label={t('userManagement.closeAria')}>
             <X size={18} aria-hidden="true" />

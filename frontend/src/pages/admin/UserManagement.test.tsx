@@ -51,23 +51,28 @@ describe('UserManagement', () => {
     expect(screen.getByText(/بحاجة لتغيير كلمة المرور/)).toBeInTheDocument();
   });
 
-  it('calls the delete API after the confirm prompt', async () => {
+  it('calls the delete API after the ConfirmDialog is confirmed', async () => {
+    // JORD-70: replaced window.confirm() with the in-app ConfirmDialog.
+    // The test now drives the flow through the dialog's confirm button
+    // instead of stubbing window.confirm.
     mockDestroy.mockResolvedValue({ message: 'ok' });
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
     renderPage();
     await waitFor(() => expect(screen.getByText('admin@t.esp')).toBeInTheDocument());
 
     await userEvent.click(screen.getByLabelText('حذف admin@t.esp'));
-    await waitFor(() => expect(mockDestroy).toHaveBeenCalledWith(1));
+    // ConfirmDialog opens with the destructive-styled confirm button.
+    await waitFor(() => expect(screen.getByTestId('confirm-dialog')).toBeInTheDocument());
+    await userEvent.click(screen.getByTestId('confirm-dialog-confirm'));
 
-    confirmSpy.mockRestore();
+    await waitFor(() => expect(mockDestroy).toHaveBeenCalledWith(1));
   });
 
-  it('does not call delete when the user cancels the confirm', async () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(false);
+  it('does not call delete when the ConfirmDialog is cancelled', async () => {
     renderPage();
     await waitFor(() => expect(screen.getByText('admin@t.esp')).toBeInTheDocument());
     await userEvent.click(screen.getByLabelText('حذف admin@t.esp'));
+    await waitFor(() => expect(screen.getByTestId('confirm-dialog')).toBeInTheDocument());
+    await userEvent.click(screen.getByTestId('confirm-dialog-cancel'));
     expect(mockDestroy).not.toHaveBeenCalled();
   });
 });

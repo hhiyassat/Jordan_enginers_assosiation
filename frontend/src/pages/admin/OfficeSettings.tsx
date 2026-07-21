@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Award, ShieldCheck, Star, Info, Save, ArrowLeft, ArrowRight } from 'lucide-react';
 import { adminApi } from '../../api/client';
+import { errorMessage } from '../../utils/errorMessage';
 
 /**
  * OfficeSettings — JORD-77
@@ -67,7 +68,7 @@ export function OfficeSettings() {
         setServerEngineers(r.engineers);
         setDraftEngineers(r.engineers);
       })
-      .catch(e => setError((e as Error).message))
+      .catch(e => setError(errorMessage(e)))
       .finally(() => setLoading(false));
   }, [officeId]);
 
@@ -126,7 +127,7 @@ export function OfficeSettings() {
       setServerEngineers(draftEngineers);
       setSavedBanner(true);
     } catch (e) {
-      setError((e as Error).message);
+      setError(errorMessage(e));
     } finally {
       setSaving(false);
     }

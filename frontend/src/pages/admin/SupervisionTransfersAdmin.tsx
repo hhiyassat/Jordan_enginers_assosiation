@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { AlertCircle, ArrowRightLeft, Building2, CheckCircle2, Clock, Download, XCircle } from 'lucide-react';
 import { adminApi } from '../../api/client';
 import { downloadCsv } from '../../utils/csv';
+import { errorMessage } from '../../utils/errorMessage';
 
 /**
  * SupervisionTransfersAdmin — JORD-83 UI
@@ -60,7 +61,7 @@ export function SupervisionTransfersAdmin() {
     setLoading(true);
     adminApi.listSupervisionTransfers()
       .then(r => setTransfers(r.transfers))
-      .catch(e => setError((e as Error).message))
+      .catch(e => setError(errorMessage(e)))
       .finally(() => setLoading(false));
   };
   useEffect(load, []);
@@ -218,7 +219,7 @@ function TransferRow({ transfer, isArabic, onAssign, onSuccess, onError }: {
       setDecision(null);
       setNotes('');
     } catch (e) {
-      onError((e as Error).message);
+      onError(errorMessage(e));
     } finally {
       setSubmitting(false);
     }
@@ -370,7 +371,7 @@ function AssignModal({ transfer, isArabic, onClose, onAssigned, onError }: {
         // Filter out the source office — can't reassign to itself.
         setOffices(r.offices.filter(o => o.id !== transfer.source_office?.id));
       })
-      .catch(e => onError((e as Error).message))
+      .catch(e => onError(errorMessage(e)))
       .finally(() => setOfficesLoading(false));
   }, []);
 
@@ -384,7 +385,7 @@ function AssignModal({ transfer, isArabic, onClose, onAssigned, onError }: {
       await adminApi.assignSupervisionTransfer(transfer.id, targetId, notes.trim() || undefined);
       onAssigned(isArabic ? 'تم تعيين المكتب المستلم.' : 'Target office assigned.');
     } catch (e) {
-      onError((e as Error).message);
+      onError(errorMessage(e));
     } finally {
       setSubmitting(false);
     }

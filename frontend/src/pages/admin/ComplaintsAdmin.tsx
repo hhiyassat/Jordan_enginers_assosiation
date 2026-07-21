@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { AlertTriangle, ChevronDown, CheckCircle2, Download, XCircle, Gavel, Info } from 'lucide-react';
 import { adminApi } from '../../api/client';
 import { downloadCsv } from '../../utils/csv';
+import { errorMessage } from '../../utils/errorMessage';
 
 /**
  * ComplaintsAdmin — JORD-81 UI
@@ -67,7 +68,7 @@ export function ComplaintsAdmin() {
     setLoading(true);
     adminApi.listComplaints()
       .then(r => setComplaints(r.complaints))
-      .catch(e => setError((e as Error).message))
+      .catch(e => setError(errorMessage(e)))
       .finally(() => setLoading(false));
   };
   useEffect(load, []);
@@ -316,7 +317,7 @@ function DecideForm({ complaintId, onDecided, onError, isArabic }: {
         : '';
       onDecided(res.message + extra);
     } catch (e) {
-      onError((e as Error).message);
+      onError(errorMessage(e));
     } finally {
       setSubmitting(false);
     }

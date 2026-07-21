@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { myOfficeApi } from '../../api/client';
 import type { MyComplaint, MySanction } from '../../api/myOffice';
+import { errorMessage } from '../../utils/errorMessage';
 
 /**
  * MyOffice — JORD-84
@@ -68,7 +69,7 @@ export function MyOffice() {
         setComplaints(complaintsRes.complaints);
         setSanctions(sanctionsRes.sanctions);
       })
-      .catch(e => setError((e as Error).message))
+      .catch(e => setError(errorMessage(e)))
       .finally(() => setLoading(false));
   }, []);
 

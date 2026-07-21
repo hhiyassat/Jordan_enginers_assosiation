@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { reviewApi } from '../../api/client';
 import type { ReviewDashboardResponse } from '../../api/review';
+import { errorMessage } from '../../utils/errorMessage';
 
 /**
  * ReviewDashboard — JORD-88 (PM)
@@ -46,7 +47,7 @@ export function ReviewDashboard() {
     setLoading(true);
     reviewApi.dashboard()
       .then(setData)
-      .catch(e => setError((e as Error).message))
+      .catch(e => setError(errorMessage(e)))
       .finally(() => setLoading(false));
   }, []);
 

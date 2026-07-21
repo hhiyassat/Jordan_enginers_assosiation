@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { integrationApi, type IntegrationCycle } from '../../api/client';
+import { errorMessage } from '../../utils/errorMessage';
 
 const STATUS_COLOR: Record<string, string> = {
   requirements_received: 'bg-blue-100 text-blue-700',
@@ -56,7 +57,7 @@ export function IntegrationCycleDetail() {
       // Refresh cycle
       integrationApi.cycle(cycle.id).then(r => setCycle(r.data));
     } catch (e: unknown) {
-      setNotifyError((e as Error).message);
+      setNotifyError(errorMessage(e));
     } finally {
       setNotifying(false);
     }

@@ -16,22 +16,12 @@ type Stats = DashboardStats & Partial<{
   total_users: number;
 }>;
 
-// JORD-11: /admin/dashboard now returns by_status + recent alongside
-// stats. Type these here as the frontend view — the hook still returns
-// only `.stats` so we cast the raw payload once.
-interface RecentApp {
-  id: number;
-  reference_number: string;
-  status: string;
-  created_at: string;
-  service_definition?: { name_ar?: string; name_en?: string } | null;
-  applicant?: { name?: string } | null;
-}
-interface EnrichedDashboardResponse {
-  stats: Stats;
-  by_status?: Record<string, number>;
-  recent?: RecentApp[];
-}
+// JORD-74: RecentApp is now typed at the API-client layer so this
+// page consumes `data.recent` directly without a cast. Kept as an
+// alias so subcomponent props still read clearly.
+type RecentApp = NonNullable<
+  NonNullable<ReturnType<typeof useAdminDashboardStats>['data']>['recent']
+>[number];
 
 export function AdminDashboard() {
   const { user } = useAuth();
@@ -39,10 +29,9 @@ export function AdminDashboard() {
   const isRtl = i18n.language.startsWith('ar');
   const numLocale = isRtl ? 'ar' : 'en';
   const { data, isPending, error } = useAdminDashboardStats();
-  const payload = data as EnrichedDashboardResponse | undefined;
-  const stats = payload?.stats as Stats | undefined;
-  const byStatus = payload?.by_status ?? {};
-  const recent   = (payload?.recent ?? []) as unknown as RecentApp[];
+  const stats = data?.stats;
+  const byStatus = data?.by_status ?? {};
+  const recent: RecentApp[] = data?.recent ?? [];
   const loading = isPending;
   // Defense in depth — the /admin route is gated at the SPA layer, but if
   // that gate ever slips this still hides user-mgmt affordances from an

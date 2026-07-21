@@ -6,6 +6,7 @@ import { adminApi } from '../../api/client';
 import { DynamicForm } from '../../engine/DynamicForm';
 import { DocumentPreviewCard } from '../../engine/DocumentPreviewCard';
 import type { ServiceDefinition, ServiceSchema } from '../../types';
+import { errorMessage } from '../../utils/errorMessage';
 
 type Tab = 'schema' | 'preview' | 'ai';
 
@@ -60,9 +61,11 @@ export function EditService() {
         setService(r.service);
         const pretty = JSON.stringify(r.service.schema, null, 2);
         setSchemaJson(pretty);
-        setParsedSchema(r.service.schema as unknown as ServiceSchema);
+        // JORD-75: ServiceDefinition.schema is already ServiceSchema;
+        // the old `as unknown as ServiceSchema` was pure noise.
+        setParsedSchema(r.service.schema ?? null);
       })
-      .catch(e => setSaveError((e as Error).message))
+      .catch(err => setSaveError(errorMessage(err)))
       .finally(() => setLoading(false));
   }, [id]);
 
@@ -89,12 +92,12 @@ export function EditService() {
       await adminApi.updateService(service.id, {
         name_ar:  parsedSchema.name_ar,
         name_en:  parsedSchema.name_en,
-        schema:   parsedSchema as unknown as Record<string, unknown>,
+        schema:   parsedSchema,
         ...(newStatus ? { status: newStatus } : {}),
       });
       navigate('/admin/services', { state: { saved: service.code } });
     } catch (err: unknown) {
-      setSaveError((err as Error).message);
+      setSaveError(errorMessage(err));
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } finally {
       setSaving(false);
@@ -109,7 +112,7 @@ export function EditService() {
       await adminApi.updateServiceStatus(service.id, 'active');
       navigate('/admin/services', { state: { saved: service.code } });
     } catch (err: unknown) {
-      setSaveError((err as Error).message);
+      setSaveError(errorMessage(err));
     } finally {
       setActivating(false);
     }
@@ -124,10 +127,7 @@ export function EditService() {
     setMessages(prev => [...prev, { role: 'user', text }]);
     setChatLoading(true);
     try {
-      const r = await adminApi.chatUpdateSchema(
-        parsedSchema as unknown as Record<string, unknown>,
-        text,
-      );
+      const r = await adminApi.chatUpdateSchema(parsedSchema, text);
       setMessages(prev => [...prev, {
         role: 'assistant',
         text: r.explanation,
@@ -137,7 +137,7 @@ export function EditService() {
         applied: false,
       }]);
     } catch (err: unknown) {
-      setChatError((err as Error).message);
+      setChatError(errorMessage(err));
     } finally {
       setChatLoading(false);
     }
@@ -162,19 +162,27 @@ export function EditService() {
     setMessages(prev => prev.map((m, i) => i === msgIndex ? { ...m, applied: true, savedError: undefined } : m));
 
     try {
+      // updatedSchema comes back from the Claude endpoint as a bag of
+      // unknown keys — cast to ServiceSchema for the save call. The
+      // API round-trip validates the shape server-side; a bad payload
+      // returns 422 and the catch below surfaces the message.
+      const schemaTyped = updatedSchema as unknown as ServiceSchema;
       const r = await adminApi.updateService(service.id, {
-        name_ar: (updatedSchema as Record<string, string>).name_ar ?? service.name_ar,
-        name_en: (updatedSchema as Record<string, string>).name_en ?? service.name_en,
-        schema:  updatedSchema,
+        name_ar: schemaTyped.name_ar ?? service.name_ar,
+        name_en: schemaTyped.name_en ?? service.name_en,
+        schema:  schemaTyped,
       });
       // Refresh the local service so is_locked, updated_at, etc. reflect DB truth.
       setService(r.service);
       setMessages(prev => prev.map((m, i) => i === msgIndex ? { ...m, saved: true } : m));
     } catch (err) {
-      const apiErr = err as Error & { errors?: Record<string, string | string[]> };
+      const apiErr = err as { errors?: Record<string, string | string[]> };
       const firstFieldError = apiErr.errors ? Object.values(apiErr.errors)[0] : undefined;
-      const firstMsg = Array.isArray(firstFieldError) ? firstFieldError[0] : (firstFieldError ?? apiErr.message);
-      setMessages(prev => prev.map((m, i) => i === msgIndex ? { ...m, savedError: firstMsg ?? 'حدث خطأ أثناء الحفظ' } : m));
+      const firstMsg = Array.isArray(firstFieldError) ? firstFieldError[0] : firstFieldError;
+      setMessages(prev => prev.map((m, i) => i === msgIndex ? {
+        ...m,
+        savedError: firstMsg ?? errorMessage(err, 'حدث خطأ أثناء الحفظ'),
+      } : m));
     }
   };
 
@@ -251,7 +259,7 @@ export function EditService() {
                 const r = await adminApi.unlockService(service.id);
                 setService(prev => prev ? { ...prev, is_locked: r.service.is_locked } : prev);
               } catch (e) {
-                setSaveError((e as Error).message);
+                setSaveError(errorMessage(e));
               }
             }}
             className="inline-flex items-center gap-1 px-3 py-1.5 text-xs bg-amber-600 text-white rounded-lg hover:bg-amber-700 font-semibold"

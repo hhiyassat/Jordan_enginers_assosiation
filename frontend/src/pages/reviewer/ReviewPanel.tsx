@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { applicationsApi, reviewApi, type StageAction } from '../../api/client';
 import { DynamicForm } from '../../engine/DynamicForm';
+import { errorMessage } from '../../utils/errorMessage';
 import type { Application } from '../../types';
 
 /**
@@ -61,8 +62,11 @@ export function ReviewPanel() {
   const [notes, setNotes]         = useState('');
   const [notesError, setNotesError] = useState('');
   const [pageError, setPageError]   = useState('');
+  const [flash, setFlash]           = useState('');
 
-  const reload = () => {
+  // JORD-73: `reload` is memoised so useEffect can honestly list it
+  // as a dependency (no more disable-next-line for exhaustive-deps).
+  const reload = useCallback(() => {
     if (!id) return;
     setLoading(true);
     applicationsApi.get(Number(id))
@@ -70,11 +74,11 @@ export function ReviewPanel() {
         setApp(r.application);
         setAvailableActions(r.available_actions ?? []);
       })
-      .catch(e => setPageError((e as Error).message))
+      .catch(err => setPageError(errorMessage(err)))
       .finally(() => setLoading(false));
-  };
+  }, [id]);
 
-  useEffect(() => { reload(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [id]);
+  useEffect(() => { reload(); }, [reload]);
 
   // Only actions that actually cause a status transition are decision
   // candidates — the others are informational (e.g. classify_technical).
@@ -90,8 +94,8 @@ export function ReviewPanel() {
       setApp(r.application);
       // Claiming may unlock new available actions for this actor.
       reload();
-    } catch (e: unknown) {
-      setPageError((e as Error).message);
+    } catch (err: unknown) {
+      setPageError(errorMessage(err));
     } finally {
       setClaiming(false);
     }
@@ -116,11 +120,11 @@ export function ReviewPanel() {
       await reviewApi.decide(app.id, selectedAction.decision, notes.trim() || undefined, annotations);
       navigate('/review/queue', { state: { decided: true, decision: selectedAction.decision, action: selectedAction.id } });
     } catch (err: unknown) {
-      const apiErr = err as Error & { errors?: Record<string, string[]> };
+      const apiErr = err as { errors?: Record<string, string[]> };
       if (apiErr.errors?.notes) {
         setNotesError(apiErr.errors.notes[0]);
       } else {
-        setPageError(apiErr.message);
+        setPageError(errorMessage(err));
       }
     } finally {
       setDeciding(false);
@@ -130,12 +134,19 @@ export function ReviewPanel() {
   const handleIssueCert = async () => {
     if (!app) return;
     setPageError('');
+    setFlash('');
     try {
       const r = await reviewApi.issueCertificate(app.id);
       setApp(r.application);
-      alert(`✅ ${r.certificate.certificate_number}`);
+      // JORD-71: replaced window.alert with an in-page flash so the
+      // certificate number stays selectable and translations flow
+      // through the same UI language as the rest of the page.
+      setFlash(t('reviewPanel.certificateIssued', {
+        number: r.certificate.certificate_number,
+        defaultValue: `تم إصدار الشهادة رقم ${r.certificate.certificate_number}`,
+      }));
     } catch (err: unknown) {
-      setPageError((err as Error).message);
+      setPageError(errorMessage(err));
     }
   };
 
@@ -200,8 +211,17 @@ export function ReviewPanel() {
       </div>
 
       {pageError && (
-        <div className="mb-6 bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 text-sm">
+        <div role="alert" className="mb-6 bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 text-sm">
           {pageError}
+        </div>
+      )}
+      {flash && (
+        <div
+          role="status"
+          data-testid="review-panel-flash"
+          className="mb-6 bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-emerald-800 text-sm"
+        >
+          ✓ {flash}
         </div>
       )}
 

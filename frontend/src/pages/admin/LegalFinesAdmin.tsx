@@ -5,6 +5,7 @@ import { adminApi } from '../../api/client';
 import { useSortableRows } from '../../utils/useSortableRows';
 import { downloadCsv } from '../../utils/csv';
 import { SortHeader } from '../../utils/SortHeader';
+import { errorMessage } from '../../utils/errorMessage';
 
 /**
  * LegalFinesAdmin — JORD-82 UI
@@ -86,7 +87,7 @@ export function LegalFinesAdmin() {
     setLoading(true);
     adminApi.listLegalFines()
       .then(r => { setFines(r.fines); setBounds(r.bounds); })
-      .catch(e => setError((e as Error).message))
+      .catch(e => setError(errorMessage(e)))
       .finally(() => setLoading(false));
   };
   useEffect(load, []);
@@ -104,7 +105,7 @@ export function LegalFinesAdmin() {
       setPayTarget(null); setPayReference('');
       load();
     } catch (e) {
-      setError((e as Error).message);
+      setError(errorMessage(e));
     } finally {
       setPaying(false);
     }
@@ -370,7 +371,7 @@ function IssueForm({ bounds, isArabic, onIssued, onError }: {
       });
       onIssued(isArabic ? 'تم إصدار الغرامة.' : 'Fine issued.');
     } catch (e) {
-      onError((e as Error).message);
+      onError(errorMessage(e));
     } finally {
       setSubmitting(false);
     }

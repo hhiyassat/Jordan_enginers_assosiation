@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { adminApi } from '../../api/client';
 import { DynamicForm } from '../../engine/DynamicForm';
+import { errorMessage } from '../../utils/errorMessage';
 import { DocumentPreviewCard } from '../../engine/DocumentPreviewCard';
 import type { ServiceSchema } from '../../types';
 import { normalizeSaveError, type ApiError } from './saveErrorHelpers';
@@ -150,26 +151,30 @@ export function NewService() {
         ? await adminApi.generateSchemaFromFile(uploadFile, nfrFile, serviceCode.trim() || undefined, mode)
         : await adminApi.generateSchema(srsText.trim(), serviceCode.trim() || undefined, mode);
 
-      // Hukm response fields
+      // Hukm response fields. JORD-76: schema is now ServiceSchema
+      // from the client type, so no more `as unknown as ServiceSchema`.
+      // The two Hukm payloads (validation_report, generation_audit)
+      // are typed as `unknown` at the API layer and cast to the
+      // component's view shape here — a single cast, not a laundering.
       if (r.verdict)            setVerdict(r.verdict as Verdict);
-      if (r.validation_report)  setValidReport(r.validation_report as unknown as ValidationReport);
-      if (r.generation_audit)   setAudit(r.generation_audit as unknown as GenerationAudit);
+      if (r.validation_report)  setValidReport(r.validation_report as ValidationReport);
+      if (r.generation_audit)   setAudit(r.generation_audit as GenerationAudit);
       if (r.blockers)           setBlockers(r.blockers as Blocker[]);
       if (r.hukm_ir)            setHukmIRCount(Array.isArray(r.hukm_ir) ? r.hukm_ir.length : null);
       setTokensUsed(r.tokens_used);
 
       const pretty = JSON.stringify(r.schema, null, 2);
       setSchemaJson(pretty);
-      setParsedSchema(r.schema as unknown as ServiceSchema);
-      setSaveCode((r.schema as unknown as ServiceSchema).service_code ?? '');
+      setParsedSchema(r.schema);
+      setSaveCode(r.schema.service_code ?? '');
       setJsonError('');
       setTab('schema');
-    } catch (e: unknown) {
-      const err = e as Error & { blockers?: Blocker[]; verdict?: Verdict };
-      setGenError(err.message);
+    } catch (err: unknown) {
+      const apiErr = err as { blockers?: Blocker[]; verdict?: Verdict };
+      setGenError(errorMessage(err));
       // Blocker-halt: response came back as 422 with blockers
-      if (err.blockers) setBlockers(err.blockers);
-      if (err.verdict)  setVerdict(err.verdict as Verdict);
+      if (apiErr.blockers) setBlockers(apiErr.blockers);
+      if (apiErr.verdict)  setVerdict(apiErr.verdict);
     } finally {
       setGenerating(false);
     }
@@ -214,8 +219,8 @@ export function NewService() {
         code,
         name_ar:  parsedSchema.name_ar,
         name_en:  parsedSchema.name_en,
-        currency: (parsedSchema.fee as Record<string, unknown>)?.currency as string ?? 'JOD',
-        schema:   parsedSchema as unknown as Record<string, unknown>,
+        currency: parsedSchema.fee?.currency ?? 'JOD',
+        schema:   parsedSchema,
         status,
       });
       navigate('/admin/services', { state: { created: code } });
