@@ -144,4 +144,30 @@ describe('AuthProvider — JORD-50 cross-tab session guard', () => {
     expect(authApi.me).not.toHaveBeenCalled();
     expect(screen.queryByTestId('stale-tab-modal')).toBeNull();
   });
+
+  /**
+   * JORD-55 (PM): a never-authenticated tab must NOT throw the
+   * "session changed" lock modal when another tab signs in. The
+   * lock modal exists to protect a tab that already holds a stale
+   * identity from unknowingly mutating the wrong account — a guest
+   * tab has no stale state to protect.
+   */
+  it('silently adopts the new identity when the receiving tab was never logged in', async () => {
+    // Boot with no cookie → current === null.
+    await bootAs(null);
+    expect(screen.getByTestId('who')).toHaveTextContent('anon');
+
+    // Peer signs in as USER_B.
+    (authApi.me as ReturnType<typeof vi.fn>).mockResolvedValue({ user: USER_B });
+    const peer = new BroadcastChannel(AUTH_CHANNEL);
+    await act(async () => {
+      peer.postMessage({ type: 'auth-changed', userId: USER_B.id });
+      await new Promise(r => setTimeout(r, 0));
+    });
+    peer.close();
+
+    // The identity is adopted silently. No modal.
+    await waitFor(() => expect(screen.getByTestId('who')).toHaveTextContent('Admin B'));
+    expect(screen.queryByTestId('stale-tab-modal')).toBeNull();
+  });
 });

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Search, ChevronRight, ChevronLeft } from 'lucide-react';
 import { usePaginatedAdminApplications } from '../../api/hooks';
@@ -26,11 +26,22 @@ export function AdminApplications(): JSX.Element {
   const { t, i18n } = useTranslation();
   const isRtl = i18n.language.startsWith('ar');
   const dateLocale = isRtl ? 'ar-JO' : 'en-JO';
+  // JORD-61/66 (PM): landing here with ?status=<x> pre-selects the
+  // filter. Fixes the "Certificates" tile on AdminDashboard, which
+  // used to point at /admin/certificates (a nonexistent route → the
+  // wildcard bounced back to /). Now it deep-links here with the
+  // right status pre-picked and the table shows just certificates.
+  const [searchParams] = useSearchParams();
+  const urlStatus = searchParams.get('status') ?? '';
+
   const [q, setQ] = useState('');
   const [debouncedQ, setDebouncedQ] = useState('');
-  const [status, setStatus] = useState<string>('');
+  const [status, setStatus] = useState<string>(urlStatus);
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(20);
+
+  // When the URL param changes (client-side navigation), reflect it.
+  useEffect(() => { setStatus(urlStatus); setPage(1); }, [urlStatus]);
 
   // Debounce the search input. Also resets to page 1 whenever the
   // needle changes so the applicant list stays coherent.

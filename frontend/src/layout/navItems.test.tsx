@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { navItemsForRole } from './navItems';
+import { isActivePath, navItemsForRole } from './navItems';
 import { canReachAdmin, canReachReviewer } from '../auth/guards';
 
 /**
@@ -96,5 +96,33 @@ describe('canReachReviewer', () => {
   it('blocks applicant and unauthenticated', () => {
     expect(canReachReviewer('applicant')).toBe(false);
     expect(canReachReviewer(undefined)).toBe(false);
+  });
+});
+
+/**
+ * JORD-65 (PM): sibling nav entries `/admin/services` and
+ * `/admin/services/new` were both highlighted on the New Service
+ * page because a naive startsWith made "/admin/services/new" match
+ * both. Pin the fix so a future refactor can't reintroduce the bug.
+ */
+describe('isActivePath — JORD-65 sibling nav highlight', () => {
+  it('lights only "New Service" on /admin/services/new', () => {
+    expect(isActivePath('/admin/services/new', '/admin/services/new')).toBe(true);
+    expect(isActivePath('/admin/services/new', '/admin/services')).toBe(false);
+  });
+
+  it('lights only "Services" on /admin/services itself', () => {
+    expect(isActivePath('/admin/services', '/admin/services')).toBe(true);
+    expect(isActivePath('/admin/services', '/admin/services/new')).toBe(false);
+  });
+
+  it('lights only "Services" on the edit sub-route', () => {
+    expect(isActivePath('/admin/services/42/edit', '/admin/services')).toBe(true);
+    expect(isActivePath('/admin/services/42/edit', '/admin/services/new')).toBe(false);
+  });
+
+  it('does not light "Services" on the fees editor sibling', () => {
+    expect(isActivePath('/admin/service-fees', '/admin/services')).toBe(false);
+    expect(isActivePath('/admin/service-fees', '/admin/service-fees')).toBe(true);
   });
 });

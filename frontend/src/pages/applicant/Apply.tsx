@@ -12,6 +12,7 @@ import { ComplianceNotesBanner } from '../../components/ui/ComplianceNotesBanner
 import { ProjectContextHeader } from './ProjectContextHeader';
 import { normalizeApplyError, labelForOtherKey, type ApiError } from './applyErrorHelpers';
 import { missingRequiredDocsFor } from './missingRequiredDocs';
+import { useAuth } from '../../auth/AuthContext';
 
 /**
  * Map an Application.status to the corresponding stage_id in the
@@ -70,6 +71,11 @@ export function Apply() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
+  // JORD-68 (PM): show the current applicant + org above the form so
+  // the office user has a visible "I'm submitting as X for org Y"
+  // confirmation. Previously the header only carried the service name,
+  // which reviewers cited as confusing during shared-terminal QA.
+  const { user } = useAuth();
   const isRtl = i18n.language.startsWith('ar');
   const isArabic = isRtl;
   const variantKey = searchParams.get('variant');
@@ -350,6 +356,30 @@ export function Apply() {
           </p>
         )}
       </header>
+
+      {/* JORD-68 (PM): applicant identity card. Renders even when the
+          project header is absent (SRV-013 replacement, MSC-* misc,
+          etc.) so the office always sees "who am I submitting as". */}
+      {user && (
+        <section
+          data-testid="apply-applicant-card"
+          className="mb-4 bg-white border border-gray-200 rounded-xl p-4"
+          aria-label={isArabic ? 'معلومات مقدم الطلب' : 'Applicant information'}
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-jea-accent text-jea-primary flex items-center justify-center text-sm font-bold" aria-hidden="true">
+              {(user.name || user.email).slice(0, 1).toUpperCase()}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-gray-900 truncate">{user.name}</p>
+              <p className="text-xs text-gray-500 truncate">{user.email}</p>
+            </div>
+            <span className="text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-full bg-blue-50 border border-blue-200 text-blue-700">
+              {isArabic ? 'مقدم الطلب' : 'Applicant'}
+            </span>
+          </div>
+        </section>
+      )}
 
       {/* JORD-18: service info card so the applicant sees fee/SLA/doc
           count before starting the form, not just the service name. */}

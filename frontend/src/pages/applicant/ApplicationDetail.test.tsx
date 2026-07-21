@@ -147,4 +147,47 @@ describe('ApplicationDetail (JORD-59 / JORD-62)', () => {
     renderAt(42);
     await waitFor(() => expect(screen.getByTestId('documents-empty')).toBeInTheDocument());
   });
+
+  /**
+   * JORD-64 (PM): after auditor approval the app sits at
+   * status=approved + payment_status=pending. Applicant needs a
+   * clear "pay this amount at the JEA counter" instruction; the
+   * page previously showed nothing about payment.
+   */
+  it('shows the "payment required" banner when approved but not yet paid', async () => {
+    mockGet.mockResolvedValue({
+      application: baseApp({
+        status: 'approved',
+        payment_status: 'pending',
+        fee_amount: 150,
+        reference_number: 'JEA-26-1234-0042',
+      }),
+    });
+    renderAt(42);
+    await waitFor(() => expect(screen.getByTestId('payment-required-banner')).toBeInTheDocument());
+    expect(screen.getByTestId('payment-required-banner')).toHaveTextContent(/150 JOD/);
+    // Reference number is prominent so the applicant can quote it at the counter.
+    expect(screen.getByTestId('payment-reference-hint')).toHaveTextContent('JEA-26-1234-0042');
+  });
+
+  it('hides the payment banner once the fee is paid', async () => {
+    mockGet.mockResolvedValue({
+      application: baseApp({
+        status: 'approved',
+        payment_status: 'paid',
+      }),
+    });
+    renderAt(42);
+    await waitFor(() => expect(screen.getByTestId('application-reference')).toBeInTheDocument());
+    expect(screen.queryByTestId('payment-required-banner')).toBeNull();
+  });
+
+  it('hides the payment banner for terminal statuses', async () => {
+    mockGet.mockResolvedValue({
+      application: baseApp({ status: 'certificate_issued', payment_status: 'paid' }),
+    });
+    renderAt(42);
+    await waitFor(() => expect(screen.getByTestId('application-reference')).toBeInTheDocument());
+    expect(screen.queryByTestId('payment-required-banner')).toBeNull();
+  });
 });

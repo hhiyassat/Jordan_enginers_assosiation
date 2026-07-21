@@ -69,5 +69,15 @@ export function navItemsForRole(role: User['role'] | undefined): NavItem[] {
 export function isActivePath(pathname: string, to: string): boolean {
   if (to === '/services') return pathname === '/services' || pathname.startsWith('/services/') || pathname.startsWith('/apply/') || pathname.startsWith('/projects');
   if (to === '/admin')    return pathname === '/admin';
+  // JORD-65 (PM): `/admin/services` and `/admin/services/new` are
+  // sibling entries in the sidebar. A naive startsWith would light
+  // both when the user is on /admin/services/new, because
+  // '/admin/services/new'.startsWith('/admin/services') is true.
+  // Anchor "Services" so it only claims its own lane + the edit
+  // sub-route, leaving /new to be owned exclusively by "New Service".
+  if (to === '/admin/services') {
+    return pathname === '/admin/services'
+      || /^\/admin\/services\/\d+\/edit$/.test(pathname);
+  }
   return pathname.startsWith(to);
 }

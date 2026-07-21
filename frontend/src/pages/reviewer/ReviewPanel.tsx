@@ -85,6 +85,17 @@ export function ReviewPanel() {
   const decisionActions = availableActions.filter(a => a.decision !== null);
   const selectedAction = decisionActions.find(a => a.id === selectedActionId) ?? null;
 
+  // JORD-67 (PM): approve must be greyed out when the applicant hasn't
+  // supplied anything meaningful. Ask them to fill it in first via
+  // "request modifications" (still enabled) rather than approving an
+  // empty case.
+  const applicationIsEmpty = !app
+    ? false
+    : (!app.data || Object.keys(app.data).length === 0)
+      && (!app.documents || app.documents.length === 0);
+  const isEmptyBlockedDecision = (decision: string | null) =>
+    applicationIsEmpty && (decision === 'approved' || decision === 'certificate_issued');
+
   const handleClaim = async () => {
     if (!app) return;
     setClaiming(true);
@@ -342,18 +353,36 @@ export function ReviewPanel() {
 
               {decisionActions.length > 0 && (
                 <>
+                  {applicationIsEmpty && (
+                    <div
+                      role="alert"
+                      data-testid="empty-application-warning"
+                      className="mb-3 bg-amber-50 border border-amber-200 rounded-lg p-3 text-amber-900 text-xs"
+                    >
+                      {isArabic
+                        ? 'الطلب فارغ — لا يمكن اعتماده بلا بيانات. اطلب من المتقدم تعبئة النموذج عبر "طلب تعديل".'
+                        : 'This application has no data. You can\'t approve an empty case — send it back with "Request modifications" so the applicant fills it in.'}
+                    </div>
+                  )}
                   <div className="space-y-2" role="group" aria-label={t('reviewPanel.reviewSection')}>
                     {decisionActions.map(action => {
                       const cls = VARIANT_STYLES[action.variant];
                       const isSelected = selectedActionId === action.id;
                       const actionLabel = isArabic ? (action.label_ar || action.label_en) : (action.label_en || action.label_ar);
+                      const blockedByEmpty = isEmptyBlockedDecision(action.decision);
                       return (
                         <button
                           key={action.id}
                           type="button"
                           onClick={() => { setSelectedActionId(action.id); setNotesError(''); setNotes(''); }}
                           aria-pressed={isSelected}
-                          className={`w-full ${isRtl ? 'text-right' : 'text-left'} px-4 py-3 rounded-lg border-2 text-sm font-medium transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-jea-primary/40 ${
+                          aria-disabled={blockedByEmpty}
+                          disabled={blockedByEmpty}
+                          data-testid={`decision-action-${action.id}`}
+                          title={blockedByEmpty
+                            ? (isArabic ? 'الطلب فارغ — استخدم "طلب تعديل" بدلاً من ذلك' : 'Application has no data — use "Request modifications" instead')
+                            : undefined}
+                          className={`w-full ${isRtl ? 'text-right' : 'text-left'} px-4 py-3 rounded-lg border-2 text-sm font-medium transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-jea-primary/40 disabled:opacity-40 disabled:cursor-not-allowed ${
                             isSelected ? cls.active : cls.idle
                           }`}
                         >
@@ -390,7 +419,8 @@ export function ReviewPanel() {
 
                   <button
                     onClick={handleDecide}
-                    disabled={!selectedAction || deciding}
+                    disabled={!selectedAction || deciding || isEmptyBlockedDecision(selectedAction?.decision ?? null)}
+                    data-testid="review-panel-confirm"
                     className="w-full py-2.5 bg-jea-topbar text-white rounded-lg hover:bg-jea-hover disabled:opacity-50 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-jea-primary/40"
                   >
                     {deciding ? t('reviewPanel.actionLoading') : t('reviewPanel.confirmYes')}

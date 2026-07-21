@@ -42,7 +42,10 @@ export function AdminDashboard() {
     { label: t('adminDashboard.stat.totalApplications'), value: stats.total_applications ?? 0, icon: '📋', link: '/admin/applications', color: 'bg-blue-50 border-blue-200' },
     { label: t('adminDashboard.stat.pendingReview'),     value: stats.pending_review ?? 0,     icon: '🔍', link: '/review/queue',      color: 'bg-yellow-50 border-yellow-200' },
     { label: t('adminDashboard.stat.approvedToday'),     value: stats.approved_today ?? 0,     icon: '✅', link: '/admin/applications', color: 'bg-green-50 border-green-200' },
-    { label: t('adminDashboard.stat.certificates'),      value: stats.certificates_issued ?? 0, icon: '🏆', link: '/admin/certificates', color: 'bg-teal-50 border-teal-200' },
+    // JORD-61/66 (PM): tile used to point at /admin/certificates which
+    // has no route — every click bounced back to `/`. Deep-link into
+    // the applications list pre-filtered to issued certificates.
+    { label: t('adminDashboard.stat.certificates'),      value: stats.certificates_issued ?? 0, icon: '🏆', link: '/admin/applications?status=certificate_issued', color: 'bg-teal-50 border-teal-200' },
     { label: t('adminDashboard.stat.activeServices'),    value: stats.active_services ?? 0,    icon: '⚙️', link: '/admin/services',     color: 'bg-purple-50 border-purple-200' },
     ...(canManageUsers ? [{ label: t('adminDashboard.stat.users'), value: stats.total_users ?? 0, icon: '👥', link: '/admin/users', color: 'bg-gray-50 border-gray-200' }] : []),
   ] : [];

@@ -1,4 +1,5 @@
 import React, { useEffect, useId, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
 import { Bilingual } from './Bilingual';
 
@@ -34,6 +35,8 @@ const SIZE: Record<NonNullable<ModalProps['size']>, string> = {
 };
 
 export function Modal({ open, onClose, titleAr, titleEn, size = 'md', footer, children }: ModalProps) {
+  const { i18n } = useTranslation();
+  const dir = i18n.language.startsWith('ar') ? 'rtl' : 'ltr';
   const rawId = useId();
   const titleId = `modal-${rawId}-title`;
   const panelRef = useRef<HTMLDivElement>(null);
@@ -92,7 +95,9 @@ export function Modal({ open, onClose, titleAr, titleEn, size = 'md', footer, ch
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40"
-      dir="rtl"
+      // JORD-56 (PM): dir was hardcoded rtl so English input flowed
+      // right-to-left inside the modal. Follow the current language.
+      dir={dir}
       onClick={onClose}
       role="presentation"
     >

@@ -116,7 +116,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }): JSX.E
 
       // Peer signed in as someone else — verify with the server (the
       // broadcast is untrusted for identity claims) and lock the tab
-      // only if the answer really is a different user.
+      // only if the answer really is a different user AND we already
+      // held an identity here.
       authApi.me()
         .then(r => {
           // JORD-84 (PM): /auth/me now returns {user: null} for guests
@@ -126,7 +127,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }): JSX.E
             if (current) setUser(null);
             return;
           }
-          if (r.user.id !== current?.id) {
+          // JORD-55 (PM): if this tab was NOT logged in at all
+          // (current === null), silently adopt the new identity
+          // rather than throwing a "session changed" lock modal at
+          // an idle guest tab. The lock modal exists to prevent an
+          // *authenticated* user from unknowingly acting on someone
+          // else's account — a never-authenticated tab has no
+          // stale local state to protect.
+          if (current === null) {
+            setUser(r.user);
+            return;
+          }
+          if (r.user.id !== current.id) {
             setStaleTabNotice({ newUser: r.user });
           }
         })

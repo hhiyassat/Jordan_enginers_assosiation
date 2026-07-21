@@ -266,9 +266,13 @@ function AddProjectModal({
       }
     >
       <form id="add-project-form" onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
+        {/* JORD-56 (PM): labelEn was `= label` for every field, so the
+            bilingual FormField rendered the same string twice ("اسم المشروع · اسم المشروع").
+            t() already localises to the current UI language, so we pass
+            `label` only. Callers that legitimately want the bilingual
+            AR + EN pair can still provide both. */}
         <TextField
           label={t('projects.form.nameAr')}
-          labelEn={t('projects.form.nameAr')}
           value={name_ar}
           onChange={setNameAr}
           placeholder={t('projects.form.namePlaceholderAr')}
@@ -276,7 +280,6 @@ function AddProjectModal({
         />
         <TextField
           label={t('projects.form.nameEn')}
-          labelEn={t('projects.form.nameEn')}
           value={name_en}
           onChange={setNameEn}
           placeholder={t('projects.form.namePlaceholderEn')}
@@ -284,14 +287,12 @@ function AddProjectModal({
         <div className="grid grid-cols-2 gap-4">
           <TextField
             label={t('projects.form.city')}
-            labelEn={t('projects.form.city')}
             value={city}
             onChange={setCity}
             placeholder={t('projects.form.cityPlaceholder')}
           />
           <TextField
             label={t('projects.form.area')}
-            labelEn={t('projects.form.area')}
             value={area_m2}
             onChange={setArea}
             type="number"
@@ -299,7 +300,7 @@ function AddProjectModal({
           />
         </div>
 
-        <FormField label={t('projects.form.type')} labelEn={t('projects.form.type')}>
+        <FormField label={t('projects.form.type')}>
           {props => (
             <select
               {...props}
@@ -316,7 +317,7 @@ function AddProjectModal({
           )}
         </FormField>
 
-        <FormField label={t('projects.form.engineer')} labelEn={t('projects.form.engineer')} required>
+        <FormField label={t('projects.form.engineer')} required>
           {props => (
             <select
               {...props}

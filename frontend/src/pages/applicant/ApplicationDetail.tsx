@@ -196,6 +196,40 @@ export function ApplicationDetail() {
         </section>
       )}
 
+      {/* JORD-64 (PM): payment-required banner. Auditor approval moves
+          the app to `approved` with `payment_status = pending`; the
+          applicant had no on-screen instruction telling them how to
+          settle the fee. Payment itself is off-platform (JEA counter
+          / bank transfer per the manual), so this banner surfaces
+          the amount + reference number and points to the counter. */}
+      {application.status === 'approved' && application.payment_status === 'pending' && (
+        <section
+          role="alert"
+          data-testid="payment-required-banner"
+          className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6"
+        >
+          <div className="flex items-start gap-3">
+            <AlertCircle size={20} className="text-amber-700 shrink-0 mt-0.5" aria-hidden="true" />
+            <div className="flex-1 min-w-0">
+              <h2 className="text-sm font-bold text-amber-900">
+                {isArabic ? 'مطلوب دفع الرسوم' : 'Payment required'}
+              </h2>
+              <p className="text-sm text-amber-900/90 mt-1">
+                {isArabic
+                  ? `مبلغ ${application.fee_amount} ${service?.currency ?? 'JOD'} — يُدفع في مقرّ نقابة المهندسين مع ذكر رقم الطلب أدناه. تُصدَر الشهادة فور تسجيل الدفع.`
+                  : `Amount ${application.fee_amount} ${service?.currency ?? 'JOD'} — pay at the JEA counter and quote the reference number below. The certificate is issued as soon as payment is recorded.`}
+              </p>
+              <p
+                className="text-xs font-mono text-amber-900 bg-amber-100 border border-amber-200 rounded px-2 py-1 mt-2 inline-block"
+                data-testid="payment-reference-hint"
+              >
+                {application.reference_number}
+              </p>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Summary grid */}
       <section className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
         <div className="bg-white border border-gray-200 rounded-xl p-4">
