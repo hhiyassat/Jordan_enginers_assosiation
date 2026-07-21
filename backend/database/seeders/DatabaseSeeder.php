@@ -64,6 +64,9 @@ class DatabaseSeeder extends Seeder
             // JORD-75: government-bidder site-survey linear-meter
             // quota (JEA p.125). SRV-006 with length_lm basis.
             GovernmentSurveyQuotaSeeder::class,
+            // JORD-78: site-survey base fees (150 fils/lm + 1% syndicate)
+            // per JEA p.96. Wires SRV-001..006 with real per-lm pricing.
+            SiteSurveyFeesSeeder::class,
             // JeaDrawingsSeeder omitted — its 7 DRW-* rows duplicate the
             // richer DRW-P-* set produced by ServicePlan2026Seeder + the
             // real workflows attached by CatalogWorkflowsSeeder.
