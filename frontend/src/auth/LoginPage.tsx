@@ -124,9 +124,13 @@ export function LoginPage(): JSX.Element {
             <h2 className="text-base font-black text-jea-text">{t('auth.signIn')}</h2>
           </div>
           <form onSubmit={handleSubmit} className="px-6 py-6 flex flex-col gap-5" noValidate>
+            {/* JORD-51 (PM): passing `label` and `labelEn` with the same
+                t() key made FormField render the same string twice
+                ("البريد الإلكتروني · البريد الإلكتروني"), which reviewer
+                QA read as "email + password not translated". t() already
+                localises to the current language — one label is enough. */}
             <TextField
               label={t('auth.email')}
-              labelEn={t('auth.email')}
               value={email}
               onChange={setEmail}
               type="email"
@@ -138,7 +142,6 @@ export function LoginPage(): JSX.Element {
 
             <TextField
               label={t('auth.password')}
-              labelEn={t('auth.password')}
               value={password}
               onChange={setPassword}
               type={showPass ? 'text' : 'password'}
