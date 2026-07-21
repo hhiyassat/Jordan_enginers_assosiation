@@ -37,6 +37,20 @@ class Application extends Model
 {
     use SoftDeletes, BelongsToOrganization;
 
+    /**
+     * JORD-68: on soft-delete, release any quota this application had
+     * consumed. Registered here (not on the observer file) so it's
+     * impossible to soft-delete an approved application without the
+     * matching ledger entry going away — the two mutations always
+     * co-occur, no observer registration to forget.
+     */
+    protected static function booted(): void
+    {
+        static::deleted(function (Application $app) {
+            app(\App\Engine\QuotaLedger::class)->releaseFor($app);
+        });
+    }
+
     protected $fillable = [
         'reference_number', 'contract_no', 'organization_id', 'service_definition_id', 'project_id', 'applicant_id',
         'assigned_reviewer_id', 'status', 'current_stage', 'data', 'fee_amount',

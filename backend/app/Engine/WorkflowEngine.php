@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Engine;
 
+use App\Engine\QuotaLedger;
 use App\Models\Application;
 use App\Models\ApplicationReview;
 use App\Models\AuditLog;
@@ -350,6 +351,16 @@ class WorkflowEngine
                     'review_id'   => $review->id,
                 ],
             );
+
+            // JORD-68: record quota consumption on FINAL approval only.
+            // Mid-workflow stage-approves ($nextStageIfApproving !== null)
+            // do NOT consume — the case isn't done yet. Consumption fires
+            // inside the same DB transaction as the status change so a
+            // roll-back on any downstream failure also rolls back the
+            // consumption row.
+            if ($decision === Application::STATUS_APPROVED && $nextStageIfApproving === null) {
+                app(QuotaLedger::class)->recordApproval($app);
+            }
         });
 
         // JORD-9: notify the applicant of the reviewer's decision.
