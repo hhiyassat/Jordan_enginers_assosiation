@@ -39,10 +39,10 @@ export function navItemsForRole(role: User['role'] | undefined): NavItem[] {
     // decides which roles the actor can act on inside the page.
     items.push({ to: '/admin/users',           labelKey: 'nav.users',           Icon: UserIcon });
   }
-  // JORD-76: organization boost flags + specialization-head toggles.
+  // JORD-77: office picker → per-office boost flags + spec-head toggles.
   // Admin-only (superuser scope is user-management, not quota policy).
   if (role === 'admin') {
-    items.push({ to: '/admin/organization',    labelKey: 'nav.organizationSettings', Icon: Building2 });
+    items.push({ to: '/admin/offices',         labelKey: 'nav.officesSettings', Icon: Building2 });
   }
   return items;
 }
