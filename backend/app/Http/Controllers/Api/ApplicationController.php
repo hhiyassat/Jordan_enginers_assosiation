@@ -274,6 +274,19 @@ class ApplicationController extends Controller
             ], 422);
         }
 
+        // JORD-81: sanction gate — an office with an active blocking
+        // sanction (suspension_1yr / suspension_2yr / deregistration)
+        // cannot submit ANY application until the sanction lapses.
+        // Fires last so field / doc / capacity issues surface first
+        // (fixable in-place), and the sanction message is a hard stop.
+        $sanctionErrors = app(\App\Engine\SanctionGuard::class)->validate($app);
+        if ($sanctionErrors) {
+            return response()->json([
+                'message' => 'لا يمكن تقديم الطلب بسبب عقوبة تأديبية نافذة على المكتب.',
+                'errors'  => $sanctionErrors,
+            ], 422);
+        }
+
         // WF-001: delegate to WorkflowEngine (EDA B-5, B-9)
         $engine = new WorkflowEngine($service);
         $app    = $engine->submit($app, $request->user());

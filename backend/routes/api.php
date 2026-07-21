@@ -92,6 +92,11 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'token.inactivity', 'password.p
         Route::get('services',         [ServiceCatalogController::class, 'index']);
         Route::get('services/{code}',  [ServiceCatalogController::class, 'show']);
 
+        // JORD-81: complaint intake — any authenticated user can file
+        // against an office in their own org. Admin-only decide/list
+        // endpoints live in the admin group further below.
+        Route::post('complaints',      [\App\Http\Controllers\Api\ComplaintController::class, 'store']);
+
         // FR-002 to FR-007: Application CRUD
         Route::get('applications',                            [ApplicationController::class, 'index']);
         Route::post('applications',                           [ApplicationController::class, 'store']);
@@ -178,6 +183,11 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'token.inactivity', 'password.p
         Route::get('admin/offices/{id}/dues',            [\App\Http\Controllers\Api\RecurringDuesController::class, 'index']);
         Route::post('admin/offices/{id}/dues/register',  [\App\Http\Controllers\Api\RecurringDuesController::class, 'seedRegistration']);
         Route::post('admin/dues/{obligationId}/pay',     [\App\Http\Controllers\Api\RecurringDuesController::class, 'pay']);
+
+        // JORD-81: disciplinary complaints + sanctions.
+        // (Intake POST /complaints lives in the applicant group above.)
+        Route::get('admin/complaints',                   [\App\Http\Controllers\Api\ComplaintController::class, 'index']);
+        Route::post('admin/complaints/{id}/decide',      [\App\Http\Controllers\Api\ComplaintController::class, 'decide']);
     });
 
     // ── User management ─────────────────────────────────────────────────
