@@ -188,6 +188,12 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'token.inactivity', 'password.p
         // (Intake POST /complaints lives in the applicant group above.)
         Route::get('admin/complaints',                   [\App\Http\Controllers\Api\ComplaintController::class, 'index']);
         Route::post('admin/complaints/{id}/decide',      [\App\Http\Controllers\Api\ComplaintController::class, 'decide']);
+
+        // JORD-82: legal fines (Art.14 owner fines for unlicensed
+        // contractor use). Admin-only issuance + payment tracking.
+        Route::get('admin/legal-fines',                  [\App\Http\Controllers\Api\LegalFineController::class, 'index']);
+        Route::post('admin/legal-fines',                 [\App\Http\Controllers\Api\LegalFineController::class, 'store']);
+        Route::post('admin/legal-fines/{id}/pay',        [\App\Http\Controllers\Api\LegalFineController::class, 'pay']);
     });
 
     // ── User management ─────────────────────────────────────────────────
