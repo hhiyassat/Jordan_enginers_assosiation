@@ -163,6 +163,14 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'token.inactivity', 'password.p
             ->middleware('throttle:ai-schema');
         Route::post('admin/services/chat-schema',               [AdminController::class, 'chatUpdateSchema'])
             ->middleware('throttle:ai-schema');
+
+        // JORD-70/76: organization boost flags + per-engineer
+        // specialization-head toggle. Admin surface — the flags
+        // change effective quota ceilings for every submission the
+        // office makes, so they're not office-self-service.
+        Route::get('admin/organization',              [\App\Http\Controllers\Api\OrganizationSettingsController::class, 'show']);
+        Route::patch('admin/organization',            [\App\Http\Controllers\Api\OrganizationSettingsController::class, 'update']);
+        Route::patch('admin/engineers/{id}',          [\App\Http\Controllers\Api\OrganizationSettingsController::class, 'updateEngineer']);
     });
 
     // ── User management ─────────────────────────────────────────────────

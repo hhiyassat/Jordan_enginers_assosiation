@@ -12,7 +12,8 @@
     "servicesAdmin": "إدارة الخدمات",
     "newService": "خدمة جديدة",
     "integration": "التكامل",
-    "users": "إدارة المستخدمين"
+    "users": "إدارة المستخدمين",
+    "organizationSettings": "إعدادات المكتب"
   },
   "layout": {
     "sidebarLabel": "القائمة الجانبية",

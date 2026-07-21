@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, Home, FileText, ShieldCheck, Settings, ClipboardList,
-  PlusCircle, Zap, User as UserIcon,
+  PlusCircle, Zap, User as UserIcon, Building2,
   type LucideIcon,
 } from 'lucide-react';
 import type { User } from '../types';
@@ -38,6 +38,11 @@ export function navItemsForRole(role: User['role'] | undefined): NavItem[] {
     // Both admin and superuser get the user-management lane. The backend
     // decides which roles the actor can act on inside the page.
     items.push({ to: '/admin/users',           labelKey: 'nav.users',           Icon: UserIcon });
+  }
+  // JORD-76: organization boost flags + specialization-head toggles.
+  // Admin-only (superuser scope is user-management, not quota policy).
+  if (role === 'admin') {
+    items.push({ to: '/admin/organization',    labelKey: 'nav.organizationSettings', Icon: Building2 });
   }
   return items;
 }

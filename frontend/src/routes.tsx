@@ -33,6 +33,7 @@ const NewService              = React.lazy(() => import('./pages/admin/NewServic
 const ServicesList            = React.lazy(() => import('./pages/admin/ServicesList').then(m => ({ default: m.ServicesList })));
 const EditService             = React.lazy(() => import('./pages/admin/EditService').then(m => ({ default: m.EditService })));
 const UserManagement          = React.lazy(() => import('./pages/admin/UserManagement').then(m => ({ default: m.UserManagement })));
+const OrganizationSettings    = React.lazy(() => import('./pages/admin/OrganizationSettings').then(m => ({ default: m.OrganizationSettings })));
 const ChangeCredentials       = React.lazy(() => import('./pages/auth/ChangeCredentials').then(m => ({ default: m.ChangeCredentials })));
 const Profile                 = React.lazy(() => import('./pages/auth/Profile').then(m => ({ default: m.Profile })));
 
@@ -72,6 +73,9 @@ export function AppRoutes(): JSX.Element {
       <Route path="/admin/services/:id/edit"    element={<RequireAdmin><Layout><EditService /></Layout></RequireAdmin>} />
       <Route path="/admin/integration"          element={<RequireAdmin><Layout><IntegrationCycles /></Layout></RequireAdmin>} />
       <Route path="/admin/integration/:id"      element={<RequireAdmin><Layout><IntegrationCycleDetail /></Layout></RequireAdmin>} />
+
+      {/* JORD-76: organization boost flags + specialization-head toggles */}
+      <Route path="/admin/organization"         element={<RequireAdmin><Layout><OrganizationSettings /></Layout></RequireAdmin>} />
 
       {/* User management — admin + superuser */}
       <Route path="/admin/users" element={<RequireUserManager><Layout><UserManagement /></Layout></RequireUserManager>} />

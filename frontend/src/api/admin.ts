@@ -157,4 +157,31 @@ export const adminApi = {
     currency?: string; schema: Record<string, unknown>;
     status: 'draft' | 'active';
   }) => request<{ service: ServiceDefinition }>('POST', '/services', data),
+
+  /**
+   * JORD-76: organization boost flags + per-engineer specialization-head
+   * toggle. Feeds QuotaLedger's boost math (JORD-70). Admin surface.
+   */
+  getOrganizationSettings: () => request<{
+    organization: {
+      id: number; name_ar: string; name_en: string;
+      has_excellence_award: boolean;
+      is_bit_khibra: boolean;
+      has_iso_cert: boolean;
+    };
+    engineers: Array<{
+      id: number; name_ar: string; name_en: string | null;
+      membership_number: string; specialization: string | null;
+      is_specialization_head: boolean;
+    }>;
+  }>('GET', '/admin/organization'),
+
+  updateOrganizationFlags: (flags: {
+    has_excellence_award?: boolean;
+    is_bit_khibra?: boolean;
+    has_iso_cert?: boolean;
+  }) => request<{ message: string }>('PATCH', '/admin/organization', flags),
+
+  updateEngineerSpecHead: (id: number, is_specialization_head: boolean) =>
+    request<{ message: string }>('PATCH', `/admin/engineers/${id}`, { is_specialization_head }),
 };

@@ -12,7 +12,8 @@
     "servicesAdmin": "Services",
     "newService": "New Service",
     "integration": "Integration",
-    "users": "Users"
+    "users": "Users",
+    "organizationSettings": "Organization Settings"
   },
   "layout": {
     "sidebarLabel": "Sidebar navigation",
