@@ -24,6 +24,7 @@ const Dashboard               = React.lazy(() => import('./pages/applicant/Dashb
 const Apply                   = React.lazy(() => import('./pages/applicant/Apply').then(m => ({ default: m.Apply })));
 const MyApplications          = React.lazy(() => import('./pages/applicant/MyApplications').then(m => ({ default: m.MyApplications })));
 const MyOffice                = React.lazy(() => import('./pages/applicant/MyOffice').then(m => ({ default: m.MyOffice })));
+const ApplicationDetail       = React.lazy(() => import('./pages/applicant/ApplicationDetail').then(m => ({ default: m.ApplicationDetail })));
 const ReviewQueue             = React.lazy(() => import('./pages/reviewer/ReviewQueue').then(m => ({ default: m.ReviewQueue })));
 const ReviewPanel             = React.lazy(() => import('./pages/reviewer/ReviewPanel').then(m => ({ default: m.ReviewPanel })));
 const AdminDashboard          = React.lazy(() => import('./pages/admin/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
@@ -65,6 +66,11 @@ export function AppRoutes(): JSX.Element {
       <Route path="/projects/:projectId"     element={<RequireApplicant><Layout><ProjectDetail /></Layout></RequireApplicant>} />
       <Route path="/apply/:serviceCode"      element={<RequireApplicant><Layout><Apply /></Layout></RequireApplicant>} />
       <Route path="/my-applications"         element={<RequireApplicant><Layout><MyApplications /></Layout></RequireApplicant>} />
+      {/* JORD-59 / JORD-62: applicant view of a single request.
+          Fixes the "clicking a request bounces to /" bug — the row
+          links to /applications/:id but no route existed, so the
+          wildcard swallowed it. */}
+      <Route path="/applications/:id"        element={<RequireApplicant><Layout><ApplicationDetail /></Layout></RequireApplicant>} />
       {/* JORD-84: applicant self-service — own dues + complaints + sanctions. */}
       <Route path="/my-office"               element={<RequireApplicant><Layout><MyOffice /></Layout></RequireApplicant>} />
 

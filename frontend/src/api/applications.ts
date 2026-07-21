@@ -43,6 +43,13 @@ export const applicationsApi = {
     application: Application;
     available_actions?: StageAction[];
     fee_breakdown?: FeeBreakdown | null;
+    /**
+     * JORD-59/62: signed download URL for the issued certificate PDF.
+     * Backend returns this alongside the application so the applicant
+     * detail page can render a one-click download without another
+     * server trip. Null / undefined when no certificate exists yet.
+     */
+    certificate_pdf_url?: string | null;
   }>('GET', `/applications/${id}`),
   create: (service_code: string, data: Record<string, unknown>, project_id?: number) =>
     request<{ application: Application }>('POST', '/applications', {

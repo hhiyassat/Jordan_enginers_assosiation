@@ -5,12 +5,13 @@ import { applicationsApi, projectsApi, servicesApi } from '../../api/client';
 import type { FeeBreakdown } from '../../api/applications';
 import { DynamicForm, validateAll } from '../../engine/DynamicForm';
 import { DocumentUploader } from '../../engine/DocumentUploader';
-import type { Application, Project, ServiceDefinition, SchemaWorkflowStage } from '../../types';
+import type { Application, Project, ServiceDefinition, SchemaDocument, SchemaWorkflowStage } from '../../types';
 import { WorkflowStepper } from '../../components/ui/WorkflowStepper';
 import { ServiceInfoCard } from '../../components/ui/ServiceInfoCard';
 import { ComplianceNotesBanner } from '../../components/ui/ComplianceNotesBanner';
 import { ProjectContextHeader } from './ProjectContextHeader';
 import { normalizeApplyError, labelForOtherKey, type ApiError } from './applyErrorHelpers';
+import { missingRequiredDocsFor } from './missingRequiredDocs';
 
 /**
  * Map an Application.status to the corresponding stage_id in the
@@ -74,6 +75,13 @@ export function Apply() {
   const variantKey = searchParams.get('variant');
   const projectIdParam = searchParams.get('project_id');
   const projectId = projectIdParam ? Number(projectIdParam) : null;
+  // JORD-62: when the applicant comes here from ApplicationDetail's
+  // "Edit request" CTA (status = modifications_requested), we pre-load
+  // the existing application into the wizard so their previous form
+  // data + uploads are already there. Absent → normal "new application"
+  // flow.
+  const editApplicationIdParam = searchParams.get('application_id');
+  const editApplicationId = editApplicationIdParam ? Number(editApplicationIdParam) : null;
 
   const [service, setService]         = useState<ServiceDefinition | null>(null);
   const [project, setProject]         = useState<Project | null>(null);
@@ -103,6 +111,23 @@ export function Apply() {
       .catch(() => navigate('/services'))
       .finally(() => setLoading(false));
   }, [serviceCode, navigate]);
+
+  // JORD-62: pre-load an existing application when the URL carries
+  // ?application_id=X. Populates formData + application state so the
+  // wizard opens on Step 1 with the previous entries already filled.
+  // Non-editable statuses bounce back to the detail page — the
+  // detail-page CTA only appears for editable statuses but a hand-
+  // crafted URL shouldn't crash the app either.
+  useEffect(() => {
+    if (!editApplicationId) return;
+    applicationsApi.get(editApplicationId)
+      .then(r => {
+        setApplication(r.application);
+        setFormData((r.application.data ?? {}) as Record<string, unknown>);
+        setFeeBreakdown(r.fee_breakdown ?? null);
+      })
+      .catch(() => navigate(`/applications/${editApplicationId}`));
+  }, [editApplicationId, navigate]);
 
   // Load the project the applicant entered through (if any). Failure to
   // fetch is non-fatal — worst case the form renders without the read-only
@@ -179,6 +204,41 @@ export function Apply() {
     // so if the applicant edits the form between uploads the review
     // step reflects the latest breakdown from the server.
     setFeeBreakdown(r.fee_breakdown ?? null);
+    // JORD-58: a fresh upload may satisfy the missing-docs gate.
+    // Clear the "please upload required" banner so the user isn't
+    // reading a stale error while they finish the remaining slots.
+    setErrorSummary('');
+  };
+
+  /**
+   * JORD-58: block the docs → review transition when a required
+   * document is still missing. The previous flow let the applicant
+   * click Next through an empty documents step, then hit Submit on
+   * the review step, then bounce back to the FORM step (not docs)
+   * with a 422 — the applicant lost context of which slot was empty.
+   *
+   * `missingDocs` is memoised off the current application + schema
+   * so the disabled-state on the Next button stays in sync as
+   * uploads complete without re-rendering the whole tree.
+   */
+  const missingDocs = useMemo<SchemaDocument[]>(
+    () => missingRequiredDocsFor(service?.schema?.documents, application, formData),
+    [application, service?.schema?.documents, formData],
+  );
+
+  const handleNextFromDocs = () => {
+    if (missingDocs.length > 0) {
+      setErrorSummary(isArabic
+        ? 'يجب رفع كل الملفات الإلزامية قبل المتابعة.'
+        : 'Please upload every required document before continuing.');
+      setTimeout(() => {
+        document.querySelector('[data-testid="missing-docs-banner"]')
+          ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 50);
+      return;
+    }
+    setErrorSummary('');
+    setStep('review');
   };
 
   /**
@@ -399,6 +459,24 @@ export function Apply() {
             <p className="font-medium mb-1">{t('apply.docsHeading')}</p>
             <p className="text-blue-500">{t('apply.docsHint')}</p>
           </div>
+          {missingDocs.length > 0 && errorSummary && (
+            <div
+              role="alert"
+              data-testid="missing-docs-banner"
+              className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-800"
+            >
+              <p className="font-medium mb-1">
+                {isArabic
+                  ? 'يرجى رفع كل الملفات الإلزامية قبل المتابعة:'
+                  : 'Please upload every required document before continuing:'}
+              </p>
+              <ul className="list-disc ms-5 mt-1 space-y-0.5">
+                {missingDocs.map(d => (
+                  <li key={d.id}>{isArabic ? d.label_ar : d.label_en}</li>
+                ))}
+              </ul>
+            </div>
+          )}
           <DocumentUploader
             documents={schema.documents}
             application={application}
@@ -410,8 +488,17 @@ export function Apply() {
               className="px-5 py-2.5 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm">
               {t('apply.back')}
             </button>
-            <button type="button" onClick={() => setStep('review')}
-              className="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium">
+            <button
+              type="button"
+              onClick={handleNextFromDocs}
+              data-testid="docs-next-btn"
+              className="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium disabled:opacity-50"
+              disabled={missingDocs.length > 0}
+              aria-disabled={missingDocs.length > 0}
+              title={missingDocs.length > 0
+                ? (isArabic ? 'يجب رفع الملفات الإلزامية أولاً' : 'Upload the required documents first')
+                : undefined}
+            >
               {t('apply.nextReview')}
             </button>
           </div>
