@@ -14,7 +14,8 @@
     "integration": "التكامل",
     "users": "إدارة المستخدمين",
     "officesSettings": "إعدادات المكاتب",
-    "complaints": "الشكاوى"
+    "complaints": "الشكاوى",
+    "legalFines": "الغرامات القانونية"
   },
   "layout": {
     "sidebarLabel": "القائمة الجانبية",

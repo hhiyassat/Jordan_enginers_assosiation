@@ -14,7 +14,8 @@
     "integration": "Integration",
     "users": "Users",
     "officesSettings": "Offices",
-    "complaints": "Complaints"
+    "complaints": "Complaints",
+    "legalFines": "Legal Fines"
   },
   "layout": {
     "sidebarLabel": "Sidebar navigation",

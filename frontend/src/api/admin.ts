@@ -255,4 +255,38 @@ export const adminApi = {
       | { decision: 'sanction'; sanction_kind: 'warning' | 'suspension_1yr' | 'suspension_2yr' | 'deregistration'; reason: string; notes?: string }
       | { decision: 'dismiss'; notes?: string }
   ) => request<{ message: string; transfers_opened?: number }>('POST', `/admin/complaints/${id}/decide`, payload),
+
+  /**
+   * JORD-82 UI: legal fines (Art.14 owner fines for unlicensed contractor).
+   * Bounds come from the backend (server-side source of truth so a
+   * manual amendment doesn't require a frontend release to reflect).
+   */
+  listLegalFines: () => request<{
+    fines: Array<{
+      id: number;
+      kind: 'unlicensed_contractor_small' | 'unlicensed_contractor_large';
+      target_display: string;
+      amount_jod: string;
+      project_area_m2: number | null;
+      reason: string;
+      issued_at: string;
+      paid_at: string | null;
+      payment_reference: string | null;
+      issued_by: { id: number; name: string } | null;
+      application: { id: number; reference_number: string } | null;
+    }>;
+    bounds: Record<string, { min: number; max: number; area_threshold_m2: number | null }>;
+  }>('GET', '/admin/legal-fines'),
+
+  issueLegalFine: (payload: {
+    kind: 'unlicensed_contractor_small' | 'unlicensed_contractor_large';
+    amount_jod: number;
+    target_display: string;
+    project_area_m2?: number;
+    application_id?: number;
+    reason: string;
+  }) => request<{ message: string }>('POST', '/admin/legal-fines', payload),
+
+  payLegalFine: (id: number, payment_reference: string) =>
+    request<{ message: string }>('POST', `/admin/legal-fines/${id}/pay`, { payment_reference }),
 };

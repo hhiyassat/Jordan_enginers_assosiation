@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, Home, FileText, ShieldCheck, Settings, ClipboardList,
-  PlusCircle, Zap, User as UserIcon, Building2, Gavel,
+  PlusCircle, Zap, User as UserIcon, Building2, Gavel, Scale,
   type LucideIcon,
 } from 'lucide-react';
 import type { User } from '../types';
@@ -39,11 +39,12 @@ export function navItemsForRole(role: User['role'] | undefined): NavItem[] {
     // decides which roles the actor can act on inside the page.
     items.push({ to: '/admin/users',           labelKey: 'nav.users',           Icon: UserIcon });
   }
-  // JORD-77 / JORD-81: office picker + disciplinary complaints queue.
+  // JORD-77 / JORD-81 / JORD-82: office picker + complaints + legal fines.
   // Admin-only (superuser scope is user-management, not quota / discipline).
   if (role === 'admin') {
     items.push({ to: '/admin/offices',         labelKey: 'nav.officesSettings', Icon: Building2 });
     items.push({ to: '/admin/complaints',      labelKey: 'nav.complaints',      Icon: Gavel });
+    items.push({ to: '/admin/legal-fines',     labelKey: 'nav.legalFines',      Icon: Scale });
   }
   return items;
 }
