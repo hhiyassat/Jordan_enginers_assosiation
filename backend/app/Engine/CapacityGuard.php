@@ -116,12 +116,14 @@ class CapacityGuard
             );
         }
 
-        // JORD-71: pass governorate so the ledger can apply the +10%
-        // overflow when this office has hit 90% in that governorate.
-        // Absent governorate → no overflow (whole-org check only).
+        // JORD-71 + JORD-77: pass governorate so the ledger can apply
+        // the +10% overflow when this office has hit 90% in that
+        // governorate. Absent governorate → no overflow.
+        // Ceiling is keyed on office_user_id (= applicant on this app),
+        // not the enclosing organization.
         $governorate = is_string($data['governorate'] ?? null) ? $data['governorate'] : null;
         $officeRem = $this->ledger->remainingOfficeCeiling(
-            $app->organization_id, $discipline, $year, $governorate,
+            (int) $app->applicant_id, $discipline, $year, $governorate,
         );
         if ($officeRem !== null && $officeRem < $quantityI) {
             $errors['office_ceiling'] = sprintf(

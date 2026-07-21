@@ -164,13 +164,13 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'token.inactivity', 'password.p
         Route::post('admin/services/chat-schema',               [AdminController::class, 'chatUpdateSchema'])
             ->middleware('throttle:ai-schema');
 
-        // JORD-70/76: organization boost flags + per-engineer
-        // specialization-head toggle. Admin surface — the flags
-        // change effective quota ceilings for every submission the
-        // office makes, so they're not office-self-service.
-        Route::get('admin/organization',              [\App\Http\Controllers\Api\OrganizationSettingsController::class, 'show']);
-        Route::patch('admin/organization',            [\App\Http\Controllers\Api\OrganizationSettingsController::class, 'update']);
-        Route::patch('admin/engineers/{id}',          [\App\Http\Controllers\Api\OrganizationSettingsController::class, 'updateEngineer']);
+        // JORD-77: office-scoped boost flags + specialization-head
+        // (replaces the JORD-76 organization-scoped endpoints).
+        // Admin picks an office first, then edits its flags.
+        Route::get('admin/offices',                                 [\App\Http\Controllers\Api\OfficeSettingsController::class, 'index']);
+        Route::get('admin/offices/{id}',                            [\App\Http\Controllers\Api\OfficeSettingsController::class, 'show']);
+        Route::patch('admin/offices/{id}',                          [\App\Http\Controllers\Api\OfficeSettingsController::class, 'update']);
+        Route::patch('admin/offices/{officeId}/engineers/{engineerId}', [\App\Http\Controllers\Api\OfficeSettingsController::class, 'updateEngineer']);
     });
 
     // ── User management ─────────────────────────────────────────────────

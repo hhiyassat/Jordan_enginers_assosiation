@@ -13,7 +13,7 @@
     "newService": "New Service",
     "integration": "Integration",
     "users": "Users",
-    "organizationSettings": "Organization Settings"
+    "officesSettings": "Offices"
   },
   "layout": {
     "sidebarLabel": "Sidebar navigation",

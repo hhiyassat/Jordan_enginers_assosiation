@@ -53,15 +53,22 @@ class MaterialsTestingQuotaSeeder extends Seeder
             return;
         }
 
-        // 1. Office ceiling for the materials bucket.
-        OfficeCeiling::updateOrCreate(
-            [
-                'organization_id' => $org->id,
-                'discipline'      => self::MATERIALS_DISCIPLINE,
-                'year'            => (int) now()->year,
-            ],
-            ['m2_allowed' => self::DEFAULT_CEILING],
-        );
+        // 1. Office ceilings — one per office user (JORD-77).
+        $applicants = \App\Models\User::where('organization_id', $org->id)
+            ->where('role', 'applicant')->get();
+        foreach ($applicants as $applicant) {
+            OfficeCeiling::updateOrCreate(
+                [
+                    'office_user_id' => $applicant->id,
+                    'discipline'     => self::MATERIALS_DISCIPLINE,
+                    'year'           => (int) now()->year,
+                ],
+                [
+                    'organization_id' => $org->id, // denorm
+                    'm2_allowed'      => self::DEFAULT_CEILING,
+                ],
+            );
+        }
 
         // 2. Schema wiring on SRV-008/009.
         $updated = 0;

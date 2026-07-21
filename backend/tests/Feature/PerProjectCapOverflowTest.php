@@ -57,6 +57,7 @@ class PerProjectCapOverflowTest extends TestCase
         ]);
         OfficeCeiling::create([
             'organization_id' => $this->org->id,
+            'office_user_id'  => $this->officeUser->id,
             'discipline'      => Disciplines::ARCHITECTURAL,
             'year'            => (int) now()->year,
             'm2_allowed'      => 100000,

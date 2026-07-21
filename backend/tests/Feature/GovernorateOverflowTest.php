@@ -60,6 +60,7 @@ class GovernorateOverflowTest extends TestCase
         ]);
         OfficeCeiling::create([
             'organization_id' => $this->org->id,
+            'office_user_id'  => $this->officeUser->id,
             'discipline'      => Disciplines::ARCHITECTURAL,
             'year'            => (int) now()->year,
             'm2_allowed'      => 10000,
@@ -76,7 +77,7 @@ class GovernorateOverflowTest extends TestCase
         // 10,000 ceiling × 0.80 = 8,000 in Amman. Trigger is at 9,000.
         $this->consume('amman', 8000);
         $rem = app(QuotaLedger::class)->remainingOfficeCeiling(
-            $this->org->id, Disciplines::ARCHITECTURAL, (int) now()->year, 'amman',
+            $this->officeUser->id, Disciplines::ARCHITECTURAL, (int) now()->year, 'amman',
         );
         // 10,000 base - 8,000 consumed = 2,000.
         $this->assertSame(2000, $rem);
@@ -88,7 +89,7 @@ class GovernorateOverflowTest extends TestCase
         // Effective = 10,000 × 1.10 = 11,000. Remaining = 11,000 - 9,000 = 2,000.
         $this->consume('amman', 9000);
         $rem = app(QuotaLedger::class)->remainingOfficeCeiling(
-            $this->org->id, Disciplines::ARCHITECTURAL, (int) now()->year, 'amman',
+            $this->officeUser->id, Disciplines::ARCHITECTURAL, (int) now()->year, 'amman',
         );
         $this->assertSame(2000, $rem);
     }
@@ -100,10 +101,10 @@ class GovernorateOverflowTest extends TestCase
         $this->consume('amman', 9000);
 
         $ammanRem = app(QuotaLedger::class)->remainingOfficeCeiling(
-            $this->org->id, Disciplines::ARCHITECTURAL, (int) now()->year, 'amman',
+            $this->officeUser->id, Disciplines::ARCHITECTURAL, (int) now()->year, 'amman',
         );
         $irbidRem = app(QuotaLedger::class)->remainingOfficeCeiling(
-            $this->org->id, Disciplines::ARCHITECTURAL, (int) now()->year, 'irbid',
+            $this->officeUser->id, Disciplines::ARCHITECTURAL, (int) now()->year, 'irbid',
         );
 
         // Amman: 11,000 - 9,000 = 2,000.
@@ -119,7 +120,7 @@ class GovernorateOverflowTest extends TestCase
         // Same behavior as pre-JORD-71.
         $this->consume('amman', 9000);
         $rem = app(QuotaLedger::class)->remainingOfficeCeiling(
-            $this->org->id, Disciplines::ARCHITECTURAL, (int) now()->year, null,
+            $this->officeUser->id, Disciplines::ARCHITECTURAL, (int) now()->year, null,
         );
         // 10,000 - 9,000 = 1,000 (no overflow).
         $this->assertSame(1000, $rem);
@@ -131,12 +132,12 @@ class GovernorateOverflowTest extends TestCase
         // Consume 10,350 in Amman → overflow adds +10 percentage points.
         // Effective = 10,000 × (1.15 + 0.10) = 12,500.
         // Remaining = 12,500 - 10,350 = 2,150.
-        $this->org->update([
+        $this->officeUser->update([
             'has_excellence_award' => true, 'is_bit_khibra' => true, 'has_iso_cert' => true,
         ]);
         $this->consume('amman', 10350);
         $rem = app(QuotaLedger::class)->remainingOfficeCeiling(
-            $this->org->id, Disciplines::ARCHITECTURAL, (int) now()->year, 'amman',
+            $this->officeUser->id, Disciplines::ARCHITECTURAL, (int) now()->year, 'amman',
         );
         $this->assertSame(2150, $rem);
     }
@@ -180,6 +181,7 @@ class GovernorateOverflowTest extends TestCase
             'application_id'  => $app->id,
             'engineer_id'     => $this->engineer->id,
             'organization_id' => $this->org->id,
+            'office_user_id'  => $this->officeUser->id,
             'discipline'      => Disciplines::ARCHITECTURAL,
             'year'            => (int) now()->year,
             'm2'              => $m2,

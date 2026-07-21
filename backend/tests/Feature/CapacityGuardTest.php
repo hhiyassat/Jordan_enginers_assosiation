@@ -56,7 +56,8 @@ class CapacityGuardTest extends TestCase
             'year' => (int) now()->year, 'm2_allowed' => 1000,
         ]);
         OfficeCeiling::create([
-            'organization_id' => $this->org->id, 'discipline' => Disciplines::ARCHITECTURAL,
+            'organization_id' => $this->org->id, 'office_user_id' => $this->officeUser->id,
+            'discipline' => Disciplines::ARCHITECTURAL,
             'year' => (int) now()->year, 'm2_allowed' => 3000,
         ]);
 
@@ -221,6 +222,7 @@ class CapacityGuardTest extends TestCase
             'application_id'  => $app->id,
             'engineer_id'     => ($engineer ?? $this->engineer)->id,
             'organization_id' => $this->org->id,
+            'office_user_id'  => $this->officeUser->id,
             'discipline'      => Disciplines::ARCHITECTURAL,
             'year'            => (int) now()->year,
             'm2'              => $m2,

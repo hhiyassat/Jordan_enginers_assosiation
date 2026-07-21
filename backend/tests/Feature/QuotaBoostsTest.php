@@ -53,6 +53,7 @@ class QuotaBoostsTest extends TestCase
         ]);
         OfficeCeiling::create([
             'organization_id' => $this->org->id,
+            'office_user_id'  => $this->officeUser->id,
             'discipline'      => Disciplines::ARCHITECTURAL,
             'year'            => (int) now()->year,
             'm2_allowed'      => 20000,
@@ -68,7 +69,7 @@ class QuotaBoostsTest extends TestCase
             $this->engineer, Disciplines::ARCHITECTURAL, (int) now()->year,
         ));
         $this->assertSame(20000, app(QuotaLedger::class)->remainingOfficeCeiling(
-            $this->org->id, Disciplines::ARCHITECTURAL, (int) now()->year,
+            $this->officeUser->id, Disciplines::ARCHITECTURAL, (int) now()->year,
         ));
     }
 
@@ -85,25 +86,25 @@ class QuotaBoostsTest extends TestCase
     public function test_office_award_gives_ceiling_plus_5_percent(): void
     {
         // 20,000 × 1.05 = 21,000.
-        $this->org->update(['has_excellence_award' => true]);
+        $this->officeUser->update(['has_excellence_award' => true]);
         $this->assertSame(21000, app(QuotaLedger::class)->remainingOfficeCeiling(
-            $this->org->id, Disciplines::ARCHITECTURAL, (int) now()->year,
+            $this->officeUser->id, Disciplines::ARCHITECTURAL, (int) now()->year,
         ));
     }
 
     public function test_bit_khibra_alone_gives_plus_5_percent(): void
     {
-        $this->org->update(['is_bit_khibra' => true]);
+        $this->officeUser->update(['is_bit_khibra' => true]);
         $this->assertSame(21000, app(QuotaLedger::class)->remainingOfficeCeiling(
-            $this->org->id, Disciplines::ARCHITECTURAL, (int) now()->year,
+            $this->officeUser->id, Disciplines::ARCHITECTURAL, (int) now()->year,
         ));
     }
 
     public function test_iso_alone_gives_plus_5_percent(): void
     {
-        $this->org->update(['has_iso_cert' => true]);
+        $this->officeUser->update(['has_iso_cert' => true]);
         $this->assertSame(21000, app(QuotaLedger::class)->remainingOfficeCeiling(
-            $this->org->id, Disciplines::ARCHITECTURAL, (int) now()->year,
+            $this->officeUser->id, Disciplines::ARCHITECTURAL, (int) now()->year,
         ));
     }
 
@@ -113,13 +114,13 @@ class QuotaBoostsTest extends TestCase
         // Multiplicative stacking would give 20,000 × 1.05^3 = 23,152.5
         // — pin the additive semantic so an accidental refactor to
         // compounding percentages gets caught here.
-        $this->org->update([
+        $this->officeUser->update([
             'has_excellence_award' => true,
             'is_bit_khibra'        => true,
             'has_iso_cert'         => true,
         ]);
         $this->assertSame(23000, app(QuotaLedger::class)->remainingOfficeCeiling(
-            $this->org->id, Disciplines::ARCHITECTURAL, (int) now()->year,
+            $this->officeUser->id, Disciplines::ARCHITECTURAL, (int) now()->year,
         ));
     }
 
@@ -131,7 +132,7 @@ class QuotaBoostsTest extends TestCase
         // independence so a future refactor doesn't accidentally
         // apply engineer boost to office ceiling or vice versa.
         $this->engineer->update(['is_specialization_head' => true]);
-        $this->org->update([
+        $this->officeUser->update([
             'has_excellence_award' => true,
             'is_bit_khibra'        => true,
             'has_iso_cert'         => true,
@@ -140,7 +141,7 @@ class QuotaBoostsTest extends TestCase
             $this->engineer, Disciplines::ARCHITECTURAL, (int) now()->year,
         ));
         $this->assertSame(23000, app(QuotaLedger::class)->remainingOfficeCeiling(
-            $this->org->id, Disciplines::ARCHITECTURAL, (int) now()->year,
+            $this->officeUser->id, Disciplines::ARCHITECTURAL, (int) now()->year,
         ));
     }
 }

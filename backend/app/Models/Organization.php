@@ -30,20 +30,12 @@ class Organization extends Model
     public function applications(): HasMany { return $this->hasMany(Application::class); }
 
     /**
-     * JORD-73: the coalition this office currently belongs to, if any.
-     * A membership is "active" iff both:
-     *   • the coalition itself hasn't been dissolved
-     *   • the office hasn't left it
-     * Returns null when the office is standalone (the common case).
+     * @deprecated JORD-77: coalitions moved to per-office (User).
+     * Use User::activeCoalition() instead. Kept as a shim returning
+     * null so any lingering call sites don't crash.
      */
     public function activeCoalition(): ?OfficeCoalition
     {
-        $member = OfficeCoalitionMember::where('organization_id', $this->id)
-            ->whereNull('left_at')
-            ->latest()
-            ->first();
-        if (!$member) return null;
-        $coalition = $member->coalition;
-        return ($coalition && $coalition->isActive()) ? $coalition : null;
+        return null;
     }
 }

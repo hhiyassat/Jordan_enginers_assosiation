@@ -15,7 +15,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class QuotaConsumption extends Model
 {
     protected $fillable = [
-        'application_id', 'engineer_id', 'organization_id',
+        'application_id', 'engineer_id', 'organization_id', 'office_user_id',
         'discipline', 'governorate', 'year', 'm2',
     ];
 

@@ -9,43 +9,23 @@ use App\Models\Engineer;
 use App\Models\EngineerDisciplineQuota;
 use App\Models\OfficeCeiling;
 use App\Models\OfficeCoalition;
-use App\Models\Organization;
 use App\Models\QuotaConsumption;
+use App\Models\User;
 use Illuminate\Support\Facades\Log;
 
 /**
- * QuotaLedger — JORD-68
+ * QuotaLedger — JORD-68 + JORD-77 (per-office refactor)
  *
  * Owns the quota consumption/reversal write path and the "remaining"
- * read helpers. The whole point of centralising it here (instead of
- * scattering the arithmetic across WorkflowEngine + Application) is
- * so future tickets — JORD-70 boosts, JORD-71 overflow, JORD-73
- * coalitions — extend one class.
+ * read helpers. As of JORD-77 every quota / ceiling / boost is keyed
+ * on the OFFICE USER (a User with role='applicant'), not the
+ * enclosing Organization — matching how JEA's real data model works
+ * (one Org can house many offices).
  *
- * Semantics
- * ---------
- *   recordApproval(app)  — call on the FINAL transition to
- *                          STATUS_APPROVED. Inserts a QuotaConsumption
- *                          row keyed on (app_id, engineer_id, discipline).
- *                          Idempotent — composite unique on the
- *                          consumption table dedupes retries.
- *   releaseFor(app)      — call when the app is being soft-deleted /
- *                          cancelled. Removes any consumption rows.
- *   remainingEngineerQuota(engineer, discipline, year)
- *   remainingOfficeCeiling(orgId, discipline, year)
- *                        — used by JORD-69 CapacityGuard before submit.
- *
- * Non-consumption paths (silent no-op with a debug log)
- * -----------------------------------------------------
- *   • Service isn't quota-tracked (schema.fee.type not matrix/per_unit
- *     on area_m2 basis) → nothing to consume, skip.
- *   • Application lacks engineer_id or area_m2 in its data → skip
- *     (submission gate will catch this before approval in production;
- *     during Phase-3-in-flight it's tolerated so we don't break
- *     existing test fixtures).
- *   • Engineer not found or no quota row for the discipline → log
- *     warn, still insert a consumption row so the audit trail is
- *     complete even when the underlying quota is misconfigured.
+ * The relevant office_user_id for an Application is the applicant_id
+ * on the row (offices submit as themselves). Legacy organization_id
+ * columns are kept on the tables as a denormalization + safety net
+ * but are no longer authoritative — this class reads office_user_id.
  */
 class QuotaLedger
 {
@@ -57,11 +37,6 @@ class QuotaLedger
         $data = is_array($app->data) ? $app->data : [];
         $svc  = $app->serviceDefinition;
 
-        // JORD-75: basis field defaults to 'area_m2'; SRV-006 overrides
-        // to 'length_lm'. The `m2` column on quota_consumptions stores
-        // whatever unit the schema declared — reads elsewhere never
-        // mix units because both consumption + ceiling for the same
-        // (org, discipline, year) use the same unit by construction.
         $basisField = $svc ? data_get($svc->schema, 'quota_basis_field', 'area_m2') : 'area_m2';
         if (!is_string($basisField) || $basisField === '') {
             $basisField = 'area_m2';
@@ -87,16 +62,6 @@ class QuotaLedger
             return;
         }
 
-        // The consumption is charged against the engineer's declared
-        // discipline (folded through the alias map). If the app spans
-        // multiple disciplines each needing its own engineer, that's a
-        // JORD-72+ scenario — the current schema is 1 engineer per app.
-        //
-        // JORD-74: services like SRV-008/009 (materials testing) still
-        // have an engineer picker but are quota'd against a service-
-        // wide bucket ('materials_testing'), not the engineer's own
-        // discipline. schema.quota_discipline_override lets a service
-        // opt into that redirect without duplicating the whole engine.
         $override = $svc ? data_get($svc->schema, 'quota_discipline_override') : null;
         $discipline = is_string($override) && $override !== ''
             ? $override
@@ -108,6 +73,11 @@ class QuotaLedger
             return;
         }
 
+        // JORD-77: office_user_id is the applicant on this app.
+        // Fall back to organization_id lookup if applicant_id is not
+        // set (edge case, e.g. system-generated applications).
+        $officeUserId = $app->applicant_id ?: null;
+
         QuotaConsumption::updateOrCreate(
             [
                 'application_id' => $app->id,
@@ -116,17 +86,9 @@ class QuotaLedger
             ],
             [
                 'organization_id' => $app->organization_id,
+                'office_user_id'  => $officeUserId,
                 'year'            => (int) now()->year,
-                // The `m2` column stores the quantity in whatever unit
-                // the schema.quota_basis_field declared — see the
-                // "one unit per (org, discipline, year)" invariant note
-                // on remainingOfficeCeiling.
                 'm2'              => (int) $quantity,
-                // JORD-71: governorate lets the 90%→+10% overflow rule
-                // scope by governorate. Nullable when the form doesn't
-                // ask (older services or non-drawings) — those rows
-                // don't count toward any governorate's 90% trigger,
-                // which is the intentionally-conservative default.
                 'governorate'     => is_string($data['governorate'] ?? null)
                     ? $data['governorate']
                     : null,
@@ -146,14 +108,7 @@ class QuotaLedger
 
     /**
      * Total m² an engineer has left in the given (discipline, year).
-     *
-     * Applies the JORD-70 engineer-level boost: +20% when the engineer
-     * is registered as head-of-specialization for their office.
-     *
-     * Returns null when there's no quota row at all — callers treat
-     * null as "no cap configured" (allow) rather than "0 cap" (block),
-     * so a fresh org without seeded quotas doesn't immediately reject
-     * every submission.
+     * Applies the JORD-70 engineer-level +20% spec-head boost.
      */
     public function remainingEngineerQuota(Engineer $engineer, string $discipline, int $year): ?int
     {
@@ -176,52 +131,50 @@ class QuotaLedger
     }
 
     /**
-     * Same shape for the office-level ceiling.
+     * JORD-77: office-level ceiling keyed on office_user_id (a User).
      *
      * Applies:
-     *   • JORD-70 office boost stack (award / bit-khibra / ISO,
-     *     additive +5% each per manual quotes).
-     *   • JORD-71 governorate-scoped +10% overflow when the office
-     *     has already consumed ≥90% of its ceiling in the passed
-     *     governorate. Applied ONLY to the governorate that hit
-     *     90% — other governorates keep the base ceiling.
+     *   • JORD-70 boosts read from the office user's own flags
+     *     (has_excellence_award, is_bit_khibra, has_iso_cert), each
+     *     +5% additive. Per-office, not per-organization.
+     *   • JORD-71 governorate-scoped +10% overflow at 90% consumption.
+     *   • JORD-73 coalition aggregation: if the office is in an
+     *     active coalition, the ceiling is ((n-0.5)/n) × Σ(member
+     *     ceilings) and consumption sums across all coalition members.
      *
-     * When `$governorate` is null the JORD-71 overflow does not fire
-     * (whole-org remaining, no per-governorate accounting). Pass
-     * governorate from CapacityGuard's data.governorate to activate it.
+     * Returns null when no OfficeCeiling row exists — callers treat
+     * that as "no cap configured" (allow), not "0 cap" (block).
      */
     public function remainingOfficeCeiling(
-        int $organizationId,
+        int $officeUserId,
         string $discipline,
         int $year,
         ?string $governorate = null,
     ): ?int {
         $discipline = Disciplines::normalize($discipline);
 
-        // JORD-73: coalition-aware branch. When this org is a member
-        // of an active coalition, the ceiling is aggregated across
-        // members using the manual's ((n-0.5)/n) × sum formula, and
-        // consumption sums include EVERY coalition member's apps.
-        $org = Organization::find($organizationId);
-        $coalition = $org?->activeCoalition();
+        // Coalition-aware branch — coalitions are keyed on office_user_id
+        // post-JORD-77 too (see OfficeCoalitionMember + User::activeCoalition).
+        $officeUser = User::find($officeUserId);
+        $coalition  = $officeUser?->activeCoalition();
         if ($coalition !== null) {
             return $this->remainingCoalitionCeiling($coalition, $discipline, $year, $governorate);
         }
 
-        $ceiling = OfficeCeiling::where('organization_id', $organizationId)
+        $ceiling = OfficeCeiling::where('office_user_id', $officeUserId)
             ->where('discipline', $discipline)
             ->where('year', $year)
             ->first();
         if (!$ceiling) return null;
 
         $boostMultiplier = 1.0
-            + ($org && $org->has_excellence_award ? 0.05 : 0.0)
-            + ($org && $org->is_bit_khibra        ? 0.05 : 0.0)
-            + ($org && $org->has_iso_cert         ? 0.05 : 0.0);
+            + ($officeUser && $officeUser->has_excellence_award ? 0.05 : 0.0)
+            + ($officeUser && $officeUser->is_bit_khibra        ? 0.05 : 0.0)
+            + ($officeUser && $officeUser->has_iso_cert         ? 0.05 : 0.0);
 
         // JORD-71: governorate-scoped 90% → +10% overflow.
         if ($governorate !== null) {
-            $governorateConsumed = (int) QuotaConsumption::where('organization_id', $organizationId)
+            $governorateConsumed = (int) QuotaConsumption::where('office_user_id', $officeUserId)
                 ->where('discipline', $discipline)
                 ->where('year', $year)
                 ->where('governorate', $governorate)
@@ -234,7 +187,7 @@ class QuotaLedger
 
         $effective = (int) floor($ceiling->m2_allowed * $boostMultiplier);
 
-        $consumed = QuotaConsumption::where('organization_id', $organizationId)
+        $consumed = QuotaConsumption::where('office_user_id', $officeUserId)
             ->where('discipline', $discipline)
             ->where('year', $year)
             ->sum('m2');
@@ -243,18 +196,12 @@ class QuotaLedger
     }
 
     /**
-     * JORD-73: aggregated coalition ceiling per manual p.136:
+     * Aggregated coalition ceiling per manual p.136:
      *   coalition_ceiling = ((n-0.5)/n) × Σ(member_ceilings)
      *
-     * Discounts vs pure additive (n=2 → 0.75× sum; n=3 → 0.833× sum;
-     * n→∞ → 1× sum). Consumption sums across ALL active members so
-     * quota use anywhere in the coalition counts.
-     *
-     * Boosts and governorate overflow are NOT applied at the
-     * coalition level — the manual doesn't specify boost-stacking
-     * rules for coalitions, and applying them per-member before
-     * summing would double-count. If JEA clarifies later, this is
-     * one small edit.
+     * Coalitions are between OFFICES post-JORD-77, so member ids are
+     * office_user_ids. Consumption sums across all active member
+     * office users so quota use anywhere in the coalition counts.
      */
     private function remainingCoalitionCeiling(
         OfficeCoalition $coalition,
@@ -262,21 +209,21 @@ class QuotaLedger
         int $year,
         ?string $governorate,
     ): ?int {
-        $memberOrgIds = $coalition->activeMembers()->pluck('organization_id')->all();
-        if (empty($memberOrgIds)) return null;
+        $memberOfficeIds = $coalition->activeMembers()->pluck('office_user_id')->filter()->all();
+        if (empty($memberOfficeIds)) return null;
 
-        $memberCeilings = OfficeCeiling::whereIn('organization_id', $memberOrgIds)
+        $memberCeilings = OfficeCeiling::whereIn('office_user_id', $memberOfficeIds)
             ->where('discipline', $discipline)
             ->where('year', $year)
             ->pluck('m2_allowed')
             ->all();
         if (empty($memberCeilings)) return null;
 
-        $n   = count($memberOrgIds);
+        $n   = count($memberOfficeIds);
         $sum = array_sum($memberCeilings);
         $effective = (int) floor((($n - 0.5) / $n) * $sum);
 
-        $consumed = (int) QuotaConsumption::whereIn('organization_id', $memberOrgIds)
+        $consumed = (int) QuotaConsumption::whereIn('office_user_id', $memberOfficeIds)
             ->where('discipline', $discipline)
             ->where('year', $year)
             ->sum('m2');
@@ -285,25 +232,8 @@ class QuotaLedger
     }
 
     /**
-     * JORD-72: overflow surcharge when this application's area exceeds
-     * the office's per-project cap for the engineer's discipline.
-     *
-     * The manual (p. 129) allows the excess with a 25% overflow fee
-     * on the excess m² × base rate. We compute the amount live from
-     * the application's current form data + the office's ceiling
-     * row — no persisted state, so the calculation stays in sync when
-     * the office's cap or the applicant's area changes.
-     *
-     * Returns null when the rule doesn't apply:
-     *   • The service isn't quota-tracked (no area_m2 field).
-     *   • The office has no per_project_cap_m2 configured for the
-     *     engineer's discipline (null = pass-through).
-     *   • Area is within the cap.
-     *   • Missing engineer_id / area_m2 (edge — submit gate catches).
-     *
-     * Returns a surcharge-shaped array (same shape as
-     * schema.fee.surcharges entries) when it does apply. Caller
-     * appends to breakdown['surcharges'].
+     * JORD-72 + JORD-73: overflow surcharge when this application's
+     * area exceeds the office's (or coalition's) per-project cap.
      *
      * @return array<string, mixed>|null
      */
@@ -328,16 +258,14 @@ class QuotaLedger
         if ($discipline === '') return null;
 
         $year = (int) now()->year;
+        $officeUserId = $app->applicant_id;
 
-        // JORD-73: coalition-aware per-project cap. Manual p.136:
-        //   coalition_cap = 1.5 × mean(member per-project caps)
-        // When the org belongs to an active coalition we use the
-        // aggregated cap; otherwise fall back to the office's own row.
-        $org = Organization::find($app->organization_id);
-        $coalition = $org?->activeCoalition();
+        // JORD-73 + JORD-77: coalition aggregation keyed on office_user_id.
+        $officeUser = User::find($officeUserId);
+        $coalition  = $officeUser?->activeCoalition();
         if ($coalition !== null) {
-            $memberOrgIds = $coalition->activeMembers()->pluck('organization_id')->all();
-            $caps = OfficeCeiling::whereIn('organization_id', $memberOrgIds)
+            $memberOfficeIds = $coalition->activeMembers()->pluck('office_user_id')->filter()->all();
+            $caps = OfficeCeiling::whereIn('office_user_id', $memberOfficeIds)
                 ->where('discipline', $discipline)
                 ->where('year', $year)
                 ->whereNotNull('per_project_cap_m2')
@@ -346,7 +274,7 @@ class QuotaLedger
             if (empty($caps)) return null;
             $perProjectCap = (int) floor(1.5 * (array_sum($caps) / count($caps)));
         } else {
-            $ceiling = OfficeCeiling::where('organization_id', $app->organization_id)
+            $ceiling = OfficeCeiling::where('office_user_id', $officeUserId)
                 ->where('discipline', $discipline)
                 ->where('year', $year)
                 ->first();
@@ -359,44 +287,22 @@ class QuotaLedger
 
         $excess = $areaI - $perProjectCap;
 
-        // Base rate lookup — reuse the service's fee block. For matrix
-        // fees we need the applicant's governorate + building_class to
-        // find their per-m² rate; for per_unit we take the fee.rate.
-        // Any other fee type has no reliable "per m² rate" so we
-        // conservatively return null (no surcharge — better than an
-        // arbitrary guess).
         $fee = data_get($svc->schema, 'fee', []);
         $baseRate = $this->resolveBaseRatePerM2($fee, $data);
         if ($baseRate === null || $baseRate <= 0) return null;
 
-        // 25% × excess × base rate. Option A per the JORD-72 product
-        // decision (literal 25%, no discipline weighting). If JEA
-        // later publishes discipline weights, extend this line only.
         $amount = round(0.25 * $excess * $baseRate, 2);
 
         return [
             'code'     => 'per_project_cap_overflow_25pct',
             'kind'     => 'percent_of_excess',
-            'label_ar' => sprintf(
-                'رسم تجاوز سقف المشروع الواحد (25%% × %d م² زائدة)',
-                $excess,
-            ),
-            'label_en' => sprintf(
-                'Per-project cap overflow (25%% × %d m² excess)',
-                $excess,
-            ),
+            'label_ar' => sprintf('رسم تجاوز سقف المشروع الواحد (25%% × %d م² زائدة)', $excess),
+            'label_en' => sprintf('Per-project cap overflow (25%% × %d m² excess)', $excess),
             'amount'   => (float) $amount,
             'source'   => 'كتاب التعليمات الفنية 2025 ص 129',
         ];
     }
 
-    /**
-     * Extract the effective per-m² rate from a service's fee config
-     * for the applicant's specific form values. Returns null when the
-     * fee shape doesn't have an area-scaled rate we can decompose
-     * cleanly (fixed / tiered / formula fees don't cleanly map to
-     * "JOD per m²" so we skip rather than approximate).
-     */
     private function resolveBaseRatePerM2(array $fee, array $formData): ?float
     {
         $type = $fee['type'] ?? null;
@@ -406,7 +312,6 @@ class QuotaLedger
         }
 
         if ($type === 'matrix' && ($fee['basis'] ?? null) === 'area_m2') {
-            // Reproduce matrix lookup: compose bucketized key, look up rate.
             $keys    = is_array($fee['keys'] ?? null)    ? $fee['keys']    : [];
             $rates   = is_array($fee['rates'] ?? null)   ? $fee['rates']   : [];
             $buckets = is_array($fee['buckets'] ?? null) ? $fee['buckets'] : [];

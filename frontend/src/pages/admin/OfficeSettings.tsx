@@ -1,13 +1,14 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { Link, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Award, ShieldCheck, Star, Info, Save } from 'lucide-react';
+import { Award, ShieldCheck, Star, Info, Save, ArrowLeft, ArrowRight } from 'lucide-react';
 import { adminApi } from '../../api/client';
 
 /**
- * OrganizationSettings — JORD-76
+ * OfficeSettings — JORD-77
  *
- * Admin surface for the three org-level ceiling-boost flags
- * (JORD-70) + the per-engineer specialization-head toggle.
+ * Admin surface for one engineering office's boost flags + specialization
+ * heads. Reached via /admin/offices/{id} after the OfficesList picker.
  *
  * Each flag corresponds to a JEA 2025 manual rule:
  *   • has_excellence_award   → +5% (Q-06, p.126, King Abdullah Award)
@@ -16,10 +17,8 @@ import { adminApi } from '../../api/client';
  *   • is_specialization_head → +20% engineer quota (Q-08, p.125)
  *
  * Draft-and-save UX: toggling any control marks the page dirty.
- * The "حفظ التعديلات" button at the bottom PATCHes only the
- * changed subset (diffed against the server-loaded state) and
- * reloads on success. The revert-on-failure branch keeps the
- * user's edits so they can retry.
+ * The "حفظ التعديلات" button PATCHes only the changed subset (diffed
+ * against server state) and re-baselines on success.
  */
 
 interface Engineer {
@@ -31,57 +30,54 @@ interface Engineer {
   is_specialization_head: boolean;
 }
 
-interface OrgFlags {
+interface OfficeFlags {
   has_excellence_award: boolean;
   is_bit_khibra: boolean;
   has_iso_cert: boolean;
 }
 
-interface Organization extends OrgFlags {
+interface Office extends OfficeFlags {
   id: number;
-  name_ar: string;
-  name_en: string;
+  name: string;
+  email: string;
 }
 
-export function OrganizationSettings() {
+export function OfficeSettings() {
+  const { id } = useParams<{ id: string }>();
+  const officeId = Number(id);
   const { i18n } = useTranslation();
   const isRtl = i18n.language.startsWith('ar');
   const isArabic = isRtl;
 
-  // "server" state — what the server last confirmed. "draft" state —
-  // what the user has edited but not yet saved. Diff-on-save produces
-  // the PATCH payload; also drives the "dirty" indicator.
-  const [serverOrg, setServerOrg] = useState<Organization | null>(null);
-  const [draftOrg,  setDraftOrg]  = useState<Organization | null>(null);
+  const [serverOffice,    setServerOffice]    = useState<Office | null>(null);
+  const [draftOffice,     setDraftOffice]     = useState<Office | null>(null);
   const [serverEngineers, setServerEngineers] = useState<Engineer[]>([]);
   const [draftEngineers,  setDraftEngineers]  = useState<Engineer[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving,  setSaving]  = useState(false);
-  const [error, setError] = useState('');
+  const [error,   setError]   = useState('');
   const [savedBanner, setSavedBanner] = useState(false);
 
-  const load = () => {
-    adminApi.getOrganizationSettings()
+  useEffect(() => {
+    if (!officeId) return;
+    adminApi.getOfficeSettings(officeId)
       .then(r => {
-        setServerOrg(r.organization);
-        setDraftOrg(r.organization);
+        setServerOffice(r.office);
+        setDraftOffice(r.office);
         setServerEngineers(r.engineers);
         setDraftEngineers(r.engineers);
       })
       .catch(e => setError((e as Error).message))
       .finally(() => setLoading(false));
-  };
+  }, [officeId]);
 
-  useEffect(load, []);
-
-  // What changed since the last successful load.
-  const orgDiff: Partial<OrgFlags> = useMemo(() => {
-    if (!serverOrg || !draftOrg) return {};
-    const out: Partial<OrgFlags> = {};
-    (Object.keys({ has_excellence_award: 0, is_bit_khibra: 0, has_iso_cert: 0 }) as (keyof OrgFlags)[])
-      .forEach(k => { if (serverOrg[k] !== draftOrg[k]) out[k] = draftOrg[k]; });
+  const officeDiff: Partial<OfficeFlags> = useMemo(() => {
+    if (!serverOffice || !draftOffice) return {};
+    const out: Partial<OfficeFlags> = {};
+    (['has_excellence_award', 'is_bit_khibra', 'has_iso_cert'] as const)
+      .forEach(k => { if (serverOffice[k] !== draftOffice[k]) out[k] = draftOffice[k]; });
     return out;
-  }, [serverOrg, draftOrg]);
+  }, [serverOffice, draftOffice]);
 
   const engineerDiff: Engineer[] = useMemo(() => {
     return draftEngineers.filter(d => {
@@ -90,24 +86,24 @@ export function OrganizationSettings() {
     });
   }, [serverEngineers, draftEngineers]);
 
-  const isDirty = Object.keys(orgDiff).length > 0 || engineerDiff.length > 0;
+  const isDirty = Object.keys(officeDiff).length > 0 || engineerDiff.length > 0;
 
-  const toggleOrgFlag = (key: keyof OrgFlags) => {
-    if (!draftOrg) return;
-    setDraftOrg({ ...draftOrg, [key]: !draftOrg[key] });
+  const toggleFlag = (key: keyof OfficeFlags) => {
+    if (!draftOffice) return;
+    setDraftOffice({ ...draftOffice, [key]: !draftOffice[key] });
     setSavedBanner(false);
     setError('');
   };
 
-  const toggleEngineerFlag = (id: number) => {
+  const toggleEngineerFlag = (engId: number) => {
     setDraftEngineers(prev => prev.map(e =>
-      e.id === id ? { ...e, is_specialization_head: !e.is_specialization_head } : e));
+      e.id === engId ? { ...e, is_specialization_head: !e.is_specialization_head } : e));
     setSavedBanner(false);
     setError('');
   };
 
   const handleReset = () => {
-    setDraftOrg(serverOrg);
+    setDraftOffice(serverOffice);
     setDraftEngineers(serverEngineers);
     setError('');
     setSavedBanner(false);
@@ -118,22 +114,18 @@ export function OrganizationSettings() {
     setSaving(true);
     setError('');
     try {
-      // Fire org PATCH + engineer PATCHes in parallel — they touch
-      // different rows and don't depend on each other.
       const calls: Promise<unknown>[] = [];
-      if (Object.keys(orgDiff).length > 0) {
-        calls.push(adminApi.updateOrganizationFlags(orgDiff));
+      if (Object.keys(officeDiff).length > 0) {
+        calls.push(adminApi.updateOfficeFlags(officeId, officeDiff));
       }
       for (const eng of engineerDiff) {
-        calls.push(adminApi.updateEngineerSpecHead(eng.id, eng.is_specialization_head));
+        calls.push(adminApi.updateOfficeEngineerSpecHead(officeId, eng.id, eng.is_specialization_head));
       }
       await Promise.all(calls);
-      // Re-baseline: server now matches draft.
-      setServerOrg(draftOrg);
+      setServerOffice(draftOffice);
       setServerEngineers(draftEngineers);
       setSavedBanner(true);
     } catch (e) {
-      // Keep the user's edits so they can retry. Don't touch draft state.
       setError((e as Error).message);
     } finally {
       setSaving(false);
@@ -146,10 +138,12 @@ export function OrganizationSettings() {
     </div>
   );
 
-  if (!draftOrg) return null;
+  if (!draftOffice) return null;
+
+  const Back = isRtl ? ArrowRight : ArrowLeft;
 
   const orgFlags: Array<{
-    key: keyof OrgFlags; icon: React.ReactNode; ar: string; en: string; hintAr: string; hintEn: string;
+    key: keyof OfficeFlags; icon: React.ReactNode; ar: string; en: string; hintAr: string; hintEn: string;
   }> = [
     {
       key: 'has_excellence_award',
@@ -174,19 +168,17 @@ export function OrganizationSettings() {
     },
   ];
 
-  const pendingCount = Object.keys(orgDiff).length + engineerDiff.length;
+  const pendingCount = Object.keys(officeDiff).length + engineerDiff.length;
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 pb-32" dir={isRtl ? 'rtl' : 'ltr'}>
       <header className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">
-          {isArabic ? 'إعدادات المكتب' : 'Organization Settings'}
-        </h1>
-        <p className="text-sm text-gray-500 mt-1">
-          {isArabic
-            ? `${draftOrg.name_ar} — ${draftOrg.name_en}`
-            : `${draftOrg.name_en} — ${draftOrg.name_ar}`}
-        </p>
+        <Link to="/admin/offices" className="inline-flex items-center gap-1 text-sm text-jea-primary hover:underline mb-3">
+          <Back size={14} aria-hidden="true" />
+          {isArabic ? 'كل المكاتب' : 'All offices'}
+        </Link>
+        <h1 className="text-2xl font-bold text-gray-900">{draftOffice.name}</h1>
+        <p className="text-sm text-gray-500 mt-1 font-mono">{draftOffice.email}</p>
       </header>
 
       {savedBanner && (
@@ -200,7 +192,6 @@ export function OrganizationSettings() {
         </div>
       )}
 
-      {/* Office boosts */}
       <section aria-labelledby="office-boosts-title" className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
         <h2 id="office-boosts-title" className="text-sm font-bold text-gray-800 mb-1">
           {isArabic ? 'مضاعفات سقف المكتب' : 'Office Ceiling Boosts'}
@@ -208,25 +199,25 @@ export function OrganizationSettings() {
         <p className="text-xs text-gray-500 mb-4 flex items-start gap-1.5">
           <Info size={12} className="mt-0.5 shrink-0" aria-hidden="true" />
           {isArabic
-            ? 'كل بند يمنح +5% على سقف المكتب السنوي. اضغط "حفظ التعديلات" بعد الانتهاء لتطبيق التغييرات.'
-            : 'Each flag grants +5% on annual office ceiling. Click "Save changes" when done.'}
+            ? 'كل بند يمنح +5% على سقف هذا المكتب السنوي. اضغط "حفظ التعديلات" بعد الانتهاء لتطبيق التغييرات.'
+            : 'Each flag grants +5% on this office\'s annual ceiling. Click "Save changes" when done.'}
         </p>
         <div className="space-y-3">
           {orgFlags.map(f => {
-            const on = draftOrg[f.key];
-            const changed = orgDiff[f.key] !== undefined;
+            const on = draftOffice[f.key];
+            const changed = officeDiff[f.key] !== undefined;
             return (
               <label
                 key={f.key}
                 className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
                   on ? 'border-emerald-300 bg-emerald-50' : 'border-gray-200 hover:border-gray-300'
                 } ${changed ? 'ring-2 ring-blue-200' : ''}`}
-                data-testid={`org-flag-${f.key}`}
+                data-testid={`office-flag-${f.key}`}
               >
                 <input
                   type="checkbox"
                   checked={on}
-                  onChange={() => toggleOrgFlag(f.key)}
+                  onChange={() => toggleFlag(f.key)}
                   className="mt-0.5 w-4 h-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
                 />
                 <div className="flex-1 min-w-0">
@@ -256,7 +247,6 @@ export function OrganizationSettings() {
         </div>
       </section>
 
-      {/* Engineer specialization-head */}
       <section aria-labelledby="eng-heads-title" className="bg-white rounded-xl border border-gray-200 p-6">
         <h2 id="eng-heads-title" className="text-sm font-bold text-gray-800 mb-1">
           {isArabic ? 'رؤساء الاختصاص' : 'Specialization Heads'}
@@ -269,7 +259,7 @@ export function OrganizationSettings() {
         </p>
         {draftEngineers.length === 0 ? (
           <p className="text-sm text-gray-400 text-center py-6">
-            {isArabic ? 'لا يوجد مهندسون مسجّلون.' : 'No engineers registered.'}
+            {isArabic ? 'لا يوجد مهندسون مسجّلون تحت هذا المكتب.' : 'No engineers registered under this office.'}
           </p>
         ) : (
           <div className="space-y-2">
@@ -316,8 +306,6 @@ export function OrganizationSettings() {
         )}
       </section>
 
-      {/* Sticky save bar. Only shown when dirty so a clean page has
-          no visual footprint. */}
       {isDirty && (
         <div
           className={`fixed bottom-0 ${isRtl ? 'right-0 left-0' : 'left-0 right-0'} bg-white border-t border-gray-200 shadow-lg p-4 z-40`}

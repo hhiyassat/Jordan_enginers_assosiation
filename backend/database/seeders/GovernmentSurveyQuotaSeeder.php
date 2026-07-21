@@ -45,15 +45,22 @@ class GovernmentSurveyQuotaSeeder extends Seeder
             return;
         }
 
-        // 1. Office ceiling for the government-survey bucket.
-        OfficeCeiling::updateOrCreate(
-            [
-                'organization_id' => $org->id,
-                'discipline'      => self::GOVT_SURVEY_DISCIPLINE,
-                'year'            => (int) now()->year,
-            ],
-            ['m2_allowed' => self::DEFAULT_CEILING_LM],
-        );
+        // 1. JORD-77: office ceilings are per-office (User), not per-org.
+        $applicants = \App\Models\User::where('organization_id', $org->id)
+            ->where('role', 'applicant')->get();
+        foreach ($applicants as $applicant) {
+            OfficeCeiling::updateOrCreate(
+                [
+                    'office_user_id' => $applicant->id,
+                    'discipline'     => self::GOVT_SURVEY_DISCIPLINE,
+                    'year'           => (int) now()->year,
+                ],
+                [
+                    'organization_id' => $org->id, // denorm
+                    'm2_allowed'      => self::DEFAULT_CEILING_LM,
+                ],
+            );
+        }
 
         // 2. Schema wiring on SRV-006.
         $svc = ServiceDefinition::where('organization_id', $org->id)

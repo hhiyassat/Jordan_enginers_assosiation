@@ -159,12 +159,24 @@ export const adminApi = {
   }) => request<{ service: ServiceDefinition }>('POST', '/services', data),
 
   /**
-   * JORD-76: organization boost flags + per-engineer specialization-head
-   * toggle. Feeds QuotaLedger's boost math (JORD-70). Admin surface.
+   * JORD-77: per-office boost flags + specialization-head toggles.
+   * An "engineering office" is a User with role='applicant'; admins
+   * pick an office first, then edit its flags.
    */
-  getOrganizationSettings: () => request<{
-    organization: {
-      id: number; name_ar: string; name_en: string;
+  listOffices: () => request<{
+    offices: Array<{
+      id: number; name: string; email: string;
+      is_active: boolean;
+      has_excellence_award: boolean;
+      is_bit_khibra: boolean;
+      has_iso_cert: boolean;
+      engineer_count: number;
+    }>;
+  }>('GET', '/admin/offices'),
+
+  getOfficeSettings: (officeId: number) => request<{
+    office: {
+      id: number; name: string; email: string;
       has_excellence_award: boolean;
       is_bit_khibra: boolean;
       has_iso_cert: boolean;
@@ -174,14 +186,14 @@ export const adminApi = {
       membership_number: string; specialization: string | null;
       is_specialization_head: boolean;
     }>;
-  }>('GET', '/admin/organization'),
+  }>('GET', `/admin/offices/${officeId}`),
 
-  updateOrganizationFlags: (flags: {
+  updateOfficeFlags: (officeId: number, flags: {
     has_excellence_award?: boolean;
     is_bit_khibra?: boolean;
     has_iso_cert?: boolean;
-  }) => request<{ message: string }>('PATCH', '/admin/organization', flags),
+  }) => request<{ message: string }>('PATCH', `/admin/offices/${officeId}`, flags),
 
-  updateEngineerSpecHead: (id: number, is_specialization_head: boolean) =>
-    request<{ message: string }>('PATCH', `/admin/engineers/${id}`, { is_specialization_head }),
+  updateOfficeEngineerSpecHead: (officeId: number, engineerId: number, is_specialization_head: boolean) =>
+    request<{ message: string }>('PATCH', `/admin/offices/${officeId}/engineers/${engineerId}`, { is_specialization_head }),
 };

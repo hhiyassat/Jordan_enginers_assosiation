@@ -34,6 +34,7 @@ class OfficeCoalitionTest extends TestCase
     private Organization $orgA;
     private Organization $orgB;
     private User $officeUser;
+    private User $officeUserB;
     private Engineer $engineer;
     private ServiceDefinition $service;
 
@@ -46,8 +47,15 @@ class OfficeCoalitionTest extends TestCase
         $this->orgB = Organization::create([
             'name_ar' => 'B', 'name_en' => 'B', 'slug' => 'b', 'is_active' => true,
         ]);
+        // JORD-77: coalitions aggregate per office_user_id, so each
+        // Organization needs its OWN applicant User to be a coalition
+        // member (an "office" in JEA's data model = a User w/ role=applicant).
         $this->officeUser = User::create([
-            'organization_id' => $this->orgA->id, 'name' => 'o', 'email' => 'o@t.esp',
+            'organization_id' => $this->orgA->id, 'name' => 'oA', 'email' => 'oa@t.esp',
+            'password' => 'x', 'role' => 'applicant', 'is_active' => true, 'password_changed_at' => now(),
+        ]);
+        $this->officeUserB = User::create([
+            'organization_id' => $this->orgB->id, 'name' => 'oB', 'email' => 'ob@t.esp',
             'password' => 'x', 'role' => 'applicant', 'is_active' => true, 'password_changed_at' => now(),
         ]);
         $this->engineer = Engineer::create([
@@ -55,17 +63,19 @@ class OfficeCoalitionTest extends TestCase
             'name_ar' => 'م', 'membership_number' => 'EN-001',
             'specialization' => Disciplines::ARCHITECTURAL,
         ]);
-        // Seed ceilings for both orgs so the coalition math has data.
+        // Seed ceilings for both offices so the coalition math has data.
         // A = 10,000 architectural. B = 20,000 architectural.
         // Coalition sum = 30,000. With n=2 → ((2-0.5)/2) × 30,000 = 22,500.
         OfficeCeiling::create([
             'organization_id' => $this->orgA->id,
+            'office_user_id'  => $this->officeUser->id,
             'discipline' => Disciplines::ARCHITECTURAL,
             'year' => (int) now()->year, 'm2_allowed' => 10000,
             'per_project_cap_m2' => 3000,
         ]);
         OfficeCeiling::create([
             'organization_id' => $this->orgB->id,
+            'office_user_id'  => $this->officeUserB->id,
             'discipline' => Disciplines::ARCHITECTURAL,
             'year' => (int) now()->year, 'm2_allowed' => 20000,
             'per_project_cap_m2' => 5000,
@@ -81,7 +91,7 @@ class OfficeCoalitionTest extends TestCase
     {
         // Regression: no coalition = same 10,000 remaining as JORD-70.
         $rem = app(QuotaLedger::class)->remainingOfficeCeiling(
-            $this->orgA->id, Disciplines::ARCHITECTURAL, (int) now()->year,
+            $this->officeUser->id, Disciplines::ARCHITECTURAL, (int) now()->year,
         );
         $this->assertSame(10000, $rem);
     }
@@ -89,9 +99,9 @@ class OfficeCoalitionTest extends TestCase
     public function test_coalition_ceiling_uses_n_minus_half_over_n_formula(): void
     {
         // A + B in coalition: ((2-0.5)/2) × (10,000 + 20,000) = 22,500.
-        $this->formCoalition([$this->orgA, $this->orgB]);
+        $this->formCoalition([$this->officeUser, $this->officeUserB]);
         $rem = app(QuotaLedger::class)->remainingOfficeCeiling(
-            $this->orgA->id, Disciplines::ARCHITECTURAL, (int) now()->year,
+            $this->officeUser->id, Disciplines::ARCHITECTURAL, (int) now()->year,
         );
         $this->assertSame(22500, $rem);
     }
@@ -100,28 +110,29 @@ class OfficeCoalitionTest extends TestCase
     {
         // A + B in coalition. B consumes 5,000 → coalition remaining
         // is 22,500 - 5,000 = 17,500 when A queries too.
-        $this->formCoalition([$this->orgA, $this->orgB]);
+        $this->formCoalition([$this->officeUser, $this->officeUserB]);
         $priorApp = $this->makeApp($this->orgB, ['area_m2' => 5000]);
         QuotaConsumption::create([
             'application_id' => $priorApp->id,
             'engineer_id'    => $this->engineer->id,
             'organization_id' => $this->orgB->id,
+            'office_user_id'  => $this->officeUserB->id,
             'discipline'     => Disciplines::ARCHITECTURAL,
             'year'           => (int) now()->year, 'm2' => 5000,
         ]);
         $rem = app(QuotaLedger::class)->remainingOfficeCeiling(
-            $this->orgA->id, Disciplines::ARCHITECTURAL, (int) now()->year,
+            $this->officeUser->id, Disciplines::ARCHITECTURAL, (int) now()->year,
         );
         $this->assertSame(17500, $rem);
     }
 
     public function test_dissolved_coalition_falls_back_to_standalone_ceiling(): void
     {
-        $coalition = $this->formCoalition([$this->orgA, $this->orgB]);
+        $coalition = $this->formCoalition([$this->officeUser, $this->officeUserB]);
         $coalition->update(['dissolved_at' => now()->subDay()]);
 
         $rem = app(QuotaLedger::class)->remainingOfficeCeiling(
-            $this->orgA->id, Disciplines::ARCHITECTURAL, (int) now()->year,
+            $this->officeUser->id, Disciplines::ARCHITECTURAL, (int) now()->year,
         );
         // Back to standalone A ceiling = 10,000.
         $this->assertSame(10000, $rem);
@@ -129,14 +140,14 @@ class OfficeCoalitionTest extends TestCase
 
     public function test_left_member_falls_back_to_standalone_ceiling(): void
     {
-        $coalition = $this->formCoalition([$this->orgA, $this->orgB]);
+        $coalition = $this->formCoalition([$this->officeUser, $this->officeUserB]);
         // A leaves — its membership row gets left_at.
         OfficeCoalitionMember::where('office_coalition_id', $coalition->id)
-            ->where('organization_id', $this->orgA->id)
+            ->where('office_user_id', $this->officeUser->id)
             ->update(['left_at' => now()->subHour()]);
 
         $rem = app(QuotaLedger::class)->remainingOfficeCeiling(
-            $this->orgA->id, Disciplines::ARCHITECTURAL, (int) now()->year,
+            $this->officeUser->id, Disciplines::ARCHITECTURAL, (int) now()->year,
         );
         $this->assertSame(10000, $rem, 'A is no longer in the coalition, gets its own ceiling');
     }
@@ -145,7 +156,7 @@ class OfficeCoalitionTest extends TestCase
     {
         // A cap 3,000, B cap 5,000 → mean 4,000 × 1.5 = 6,000.
         // Submit 8,000 → excess 2,000 → surcharge = 0.25 × 2,000 × rate.
-        $this->formCoalition([$this->orgA, $this->orgB]);
+        $this->formCoalition([$this->officeUser, $this->officeUserB]);
         // Give the service a per_unit fee at 3.5/m² so the surcharge
         // decomposes cleanly.
         $this->service->update(['schema' => array_merge($this->service->schema, [
@@ -168,22 +179,28 @@ class OfficeCoalitionTest extends TestCase
     {
         // B lacks a mechanical ceiling; asking about mechanical when A
         // also lacks one → null (no ceiling configured for the group).
-        $this->formCoalition([$this->orgA, $this->orgB]);
+        $this->formCoalition([$this->officeUser, $this->officeUserB]);
         $this->assertNull(app(QuotaLedger::class)->remainingOfficeCeiling(
-            $this->orgA->id, Disciplines::MECHANICAL, (int) now()->year,
+            $this->officeUser->id, Disciplines::MECHANICAL, (int) now()->year,
         ));
     }
 
-    private function formCoalition(array $orgs): OfficeCoalition
+    /**
+     * @param  list<User> $officeUsers  the per-office applicants that join
+     *                                  the coalition (JORD-77: membership
+     *                                  is keyed on office_user_id, not org).
+     */
+    private function formCoalition(array $officeUsers): OfficeCoalition
     {
         $coalition = OfficeCoalition::create([
             'name_ar' => 'ائتلاف اختبار', 'name_en' => 'Test coalition',
             'formed_at' => now(),
         ]);
-        foreach ($orgs as $org) {
+        foreach ($officeUsers as $officeUser) {
             OfficeCoalitionMember::create([
                 'office_coalition_id' => $coalition->id,
-                'organization_id'     => $org->id,
+                'organization_id'     => $officeUser->organization_id,
+                'office_user_id'      => $officeUser->id,
                 'joined_at'           => now(),
             ]);
         }
@@ -192,11 +209,14 @@ class OfficeCoalitionTest extends TestCase
 
     private function makeApp(Organization $org, array $data): Application
     {
+        // Applicant on the app IS the office user; that's what QuotaLedger
+        // reads to key the office_user_id lookup post-JORD-77.
+        $applicantId = $org->id === $this->orgB->id ? $this->officeUserB->id : $this->officeUser->id;
         return Application::create([
             'reference_number'      => strtoupper(bin2hex(random_bytes(4))),
             'organization_id'       => $org->id,
             'service_definition_id' => $this->service->id,
-            'applicant_id'          => $this->officeUser->id,
+            'applicant_id'          => $applicantId,
             'status'                => Application::STATUS_APPROVED,
             'data'                  => $data,
             'fee_amount'            => 0,

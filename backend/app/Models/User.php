@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use App\Models\OfficeCoalition;
+use App\Models\OfficeCoalitionMember;
 
 /**
  * User
@@ -24,6 +26,11 @@ class User extends Authenticatable
         'organization_id', 'name', 'email', 'password', 'role', 'phone',
         'is_active', 'must_change_password', 'password_changed_at', 'email_verified_at',
         'annual_quota_m2', 'last_seen_at',
+        // JORD-77: per-office ceiling-boost flags. Previously on
+        // Organization, moved here because an "engineering office"
+        // in the JEA data model is a User with role='applicant',
+        // not the enclosing Organization.
+        'has_excellence_award', 'is_bit_khibra', 'has_iso_cert',
     ];
 
     protected $hidden = ['password', 'remember_token'];
@@ -35,6 +42,9 @@ class User extends Authenticatable
         'is_active'           => 'boolean',
         'must_change_password' => 'boolean',
         'annual_quota_m2'     => 'integer',
+        'has_excellence_award' => 'boolean',
+        'is_bit_khibra'        => 'boolean',
+        'has_iso_cert'         => 'boolean',
     ];
 
     // ── Relationships ─────────────────────────────────────────────────
@@ -42,6 +52,23 @@ class User extends Authenticatable
     public function organization(): BelongsTo
     {
         return $this->belongsTo(Organization::class);
+    }
+
+    /**
+     * JORD-77: this office's active coalition, if any. A membership
+     * is "active" iff both the coalition isn't dissolved AND the
+     * office hasn't left it. Returns null for standalone offices
+     * (the common case).
+     */
+    public function activeCoalition(): ?OfficeCoalition
+    {
+        $member = OfficeCoalitionMember::where('office_user_id', $this->id)
+            ->whereNull('left_at')
+            ->latest()
+            ->first();
+        if (!$member) return null;
+        $coalition = $member->coalition;
+        return ($coalition && $coalition->isActive()) ? $coalition : null;
     }
 
     // ── Role helpers (used by CheckRole middleware) ────────────────────

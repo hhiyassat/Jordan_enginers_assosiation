@@ -62,6 +62,7 @@ class QuotaLedgerTest extends TestCase
         ]);
         OfficeCeiling::create([
             'organization_id' => $this->org->id,
+            'office_user_id'  => $this->officeUser->id,
             'discipline'      => Disciplines::ARCHITECTURAL,
             'year'            => (int) now()->year,
             'm2_allowed'      => 30000,
@@ -160,7 +161,7 @@ class QuotaLedgerTest extends TestCase
         app(QuotaLedger::class)->recordApproval($app);
 
         $remaining = app(QuotaLedger::class)->remainingOfficeCeiling(
-            $this->org->id, Disciplines::ARCHITECTURAL, (int) now()->year,
+            $this->officeUser->id, Disciplines::ARCHITECTURAL, (int) now()->year,
         );
         $this->assertSame(29500, $remaining);
     }

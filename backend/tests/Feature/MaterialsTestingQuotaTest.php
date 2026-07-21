@@ -70,6 +70,7 @@ class MaterialsTestingQuotaTest extends TestCase
         ]);
         OfficeCeiling::create([
             'organization_id' => $this->org->id,
+            'office_user_id'  => $this->officeUser->id,
             'discipline'      => Disciplines::MECHANICAL,
             'year'            => (int) now()->year,
             'm2_allowed'      => 999999,
@@ -113,6 +114,7 @@ class MaterialsTestingQuotaTest extends TestCase
             'application_id'  => $priorApp->id,
             'engineer_id'     => $this->engineer->id,
             'organization_id' => $this->org->id,
+            'office_user_id'  => $this->officeUser->id,
             'discipline'      => 'materials_testing',
             'year'            => (int) now()->year,
             'm2'              => 100,
@@ -161,7 +163,8 @@ class MaterialsTestingQuotaTest extends TestCase
             'year' => (int) now()->year, 'm2_allowed' => 10000,
         ]);
         OfficeCeiling::create([
-            'organization_id' => $this->org->id, 'discipline' => Disciplines::ARCHITECTURAL,
+            'organization_id' => $this->org->id, 'office_user_id' => $this->officeUser->id,
+            'discipline' => Disciplines::ARCHITECTURAL,
             'year' => (int) now()->year, 'm2_allowed' => 30000,
         ]);
         $drw = ServiceDefinition::where('organization_id', $this->org->id)

@@ -69,14 +69,28 @@ class QuotasAndCeilingsSeeder extends Seeder
 
         $year = (int) now()->year;
 
-        // Office ceilings — one per discipline for the org.
+        // JORD-77: seed one office_ceiling row per (office_user × discipline).
+        // The "office" is an applicant User; each Organization can host
+        // multiple. Every applicant in the org gets the same seeded
+        // defaults; admins can override per-office via the admin UI.
+        $applicants = \App\Models\User::where('organization_id', $org->id)
+            ->where('role', 'applicant')->get();
         $officeCount = 0;
-        foreach (self::OFFICE_CEILING as $discipline => $m2) {
-            OfficeCeiling::updateOrCreate(
-                ['organization_id' => $org->id, 'discipline' => $discipline, 'year' => $year],
-                ['m2_allowed' => $m2],
-            );
-            $officeCount++;
+        foreach ($applicants as $applicant) {
+            foreach (self::OFFICE_CEILING as $discipline => $m2) {
+                OfficeCeiling::updateOrCreate(
+                    [
+                        'office_user_id' => $applicant->id,
+                        'discipline'     => $discipline,
+                        'year'           => $year,
+                    ],
+                    [
+                        'organization_id' => $org->id, // denorm for legacy queries
+                        'm2_allowed'      => $m2,
+                    ],
+                );
+                $officeCount++;
+            }
         }
 
         // Engineer quotas — one row per engineer keyed on their normalized

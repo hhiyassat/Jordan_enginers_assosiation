@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class OfficeCoalitionMember extends Model
 {
-    protected $fillable = ['office_coalition_id', 'organization_id', 'joined_at', 'left_at'];
+    protected $fillable = ['office_coalition_id', 'organization_id', 'office_user_id', 'joined_at', 'left_at'];
 
     protected $casts = [
         'joined_at' => 'datetime',

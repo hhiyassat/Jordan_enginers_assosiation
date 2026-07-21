@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -15,7 +16,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class OfficeCeiling extends Model
 {
     protected $fillable = [
-        'organization_id', 'discipline', 'year', 'm2_allowed',
+        'organization_id', 'office_user_id', 'discipline', 'year', 'm2_allowed',
         // JORD-72: per-single-project cap per JEA p.129. Null = no cap.
         'per_project_cap_m2',
     ];
@@ -25,6 +26,12 @@ class OfficeCeiling extends Model
         'm2_allowed'         => 'integer',
         'per_project_cap_m2' => 'integer',
     ];
+
+    /** JORD-77: primary FK is office_user_id (per-office). */
+    public function officeUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'office_user_id');
+    }
 
     public function organization(): BelongsTo
     {
