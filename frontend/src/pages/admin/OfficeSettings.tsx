@@ -177,8 +177,22 @@ export function OfficeSettings() {
           <Back size={14} aria-hidden="true" />
           {isArabic ? 'كل المكاتب' : 'All offices'}
         </Link>
-        <h1 className="text-2xl font-bold text-gray-900">{draftOffice.name}</h1>
-        <p className="text-sm text-gray-500 mt-1 font-mono">{draftOffice.email}</p>
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">{draftOffice.name}</h1>
+            <p className="text-sm text-gray-500 mt-1 font-mono">{draftOffice.email}</p>
+          </div>
+          {/* JORD-79 UI: sibling page for recurring obligations. Kept
+              out of a tabbed component to avoid stealing focus from
+              the save-bar UX on this page. */}
+          <Link
+            to={`/admin/offices/${draftOffice.id}/dues`}
+            className="inline-flex items-center gap-1 px-4 py-2 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+            data-testid="dues-link"
+          >
+            💰 {isArabic ? 'الرسوم والاشتراكات' : 'Fees & Dues'}
+          </Link>
+        </div>
       </header>
 
       {savedBanner && (

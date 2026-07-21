@@ -196,4 +196,35 @@ export const adminApi = {
 
   updateOfficeEngineerSpecHead: (officeId: number, engineerId: number, is_specialization_head: boolean) =>
     request<{ message: string }>('PATCH', `/admin/offices/${officeId}/engineers/${engineerId}`, { is_specialization_head }),
+
+  /**
+   * JORD-79 UI: recurring obligations (F-04 registration + F-05 annual dues).
+   * Admin lists an office's dues, seeds registration on-demand, and marks
+   * paid with a payment reference. Late surcharge is computed server-side.
+   */
+  listOfficeDues: (officeId: number) => request<{
+    office: {
+      id: number; name: string;
+      office_classification: string | null;
+    };
+    obligations: Array<{
+      id: number;
+      kind: 'registration' | 'annual_dues';
+      period_year: number;
+      period_label_ar: string | null;
+      amount_jod: string;
+      due_date: string;
+      paid_at: string | null;
+      payment_reference: string | null;
+      late_surcharge_jod: string;
+      total_paid_jod: string | null;
+    }>;
+    rate_table: Record<string, { registration: number; annual_dues: number }>;
+  }>('GET', `/admin/offices/${officeId}/dues`),
+
+  seedOfficeRegistration: (officeId: number) =>
+    request<{ message: string }>('POST', `/admin/offices/${officeId}/dues/register`, {}),
+
+  payDue: (obligationId: number, payment_reference: string) =>
+    request<{ message: string }>('POST', `/admin/dues/${obligationId}/pay`, { payment_reference }),
 };
