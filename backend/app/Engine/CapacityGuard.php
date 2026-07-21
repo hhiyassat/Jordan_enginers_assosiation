@@ -96,7 +96,13 @@ class CapacityGuard
             );
         }
 
-        $officeRem = $this->ledger->remainingOfficeCeiling($app->organization_id, $discipline, $year);
+        // JORD-71: pass governorate so the ledger can apply the +10%
+        // overflow when this office has hit 90% in that governorate.
+        // Absent governorate → no overflow (whole-org check only).
+        $governorate = is_string($data['governorate'] ?? null) ? $data['governorate'] : null;
+        $officeRem = $this->ledger->remainingOfficeCeiling(
+            $app->organization_id, $discipline, $year, $governorate,
+        );
         if ($officeRem !== null && $officeRem < $areaI) {
             $errors['office_ceiling'] = sprintf(
                 'سقف المكتب السنوي لاختصاص %s غير كافٍ (المتبقي %d م²، والمطلوب %d م²).',

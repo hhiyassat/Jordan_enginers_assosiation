@@ -96,6 +96,14 @@ class QuotaLedger
                 'organization_id' => $app->organization_id,
                 'year'            => (int) now()->year,
                 'm2'              => (int) $area,
+                // JORD-71: governorate lets the 90%→+10% overflow rule
+                // scope by governorate. Nullable when the form doesn't
+                // ask (older services or non-drawings) — those rows
+                // don't count toward any governorate's 90% trigger,
+                // which is the intentionally-conservative default.
+                'governorate'     => is_string($data['governorate'] ?? null)
+                    ? $data['governorate']
+                    : null,
             ],
         );
     }
@@ -144,14 +152,24 @@ class QuotaLedger
     /**
      * Same shape for the office-level ceiling.
      *
-     * Applies the JORD-70 office boost stack (all opt-in flags on
-     * Organization): +5% award, +5% bit-khibra, +5% ISO. Stacks
-     * additively per the manual ("احتساب 5% ... احتساب 5% ..."):
-     * an office with all three earns +15% (1.15×) on top of the
-     * base ceiling — not multiplicatively (which would be 1.157625).
+     * Applies:
+     *   • JORD-70 office boost stack (award / bit-khibra / ISO,
+     *     additive +5% each per manual quotes).
+     *   • JORD-71 governorate-scoped +10% overflow when the office
+     *     has already consumed ≥90% of its ceiling in the passed
+     *     governorate. Applied ONLY to the governorate that hit
+     *     90% — other governorates keep the base ceiling.
+     *
+     * When `$governorate` is null the JORD-71 overflow does not fire
+     * (whole-org remaining, no per-governorate accounting). Pass
+     * governorate from CapacityGuard's data.governorate to activate it.
      */
-    public function remainingOfficeCeiling(int $organizationId, string $discipline, int $year): ?int
-    {
+    public function remainingOfficeCeiling(
+        int $organizationId,
+        string $discipline,
+        int $year,
+        ?string $governorate = null,
+    ): ?int {
         $discipline = Disciplines::normalize($discipline);
         $ceiling = OfficeCeiling::where('organization_id', $organizationId)
             ->where('discipline', $discipline)
@@ -164,6 +182,20 @@ class QuotaLedger
             + ($org && $org->has_excellence_award ? 0.05 : 0.0)
             + ($org && $org->is_bit_khibra        ? 0.05 : 0.0)
             + ($org && $org->has_iso_cert         ? 0.05 : 0.0);
+
+        // JORD-71: governorate-scoped 90% → +10% overflow.
+        if ($governorate !== null) {
+            $governorateConsumed = (int) QuotaConsumption::where('organization_id', $organizationId)
+                ->where('discipline', $discipline)
+                ->where('year', $year)
+                ->where('governorate', $governorate)
+                ->sum('m2');
+            $baseForGovTrigger = (int) floor($ceiling->m2_allowed * $boostMultiplier);
+            if ($baseForGovTrigger > 0 && $governorateConsumed >= (int) ceil($baseForGovTrigger * 0.90)) {
+                $boostMultiplier += 0.10;
+            }
+        }
+
         $effective = (int) floor($ceiling->m2_allowed * $boostMultiplier);
 
         $consumed = QuotaConsumption::where('organization_id', $organizationId)

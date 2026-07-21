@@ -16,7 +16,7 @@ class QuotaConsumption extends Model
 {
     protected $fillable = [
         'application_id', 'engineer_id', 'organization_id',
-        'discipline', 'year', 'm2',
+        'discipline', 'governorate', 'year', 'm2',
     ];
 
     protected $casts = [
