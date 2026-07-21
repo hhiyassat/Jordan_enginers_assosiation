@@ -8,6 +8,7 @@ use App\Models\Application;
 use App\Models\Engineer;
 use App\Models\EngineerDisciplineQuota;
 use App\Models\OfficeCeiling;
+use App\Models\Organization;
 use App\Models\QuotaConsumption;
 use Illuminate\Support\Facades\Log;
 
@@ -111,6 +112,10 @@ class QuotaLedger
 
     /**
      * Total m² an engineer has left in the given (discipline, year).
+     *
+     * Applies the JORD-70 engineer-level boost: +20% when the engineer
+     * is registered as head-of-specialization for their office.
+     *
      * Returns null when there's no quota row at all — callers treat
      * null as "no cap configured" (allow) rather than "0 cap" (block),
      * so a fresh org without seeded quotas doesn't immediately reject
@@ -125,16 +130,25 @@ class QuotaLedger
             ->first();
         if (!$quota) return null;
 
+        $boostMultiplier = 1.0 + ($engineer->is_specialization_head ? 0.20 : 0.0);
+        $effective = (int) floor($quota->m2_allowed * $boostMultiplier);
+
         $consumed = QuotaConsumption::where('engineer_id', $engineer->id)
             ->where('discipline', $discipline)
             ->where('year', $year)
             ->sum('m2');
 
-        return max(0, $quota->m2_allowed - (int) $consumed);
+        return max(0, $effective - (int) $consumed);
     }
 
     /**
      * Same shape for the office-level ceiling.
+     *
+     * Applies the JORD-70 office boost stack (all opt-in flags on
+     * Organization): +5% award, +5% bit-khibra, +5% ISO. Stacks
+     * additively per the manual ("احتساب 5% ... احتساب 5% ..."):
+     * an office with all three earns +15% (1.15×) on top of the
+     * base ceiling — not multiplicatively (which would be 1.157625).
      */
     public function remainingOfficeCeiling(int $organizationId, string $discipline, int $year): ?int
     {
@@ -145,12 +159,19 @@ class QuotaLedger
             ->first();
         if (!$ceiling) return null;
 
+        $org = Organization::find($organizationId);
+        $boostMultiplier = 1.0
+            + ($org && $org->has_excellence_award ? 0.05 : 0.0)
+            + ($org && $org->is_bit_khibra        ? 0.05 : 0.0)
+            + ($org && $org->has_iso_cert         ? 0.05 : 0.0);
+        $effective = (int) floor($ceiling->m2_allowed * $boostMultiplier);
+
         $consumed = QuotaConsumption::where('organization_id', $organizationId)
             ->where('discipline', $discipline)
             ->where('year', $year)
             ->sum('m2');
 
-        return max(0, $ceiling->m2_allowed - (int) $consumed);
+        return max(0, $effective - (int) $consumed);
     }
 
     private function debug(Application $app, string $reason): void

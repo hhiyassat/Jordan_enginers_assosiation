@@ -10,9 +10,20 @@ class Organization extends Model
 {
     use SoftDeletes;
 
-    protected $fillable = ['name_ar', 'name_en', 'slug', 'logo_url', 'config', 'is_active'];
+    protected $fillable = [
+        'name_ar', 'name_en', 'slug', 'logo_url', 'config', 'is_active',
+        // JORD-70: ceiling-boost flags — default false so existing orgs
+        // don't silently gain 5-15% extra quota after the migration.
+        'has_excellence_award', 'is_bit_khibra', 'has_iso_cert',
+    ];
 
-    protected $casts = ['config' => 'array', 'is_active' => 'boolean'];
+    protected $casts = [
+        'config'               => 'array',
+        'is_active'            => 'boolean',
+        'has_excellence_award' => 'boolean',
+        'is_bit_khibra'        => 'boolean',
+        'has_iso_cert'         => 'boolean',
+    ];
 
     public function users(): HasMany        { return $this->hasMany(User::class); }
     public function services(): HasMany     { return $this->hasMany(ServiceDefinition::class); }

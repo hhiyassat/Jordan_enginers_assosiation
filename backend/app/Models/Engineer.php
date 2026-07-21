@@ -28,11 +28,15 @@ class Engineer extends Model
         'membership_number', 'specialization',
         'phone', 'email',
         'annual_quota_m2', 'is_active',
+        // JORD-70: +20% quota boost when this engineer heads the office's
+        // specialization for their discipline. Default false.
+        'is_specialization_head',
     ];
 
     protected $casts = [
-        'annual_quota_m2' => 'integer',
-        'is_active'       => 'boolean',
+        'annual_quota_m2'        => 'integer',
+        'is_active'              => 'boolean',
+        'is_specialization_head' => 'boolean',
     ];
 
     /** @return BelongsTo<User, $this> */
