@@ -11,8 +11,8 @@ from wherever review lands.
 - **Branch:** `feat/jord-84-85-86-office-fees-polish`
 - **PR:** https://github.com/hhiyassat/code-generation/pull/2 (open, ready for review)
 - **Base:** `main`
-- **Commits on branch:** 8 (each groups one logical batch of tickets)
-- **Diff stats vs main:** 70 files changed, 3469 insertions, 328 deletions
+- **Commits on branch:** 11 (each groups one logical batch of tickets)
+- **Diff stats vs main:** 71 files changed, +3633 / -330 lines
 - **Test totals:** backend `545 passed / 2036 assertions`, frontend `410 passed`, build green
 - **`main` is untouched.** This branch is the only landing path per project policy.
 
@@ -32,7 +32,7 @@ from wherever review lands.
 | `fab2963` | Code-quality bulk | JORD-69, JORD-70, JORD-71, JORD-72, JORD-73, JORD-74, JORD-75, JORD-76, JORD-77, JORD-78, JORD-79, JORD-81 |
 | `d178cbc` | Auth stability + CSP delivery | JORD-52, JORD-82, JORD-83 (PM) |
 | `2d79ed6` | UI bug hunt | JORD-55, JORD-56, JORD-61, JORD-64, JORD-65, JORD-66, JORD-67, JORD-68 |
-| `<final>`  | Login polish (this commit) | JORD-51 |
+| `451b80d` | Login polish + this handoff doc | JORD-51 |
 
 **Total tickets addressed on the branch:** ~40.
 
