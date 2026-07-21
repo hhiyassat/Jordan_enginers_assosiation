@@ -32,10 +32,38 @@ class FeeCalculator
 
     public function calculate(array $formData): float
     {
+        // Backwards-compatible entry: return the total only. Callers
+        // that need per-line breakdown use calculateBreakdown() below.
+        return $this->calculateBreakdown($formData)['total'];
+    }
+
+    /**
+     * JORD-65: itemized calculation for the UI's fee preview.
+     *
+     * Returns:
+     *   [
+     *     'base'       => 500.00,                 // primary fee (type-driven)
+     *     'surcharges' => [
+     *       ['code' => 'syndicate_1pct',  'label_ar' => '...', 'label_en' => '...', 'amount' => 5.00],
+     *       ['code' => 'drawing_review',  'label_ar' => '...', 'label_en' => '...', 'amount' => 12.00],
+     *     ],
+     *     'total'      => 517.00,                 // base + sum(surcharges)
+     *     'currency'   => 'JOD',
+     *   ]
+     *
+     * When schema.fee.surcharges is missing / empty the shape stays the
+     * same but the surcharges array is empty. The old calculate()
+     * behaviour is preserved verbatim — no caller change forced.
+     *
+     * @return array{base: float, surcharges: list<array<string, mixed>>, total: float, currency: string}
+     */
+    public function calculateBreakdown(array $formData): array
+    {
         $fee = $this->service->getFeeConfig();
+        $currency = strtoupper((string) ($this->service->currency ?? 'JOD'));
 
         if (empty($fee)) {
-            return 0.0;
+            return ['base' => 0.0, 'surcharges' => [], 'total' => 0.0, 'currency' => $currency];
         }
 
         // Currency mismatch is a schema-authoring error, not a runtime
@@ -54,15 +82,76 @@ class FeeCalculator
             );
         }
 
-        $amount = match ($fee['type'] ?? 'fixed') {
+        $baseDecimal = match ($fee['type'] ?? 'fixed') {
             'tiered'   => $this->tiered($fee, $formData),
             'formula'  => $this->formula($fee, $formData),
             'matrix'   => $this->matrix($fee, $formData),
             'per_unit' => $this->perUnit($fee, $formData),
             default    => $this->toDecimal($fee['amount'] ?? 0),
         };
+        $base = $this->finalize($baseDecimal);
 
-        return $this->finalize($amount);
+        // Surcharges are optional; a service without any collapses to
+        // total=base, matching the old single-line behavior exactly.
+        $surcharges = [];
+        $totalDecimal = $baseDecimal;
+        foreach ($fee['surcharges'] ?? [] as $s) {
+            if (!is_array($s)) continue;
+            $amountDecimal = $this->surchargeAmount($s, $baseDecimal, $formData);
+            if ($amountDecimal === null) continue;
+
+            $surcharges[] = [
+                'code'     => (string) ($s['code'] ?? ''),
+                'kind'     => (string) ($s['kind'] ?? ''),
+                'label_ar' => (string) ($s['label_ar'] ?? ''),
+                'label_en' => (string) ($s['label_en'] ?? ''),
+                'amount'   => $this->finalize($amountDecimal),
+            ];
+            $totalDecimal = bcadd($totalDecimal, $amountDecimal, self::CALC_SCALE);
+        }
+
+        return [
+            'base'       => $base,
+            'surcharges' => $surcharges,
+            'total'      => $this->finalize($totalDecimal),
+            'currency'   => $currency,
+        ];
+    }
+
+    /**
+     * Compute the amount for a single surcharge entry.
+     * Returns the decimal string, or null to skip the entry entirely
+     * (unknown kind / malformed shape → not counted, no throw).
+     *
+     * Supported kinds:
+     *   percent_of_base — amount = base × rate  (rate as fraction, 0.01 = 1%)
+     *   per_unit        — amount = form[basis] × rate  (with optional min/max)
+     */
+    private function surchargeAmount(array $s, string $baseDecimal, array $formData): ?string
+    {
+        $kind = $s['kind'] ?? null;
+
+        if ($kind === 'percent_of_base') {
+            $rate = $this->toDecimal($s['rate'] ?? 0);
+            return bcmul($baseDecimal, $rate, self::CALC_SCALE);
+        }
+
+        if ($kind === 'per_unit') {
+            // Reuse perUnit() by synthesizing a fee-shaped array. Keeps the
+            // capping / floor logic in one place.
+            $synthetic = [
+                'basis' => $s['basis'] ?? null,
+                'rate'  => $s['rate']  ?? 0,
+            ];
+            if (array_key_exists('min', $s)) $synthetic['min'] = $s['min'];
+            if (array_key_exists('max', $s)) $synthetic['max'] = $s['max'];
+            return $this->perUnit($synthetic, $formData);
+        }
+
+        // Unknown kind — silently skip. Schema validator refuses these
+        // at save time; this branch only fires if a schema was patched
+        // by hand outside the validation path.
+        return null;
     }
 
     /**

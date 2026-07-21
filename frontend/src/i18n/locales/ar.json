@@ -375,6 +375,8 @@
     "summaryReference": "رقم الطلب",
     "summaryService": "الخدمة",
     "summaryFee": "الرسوم",
+    "summaryBaseFee": "الرسوم الأساسية",
+    "summaryTotalFee": "الإجمالي",
     "summaryDocs": "المستندات المرفوعة",
     "confirmHeading": "تأكيد التقديم",
     "confirmBody": "بعد التقديم، لن تتمكن من تعديل البيانات إلا بعد طلب التعديل من الجهة المختصة.",

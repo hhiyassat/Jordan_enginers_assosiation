@@ -197,6 +197,50 @@ class SchemaStructureValidatorTest extends TestCase
         $this->assertNull($errors);
     }
 
+    /**
+     * JORD-65: surcharge shape validation. Malformed surcharges silently
+     * dropped by the engine — so we catch them at schema-save time.
+     */
+    public function test_surcharge_with_unknown_kind_is_rejected(): void
+    {
+        $schema = $this->baseSchema();
+        $schema['fee'] = [
+            'type' => 'fixed', 'amount' => 100,
+            'surcharges' => [['kind' => 'garbage', 'rate' => 0.01,
+                              'label_ar' => 'م', 'label_en' => 'm']],
+        ];
+        $errors = (new SchemaStructureValidator())->validate($schema);
+        $this->assertIsArray($errors);
+        $this->assertArrayHasKey('schema.fee.surcharges[0].kind', $errors);
+    }
+
+    public function test_surcharge_per_unit_without_basis_is_rejected(): void
+    {
+        $schema = $this->baseSchema();
+        $schema['fee'] = [
+            'type' => 'fixed', 'amount' => 100,
+            'surcharges' => [['kind' => 'per_unit', 'rate' => 0.04,
+                              'label_ar' => 'م', 'label_en' => 'm']],
+        ];
+        $errors = (new SchemaStructureValidator())->validate($schema);
+        $this->assertIsArray($errors);
+        $this->assertArrayHasKey('schema.fee.surcharges[0].basis', $errors);
+    }
+
+    public function test_surcharge_percent_of_base_without_basis_is_ok(): void
+    {
+        // percent_of_base doesn't need a form-field basis — it multiplies
+        // the base fee amount by its rate. Only per_unit requires basis.
+        $schema = $this->baseSchema();
+        $schema['fee'] = [
+            'type' => 'fixed', 'amount' => 100,
+            'surcharges' => [['kind' => 'percent_of_base', 'rate' => 0.01,
+                              'label_ar' => 'م', 'label_en' => 'm']],
+        ];
+        $errors = (new SchemaStructureValidator())->validate($schema);
+        $this->assertNull($errors);
+    }
+
     public function test_applicant_role_is_accepted_on_submission_stage(): void
     {
         $schema = $this->baseSchema();

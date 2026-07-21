@@ -375,6 +375,8 @@
     "summaryReference": "Reference",
     "summaryService": "Service",
     "summaryFee": "Fee",
+    "summaryBaseFee": "Base fee",
+    "summaryTotalFee": "Total",
     "summaryDocs": "Uploaded documents",
     "confirmHeading": "Submit confirmation",
     "confirmBody": "Once submitted, you can only edit the data after a modifications request from the reviewer.",

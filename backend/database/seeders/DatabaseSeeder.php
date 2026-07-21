@@ -43,6 +43,11 @@ class DatabaseSeeder extends Seeder
             // JORD-64: excavation shoring per-m² fee (JEA p. 40) on
             // SRV-007/012. Independent of drawings — different services.
             ExcavationFeeSeeder::class,
+            // JORD-65: 1% syndicate surcharge + 40 fils/m² drawing review
+            // (JEA p. 96). Runs last so it can attach to any fee block
+            // the earlier seeders set (matrix on DRW-P-*, per_unit on
+            // DRW-P-006 + SRV-007/012).
+            FeeSurchargesSeeder::class,
             // JeaDrawingsSeeder omitted — its 7 DRW-* rows duplicate the
             // richer DRW-P-* set produced by ServicePlan2026Seeder + the
             // real workflows attached by CatalogWorkflowsSeeder.

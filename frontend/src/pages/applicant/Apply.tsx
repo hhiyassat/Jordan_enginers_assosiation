@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { applicationsApi, projectsApi, servicesApi } from '../../api/client';
+import type { FeeBreakdown } from '../../api/applications';
 import { DynamicForm, validateAll } from '../../engine/DynamicForm';
 import { DocumentUploader } from '../../engine/DocumentUploader';
 import type { Application, Project, ServiceDefinition, SchemaWorkflowStage } from '../../types';
@@ -77,6 +78,11 @@ export function Apply() {
   const [service, setService]         = useState<ServiceDefinition | null>(null);
   const [project, setProject]         = useState<Project | null>(null);
   const [application, setApplication] = useState<Application | null>(null);
+  // JORD-65: itemized fee breakdown for the review step. Populated by
+  // applicationsApi.get() which the backend serves live-computed off
+  // the app's stored data + service schema. Null before the applicant
+  // reaches the review step or when the service carries no fee.
+  const [feeBreakdown, setFeeBreakdown] = useState<FeeBreakdown | null>(null);
   const [formData, setFormData]       = useState<Record<string, unknown>>({});
   const [errors, setErrors]           = useState<Record<string, string>>({});
   // Errors that don't map to a schema field/document — project_id,
@@ -168,8 +174,27 @@ export function Apply() {
   const handleDocumentUploaded = async () => {
     if (!application) return;
     const r = await applicationsApi.get(application.id);
-    setApplication((r as { application: Application }).application);
+    setApplication(r.application);
+    // JORD-65: doc upload doesn't change the fee, but refresh anyway
+    // so if the applicant edits the form between uploads the review
+    // step reflects the latest breakdown from the server.
+    setFeeBreakdown(r.fee_breakdown ?? null);
   };
+
+  /**
+   * JORD-65: when the applicant lands on the review step, pull the
+   * live fee breakdown so the summary table can itemize base +
+   * surcharges instead of just showing the single fee_amount. We do
+   * this on step change (not on every render) so the breakdown reflects
+   * the CURRENT saved state — earlier steps have already persisted the
+   * form data via handleSaveDraft.
+   */
+  useEffect(() => {
+    if (step !== 'review' || !application) return;
+    applicationsApi.get(application.id)
+      .then(r => setFeeBreakdown(r.fee_breakdown ?? null))
+      .catch(() => setFeeBreakdown(null));
+  }, [step, application?.id]);
 
   /**
    * EDA-10 Correctable Defect (BUILD CONTRACT §3):
@@ -401,19 +426,54 @@ export function Apply() {
               <h2 id="step-review-title" className="text-white font-semibold text-sm">{t('apply.summaryHeading')}</h2>
             </div>
             <dl className="p-6 space-y-3">
-              {[
-                { label: t('apply.summaryReference'), value: application.reference_number, mono: true },
-                { label: t('apply.summaryService'),   value: schemaName },
-                { label: t('apply.summaryFee'),       value: `${application.fee_amount} ${service.currency}`, blue: true },
-                { label: t('apply.summaryDocs'),      value: String(application.documents?.length ?? 0) },
-              ].map(row => (
-                <div key={row.label} className="flex justify-between text-sm">
-                  <dt className="text-gray-500">{row.label}</dt>
-                  <dd className={`font-medium ${row.mono ? 'font-mono' : ''} ${row.blue ? 'text-blue-600' : ''}`}>
-                    {row.value}
+              <div className="flex justify-between text-sm">
+                <dt className="text-gray-500">{t('apply.summaryReference')}</dt>
+                <dd className="font-mono font-medium">{application.reference_number}</dd>
+              </div>
+              <div className="flex justify-between text-sm">
+                <dt className="text-gray-500">{t('apply.summaryService')}</dt>
+                <dd className="font-medium">{schemaName}</dd>
+              </div>
+
+              {/* JORD-65: itemized fee breakdown. Falls back to the
+                  single fee_amount row when the breakdown hasn't
+                  loaded yet or the service carries no fee. */}
+              {feeBreakdown && (feeBreakdown.surcharges.length > 0 || feeBreakdown.base > 0) ? (
+                <>
+                  <div className="flex justify-between text-sm pt-2 border-t border-gray-100">
+                    <dt className="text-gray-500">{t('apply.summaryBaseFee', { defaultValue: 'الرسوم الأساسية' })}</dt>
+                    <dd className="font-medium">{feeBreakdown.base.toFixed(2)} {feeBreakdown.currency}</dd>
+                  </div>
+                  {feeBreakdown.surcharges.map(s => (
+                    <div key={s.code} className="flex justify-between text-xs" data-testid={`surcharge-${s.code}`}>
+                      <dt className="text-gray-500">
+                        {isArabic ? s.label_ar : s.label_en}
+                      </dt>
+                      <dd className="font-medium text-gray-600">
+                        + {s.amount.toFixed(2)} {feeBreakdown.currency}
+                      </dd>
+                    </div>
+                  ))}
+                  <div className="flex justify-between text-sm pt-2 border-t border-gray-100">
+                    <dt className="text-gray-500 font-semibold">{t('apply.summaryTotalFee', { defaultValue: 'الإجمالي' })}</dt>
+                    <dd className="font-bold text-blue-600" data-testid="fee-total">
+                      {feeBreakdown.total.toFixed(2)} {feeBreakdown.currency}
+                    </dd>
+                  </div>
+                </>
+              ) : (
+                <div className="flex justify-between text-sm">
+                  <dt className="text-gray-500">{t('apply.summaryFee')}</dt>
+                  <dd className="font-medium text-blue-600">
+                    {application.fee_amount} {service.currency}
                   </dd>
                 </div>
-              ))}
+              )}
+
+              <div className="flex justify-between text-sm">
+                <dt className="text-gray-500">{t('apply.summaryDocs')}</dt>
+                <dd className="font-medium">{String(application.documents?.length ?? 0)}</dd>
+              </div>
             </dl>
           </div>
 

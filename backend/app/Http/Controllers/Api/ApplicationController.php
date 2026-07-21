@@ -100,10 +100,29 @@ class ApplicationController extends Controller
             $certificatePdfUrl = url("/api/v1/certificates/{$app->certificate->certificate_number}/pdf?token={$app->certificate->qr_token}");
         }
 
+        // JORD-65: itemized fee breakdown (base + surcharges + total).
+        // Live-computed from the app's stored form data + service fee
+        // schema; safe because the calculator is stateless and cheap.
+        // Frontend uses this to render the fee-preview line items on
+        // the review / summary screen. Returns null when the service
+        // has no fee config or the calc throws (a bad schema shouldn't
+        // 500 the whole show response — the applicant needs to see
+        // documents / status even if the fee is misauthored).
+        $feeBreakdown = null;
+        if ($service instanceof \App\Models\ServiceDefinition) {
+            try {
+                $feeBreakdown = (new \App\Engine\FeeCalculator($service))
+                    ->calculateBreakdown(is_array($app->data) ? $app->data : []);
+            } catch (\Throwable) {
+                $feeBreakdown = null;
+            }
+        }
+
         return response()->json([
             'application'         => $app,
             'available_actions'   => $available,
             'certificate_pdf_url' => $certificatePdfUrl,
+            'fee_breakdown'       => $feeBreakdown,
         ]);
     }
 

@@ -17,9 +17,33 @@ export interface StageAction {
   allowed_roles: string[];
 }
 
+/**
+ * JORD-65: itemized fee breakdown returned alongside the application
+ * by the show endpoint. Base is the primary fee (matrix / per_unit /
+ * fixed / tiered / formula lookup); surcharges are the JEA p.96 add-ons
+ * (1% syndicate, 40 fils/m² drawing review, etc); total = base + sum.
+ * All values are in `currency` (typically JOD).
+ */
+export interface FeeBreakdown {
+  base: number;
+  surcharges: Array<{
+    code: string;
+    kind: string;
+    label_ar: string;
+    label_en: string;
+    amount: number;
+  }>;
+  total: number;
+  currency: string;
+}
+
 export const applicationsApi = {
   list:   () => request<{ applications: Application[] }>('GET', '/applications'),
-  get:    (id: number) => request<{ application: Application; available_actions?: StageAction[] }>('GET', `/applications/${id}`),
+  get:    (id: number) => request<{
+    application: Application;
+    available_actions?: StageAction[];
+    fee_breakdown?: FeeBreakdown | null;
+  }>('GET', `/applications/${id}`),
   create: (service_code: string, data: Record<string, unknown>, project_id?: number) =>
     request<{ application: Application }>('POST', '/applications', {
       service_code, data,

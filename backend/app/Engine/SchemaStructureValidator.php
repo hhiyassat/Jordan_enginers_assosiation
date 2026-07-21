@@ -292,6 +292,43 @@ class SchemaStructureValidator
             }
         }
 
+        // JORD-65: surcharges are optional but if present must be an
+        // array of well-formed entries. Malformed surcharge shapes
+        // silently omit the line item — worse UX than a hard 422.
+        if (isset($schema['fee']['surcharges'])) {
+            if (!is_array($schema['fee']['surcharges'])) {
+                $this->errors['schema.fee.surcharges'] = 'حقل surcharges يجب أن يكون قائمة.';
+            } else {
+                $fieldIds = [];
+                if (isset($schema['fields']) && is_array($schema['fields'])) {
+                    foreach ($schema['fields'] as $f) {
+                        if (isset($f['id']) && is_string($f['id'])) $fieldIds[] = $f['id'];
+                    }
+                }
+                foreach ($schema['fee']['surcharges'] as $i => $s) {
+                    $prefix = "schema.fee.surcharges[$i]";
+                    if (!is_array($s)) {
+                        $this->errors[$prefix] = "surcharges[$i] يجب أن يكون كائناً.";
+                        continue;
+                    }
+                    $kind = $s['kind'] ?? null;
+                    if (!in_array($kind, ['percent_of_base', 'per_unit'], true)) {
+                        $this->errors[$prefix . '.kind'] = "surcharges[$i].kind يجب أن يكون percent_of_base أو per_unit.";
+                    }
+                    if (!isset($s['rate']) || !is_numeric($s['rate'])) {
+                        $this->errors[$prefix . '.rate'] = "surcharges[$i].rate رقم مطلوب.";
+                    }
+                    if ($kind === 'per_unit') {
+                        if (empty($s['basis']) || !is_string($s['basis'])) {
+                            $this->errors[$prefix . '.basis'] = "surcharges[$i].basis معرف حقل نصي مطلوب لسورشارج per_unit.";
+                        } elseif (!in_array($s['basis'], $fieldIds, true)) {
+                            $this->errors[$prefix . '.basis'] = "surcharges[$i].basis='{$s['basis']}' يشير إلى حقل غير معرف في fields.";
+                        }
+                    }
+                }
+            }
+        }
+
         // JORD-64: per_unit — must declare basis (form field) + rate.
         // Missing either produces silent zero fees, so require both.
         if ($feeType === 'per_unit') {
