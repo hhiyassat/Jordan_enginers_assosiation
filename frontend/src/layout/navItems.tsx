@@ -31,6 +31,11 @@ export function navItemsForRole(role: User['role'] | undefined): NavItem[] {
     items.push({ to: '/my-office',       labelKey: 'nav.myOffice',     Icon: Building2 });
   }
   if (role === 'staff' || role === 'auditor' || role === 'admin') {
+    // JORD-88 (PM): reviewer dashboard lane; queue is a second entry
+    // for the users who want the raw table.
+    if (role === 'staff' || role === 'auditor') {
+      items.push({ to: '/review/dashboard', labelKey: 'nav.reviewDashboard', Icon: LayoutDashboard });
+    }
     items.push({ to: '/review/queue',    labelKey: 'nav.review',       Icon: ShieldCheck });
   }
   if (role === 'admin' || role === 'superuser') {

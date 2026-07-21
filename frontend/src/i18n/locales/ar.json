@@ -9,6 +9,7 @@
     "myRequests": "طلباتي",
     "myOffice": "مكتبي",
     "review": "المراجعة",
+    "reviewDashboard": "لوحة تحكم المراجعة",
     "admin": "الإدارة",
     "servicesAdmin": "إدارة الخدمات",
     "newService": "خدمة جديدة",
@@ -112,6 +113,24 @@
       "service_code": "رمز الخدمة",
       "data":         "بيانات الطلب"
     }
+  },
+  "validation": {
+    "required":         "هذا الحقل مطلوب",
+    "invalidEmail":     "البريد الإلكتروني غير صحيح",
+    "mustBeNumber":     "يجب أن يكون رقماً",
+    "minValue":         "الحد الأدنى {{min}}",
+    "maxValue":         "الحد الأقصى {{max}}",
+    "invalidDate":      "تاريخ غير صحيح",
+    "invalidFormat":    "صيغة غير صحيحة",
+    "minLength":        "يجب أن يكون {{min}} خانة على الأقل",
+    "maxLength":        "الحد الأقصى {{max}} خانة",
+    "exactLength":      "يجب أن يكون {{n}} خانة",
+    "selectAtLeastOne": "يرجى اختيار خيار واحد على الأقل"
+  },
+  "dynamicForm": {
+    "defaultSection":   "البيانات",
+    "selectPlaceholder": "— اختر —",
+    "loading":          "جارٍ التحميل…"
   },
   "documentUploader": {
     "required":    "إلزامي",

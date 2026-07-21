@@ -141,6 +141,10 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'token.inactivity', 'password.p
 
     Route::middleware('role:staff,auditor,admin')->group(function () {
         // FR-008 to FR-010: Review workflow
+        // JORD-88 (PM): reviewer dashboard summary. Same role gate as
+        // the queue — staff / auditor / admin. Response is a compact
+        // stats blob + two lists (recent decisions + my in-progress).
+        Route::get('review/dashboard',            [ApplicationController::class, 'reviewDashboard']);
         Route::get('review/queue',                [ApplicationController::class, 'reviewQueue']);
         Route::post('applications/{id}/claim',    [ApplicationController::class, 'claim']);
         Route::post('applications/{id}/decide',   [ApplicationController::class, 'decide']);

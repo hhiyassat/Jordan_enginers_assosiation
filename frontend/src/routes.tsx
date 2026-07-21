@@ -27,6 +27,7 @@ const MyOffice                = React.lazy(() => import('./pages/applicant/MyOff
 const ApplicationDetail       = React.lazy(() => import('./pages/applicant/ApplicationDetail').then(m => ({ default: m.ApplicationDetail })));
 const ReviewQueue             = React.lazy(() => import('./pages/reviewer/ReviewQueue').then(m => ({ default: m.ReviewQueue })));
 const ReviewPanel             = React.lazy(() => import('./pages/reviewer/ReviewPanel').then(m => ({ default: m.ReviewPanel })));
+const ReviewDashboard         = React.lazy(() => import('./pages/reviewer/ReviewDashboard').then(m => ({ default: m.ReviewDashboard })));
 const AdminDashboard          = React.lazy(() => import('./pages/admin/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
 const AdminApplications       = React.lazy(() => import('./pages/admin/AdminApplications').then(m => ({ default: m.AdminApplications })));
 const IntegrationCycles       = React.lazy(() => import('./pages/admin/IntegrationCycles').then(m => ({ default: m.IntegrationCycles })));
@@ -77,6 +78,10 @@ export function AppRoutes(): JSX.Element {
       {/* Reviewer — staff / auditor / admin. Applicants navigating here
           used to see the page render followed by a backend 403; now the
           SPA redirects them to / before the page mounts. */}
+      {/* JORD-88 (PM): reviewer landing page. HomeRedirect points
+          staff/auditor here so the queue is one click away instead
+          of the entry point. */}
+      <Route path="/review/dashboard"  element={<RequireReviewer><Layout><ReviewDashboard /></Layout></RequireReviewer>} />
       <Route path="/review/queue"      element={<RequireReviewer><Layout><ReviewQueue /></Layout></RequireReviewer>} />
       <Route path="/review/:id"        element={<RequireReviewer><Layout><ReviewPanel /></Layout></RequireReviewer>} />
 

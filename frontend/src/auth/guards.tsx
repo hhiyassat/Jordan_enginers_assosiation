@@ -95,6 +95,9 @@ export function HomeRedirect(): JSX.Element {
   if (!user) return <Navigate to="/login" replace />;
   if (user.role === 'superuser')                        return <Navigate to="/admin/users" replace />;
   if (user.role === 'admin')                            return <Navigate to="/admin" replace />;
-  if (user.role === 'staff' || user.role === 'auditor') return <Navigate to="/review/queue" replace />;
+  // JORD-88 (PM): reviewers land on their dashboard, not straight
+  // on the queue table. The dashboard has a prominent "Open queue"
+  // CTA so the previous entry point is one click away.
+  if (user.role === 'staff' || user.role === 'auditor') return <Navigate to="/review/dashboard" replace />;
   return <Navigate to="/dashboard" replace />;
 }

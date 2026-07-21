@@ -22,16 +22,17 @@ describe('navItemsForRole', () => {
     expect(links).toEqual(['/dashboard', '/services', '/my-applications', '/my-office']);
   });
 
-  it('gives staff only the review lane — no admin surface', () => {
+  it('gives staff only the review lanes — no admin surface', () => {
     const links = paths('staff');
-    expect(links).toEqual(['/review/queue']);
+    // JORD-88: reviewers now get both the dashboard and the queue.
+    expect(links).toEqual(['/review/dashboard', '/review/queue']);
     expect(links).not.toContain('/admin');
     expect(links).not.toContain('/admin/services');
     expect(links).not.toContain('/admin/users');
   });
 
-  it('gives auditor only the review lane — no admin surface', () => {
-    expect(paths('auditor')).toEqual(['/review/queue']);
+  it('gives auditor only the review lanes — no admin surface', () => {
+    expect(paths('auditor')).toEqual(['/review/dashboard', '/review/queue']);
   });
 
   it('gives admin review + every admin lane including user management', () => {

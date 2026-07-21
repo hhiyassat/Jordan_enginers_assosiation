@@ -22,6 +22,7 @@ export { engineersApi } from './engineers';
 export { applicationsApi } from './applications';
 export type { StageAction } from './applications';
 export { reviewApi } from './review';
+export type { ReviewDashboardResponse } from './review';
 export { integrationApi } from './integration';
 export type { IntegrationCycle } from './integration';
 export { adminApi } from './admin';

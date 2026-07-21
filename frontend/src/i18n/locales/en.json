@@ -9,6 +9,7 @@
     "myRequests": "My Requests",
     "myOffice": "My Office",
     "review": "Review",
+    "reviewDashboard": "Review Dashboard",
     "admin": "Admin",
     "servicesAdmin": "Services",
     "newService": "New Service",
@@ -112,6 +113,24 @@
       "service_code": "Service code",
       "data":         "Request data"
     }
+  },
+  "validation": {
+    "required":         "This field is required",
+    "invalidEmail":     "Invalid email address",
+    "mustBeNumber":     "Must be a number",
+    "minValue":         "Minimum value is {{min}}",
+    "maxValue":         "Maximum value is {{max}}",
+    "invalidDate":      "Invalid date",
+    "invalidFormat":    "Invalid format",
+    "minLength":        "Minimum {{min}} characters",
+    "maxLength":        "Maximum {{max}} characters",
+    "exactLength":      "Must be exactly {{n}} characters",
+    "selectAtLeastOne": "Select at least one option"
+  },
+  "dynamicForm": {
+    "defaultSection":   "Details",
+    "selectPlaceholder": "— Select —",
+    "loading":          "Loading…"
   },
   "documentUploader": {
     "required":    "Required",

@@ -158,7 +158,10 @@ export function Apply() {
     // instead of just the first one the backend rejected. Backend
     // still validates on submit — this is an early exit, not a
     // replacement.
-    const preflight = validateAll(service.schema, formData, 'ar');
+    // JORD-93: validateAll now defaults to the current i18n language,
+    // so English users see English validation messages when a required
+    // field is empty.
+    const preflight = validateAll(service.schema, formData);
     if (!preflight.valid) {
       setErrors(preflight.errors);
       setOtherErrors({});
