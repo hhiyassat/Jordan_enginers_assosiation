@@ -137,4 +137,35 @@ describe('ServiceFeesAdmin (JORD-85)', () => {
     expect(screen.queryByTestId('fee-row-1')).toBeNull();
     expect(screen.getByTestId('fee-row-2')).toBeInTheDocument();
   });
+
+  it('sorts by clicking the Code column header (asc → desc → off)', async () => {
+    mockList.mockResolvedValue({ fees: [
+      baseRow({ id: 1, code: 'MSC-003' }),
+      baseRow({ id: 2, code: 'MSC-001' }),
+      baseRow({ id: 3, code: 'MSC-002' }),
+    ]});
+    render(<MemoryRouter><ServiceFeesAdmin /></MemoryRouter>);
+    await waitFor(() => expect(screen.getByTestId('fee-row-1')).toBeInTheDocument());
+
+    // Default initial sort is 'code' asc (per hook init).
+    const rowsAsc = screen.getAllByTestId(/^fee-row-/).map(el => el.getAttribute('data-testid'));
+    expect(rowsAsc).toEqual(['fee-row-2', 'fee-row-3', 'fee-row-1']);
+
+    // Click flips to desc.
+    await userEvent.click(screen.getByTestId('sort-header-code').querySelector('button')!);
+    const rowsDesc = screen.getAllByTestId(/^fee-row-/).map(el => el.getAttribute('data-testid'));
+    expect(rowsDesc).toEqual(['fee-row-1', 'fee-row-3', 'fee-row-2']);
+  });
+
+  it('CSV export button is present when there are rows and hidden when empty', async () => {
+    mockList.mockResolvedValue({ fees: [baseRow({ id: 1 })] });
+    const { unmount } = render(<MemoryRouter><ServiceFeesAdmin /></MemoryRouter>);
+    await waitFor(() => expect(screen.getByTestId('fees-export-csv')).toBeInTheDocument());
+    unmount();
+
+    mockList.mockResolvedValue({ fees: [] });
+    render(<MemoryRouter><ServiceFeesAdmin /></MemoryRouter>);
+    await waitFor(() => expect(screen.getByTestId('fees-empty')).toBeInTheDocument());
+    expect(screen.queryByTestId('fees-export-csv')).toBeNull();
+  });
 });

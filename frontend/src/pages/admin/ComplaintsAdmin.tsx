@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AlertTriangle, ChevronDown, CheckCircle2, XCircle, Gavel, Info } from 'lucide-react';
+import { AlertTriangle, ChevronDown, CheckCircle2, Download, XCircle, Gavel, Info } from 'lucide-react';
 import { adminApi } from '../../api/client';
+import { downloadCsv } from '../../utils/csv';
 
 /**
  * ComplaintsAdmin — JORD-81 UI
@@ -112,26 +113,55 @@ export function ComplaintsAdmin() {
         </div>
       )}
 
-      <div className="flex gap-1 mb-4 border-b border-gray-200" data-testid="filter-tabs">
-        {filterTabs.map(t => {
-          const count = t === 'all' ? complaints.length : complaints.filter(c => c.status === t).length;
-          const active = filter === t;
-          return (
-            <button
-              key={t}
-              type="button"
-              onClick={() => setFilter(t)}
-              className={`px-3 py-2 text-sm border-b-2 transition-colors ${
-                active
-                  ? 'border-jea-primary text-jea-primary font-semibold'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
-              data-testid={`filter-${t}`}
-            >
-              {tabLabelAr[t]} <span className="text-xs opacity-60">({count})</span>
-            </button>
-          );
-        })}
+      <div className="flex items-center justify-between mb-4 border-b border-gray-200">
+        <div className="flex gap-1" data-testid="filter-tabs">
+          {filterTabs.map(t => {
+            const count = t === 'all' ? complaints.length : complaints.filter(c => c.status === t).length;
+            const active = filter === t;
+            return (
+              <button
+                key={t}
+                type="button"
+                onClick={() => setFilter(t)}
+                className={`px-3 py-2 text-sm border-b-2 transition-colors ${
+                  active
+                    ? 'border-jea-primary text-jea-primary font-semibold'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+                data-testid={`filter-${t}`}
+              >
+                {tabLabelAr[t]} <span className="text-xs opacity-60">({count})</span>
+              </button>
+            );
+          })}
+        </div>
+        {filtered.length > 0 && (
+          <button
+            type="button"
+            onClick={() => downloadCsv(
+              `complaints-${new Date().toISOString().slice(0, 10)}`,
+              filtered,
+              [
+                { header: 'ID',            get: c => c.id },
+                { header: 'Kind',          get: c => c.kind },
+                { header: 'Status',        get: c => c.status },
+                { header: 'Description',   get: c => c.description },
+                { header: 'Target office', get: c => c.target_office?.name ?? '' },
+                { header: 'Reporter',      get: c => c.reporter?.name ?? c.reporter_display ?? '' },
+                { header: 'Filed at',      get: c => c.created_at },
+                { header: 'Deadline',      get: c => c.investigation_deadline },
+                { header: 'Decided at',    get: c => c.decided_at ?? '' },
+                { header: 'Sanctions',     get: c => c.sanctions.map(s => s.kind).join(';') },
+              ],
+            )}
+            data-testid="complaints-export-csv"
+            className="mb-1 inline-flex items-center gap-1 px-2.5 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50"
+            title={isArabic ? 'تصدير CSV' : 'Export CSV'}
+          >
+            <Download size={12} aria-hidden="true" />
+            {isArabic ? 'تصدير' : 'CSV'}
+          </button>
+        )}
       </div>
 
       {filtered.length === 0 ? (

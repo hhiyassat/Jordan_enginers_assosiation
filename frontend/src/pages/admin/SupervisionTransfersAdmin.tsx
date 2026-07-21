@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AlertCircle, ArrowRightLeft, Building2, CheckCircle2, Clock, XCircle } from 'lucide-react';
+import { AlertCircle, ArrowRightLeft, Building2, CheckCircle2, Clock, Download, XCircle } from 'lucide-react';
 import { adminApi } from '../../api/client';
+import { downloadCsv } from '../../utils/csv';
 
 /**
  * SupervisionTransfersAdmin — JORD-83 UI
@@ -106,26 +107,56 @@ export function SupervisionTransfersAdmin() {
         </div>
       )}
 
-      <div className="flex gap-1 mb-4 border-b border-gray-200" data-testid="filter-tabs">
-        {filterTabs.map(t => {
-          const count = t === 'all' ? transfers.length : transfers.filter(x => x.status === t).length;
-          const active = filter === t;
-          return (
-            <button
-              key={t}
-              type="button"
-              onClick={() => setFilter(t)}
-              className={`px-3 py-2 text-sm border-b-2 transition-colors ${
-                active
-                  ? 'border-jea-primary text-jea-primary font-semibold'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
-              data-testid={`filter-${t}`}
-            >
-              {tabLabelAr[t]} <span className="text-xs opacity-60">({count})</span>
-            </button>
-          );
-        })}
+      <div className="flex items-center justify-between mb-4 border-b border-gray-200">
+        <div className="flex gap-1" data-testid="filter-tabs">
+          {filterTabs.map(t => {
+            const count = t === 'all' ? transfers.length : transfers.filter(x => x.status === t).length;
+            const active = filter === t;
+            return (
+              <button
+                key={t}
+                type="button"
+                onClick={() => setFilter(t)}
+                className={`px-3 py-2 text-sm border-b-2 transition-colors ${
+                  active
+                    ? 'border-jea-primary text-jea-primary font-semibold'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+                data-testid={`filter-${t}`}
+              >
+                {tabLabelAr[t]} <span className="text-xs opacity-60">({count})</span>
+              </button>
+            );
+          })}
+        </div>
+        {filtered.length > 0 && (
+          <button
+            type="button"
+            onClick={() => downloadCsv(
+              `supervision-transfers-${new Date().toISOString().slice(0, 10)}`,
+              filtered,
+              [
+                { header: 'ID',            get: t => t.id },
+                { header: 'Status',        get: t => t.status },
+                { header: 'Fee waived',    get: t => t.fee_waived ? 'yes' : 'no' },
+                { header: 'Reference',     get: t => t.application?.reference_number ?? '' },
+                { header: 'Service',       get: t => t.application?.service_definition?.name_en ?? t.application?.service_definition?.name_ar ?? '' },
+                { header: 'Source office', get: t => t.source_office?.name ?? '' },
+                { header: 'Target office', get: t => t.target_office?.name ?? '' },
+                { header: 'Created at',    get: t => t.created_at },
+                { header: 'Assigned at',   get: t => t.assigned_at ?? '' },
+                { header: 'Accepted at',   get: t => t.accepted_at ?? '' },
+                { header: 'Notes',         get: t => t.notes ?? '' },
+              ],
+            )}
+            data-testid="transfers-export-csv"
+            className="mb-1 inline-flex items-center gap-1 px-2.5 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50"
+            title={isArabic ? 'تصدير CSV' : 'Export CSV'}
+          >
+            <Download size={12} aria-hidden="true" />
+            {isArabic ? 'تصدير' : 'CSV'}
+          </button>
+        )}
       </div>
 
       {filtered.length === 0 ? (

@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AlertCircle, CheckCircle2, DollarSign, Lock, Search } from 'lucide-react';
+import { AlertCircle, CheckCircle2, DollarSign, Download, Lock, Search } from 'lucide-react';
 import { adminApi } from '../../api/client';
+import { useSortableRows } from '../../utils/useSortableRows';
+import { downloadCsv } from '../../utils/csv';
+import { SortHeader } from '../../utils/SortHeader';
 
 /**
  * ServiceFeesAdmin — JORD-85
@@ -105,6 +108,34 @@ export function ServiceFeesAdmin() {
   const placeholderCount = rows.filter(r => r.fee?.type === 'fixed'
     && Number(r.fee?.amount) === PLACEHOLDER_AMOUNT).length;
 
+  const sortColumns = useMemo(() => ([
+    { key: 'code'     as const, get: (r: FeeRow) => r.code },
+    { key: 'name'     as const, get: (r: FeeRow) => r.name_ar },
+    { key: 'type'     as const, get: (r: FeeRow) => r.fee?.type ?? '' },
+    { key: 'amount'   as const, get: (r: FeeRow) => r.fee?.amount ?? r.fee?.rate ?? null },
+    { key: 'currency' as const, get: (r: FeeRow) => r.fee?.currency ?? '' },
+  ]), []);
+  const { sorted, sortKey, sortDir, toggle } = useSortableRows(filtered, sortColumns, 'code', 'asc');
+
+  const handleExport = () => {
+    downloadCsv(
+      `service-fees-${new Date().toISOString().slice(0, 10)}`,
+      sorted,
+      [
+        { header: 'Code',     get: r => r.code },
+        { header: 'Category', get: r => r.parent_code ?? '' },
+        { header: 'Name AR',  get: r => r.name_ar },
+        { header: 'Name EN',  get: r => r.name_en },
+        { header: 'Status',   get: r => r.status },
+        { header: 'Fee type', get: r => r.fee?.type ?? '' },
+        { header: 'Amount',   get: r => r.fee?.amount ?? '' },
+        { header: 'Basis',    get: r => r.fee?.basis ?? '' },
+        { header: 'Rate',     get: r => r.fee?.rate ?? '' },
+        { header: 'Currency', get: r => r.fee?.currency ?? '' },
+      ],
+    );
+  };
+
   const updateDraft = (id: number, patch: Partial<Draft>) => {
     setDrafts(prev => ({ ...prev, [id]: { ...prev[id], ...patch } }));
   };
@@ -202,27 +233,40 @@ export function ServiceFeesAdmin() {
             </button>
           ))}
         </div>
+        {sorted.length > 0 && (
+          <button
+            type="button"
+            onClick={handleExport}
+            data-testid="fees-export-csv"
+            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50"
+            title={isArabic ? 'تصدير CSV' : 'Export CSV'}
+          >
+            <Download size={12} aria-hidden="true" />
+            {isArabic ? 'تصدير' : 'CSV'}
+          </button>
+        )}
       </section>
 
       <section className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-        {filtered.length === 0 ? (
-          <p className="text-sm text-gray-400 text-center py-10" data-testid="fees-empty">
-            {isArabic ? 'لا توجد خدمات مطابقة للتصفية.' : 'No services match the current filter.'}
-          </p>
+        {sorted.length === 0 ? (
+          <div className="text-center py-14 text-gray-400" data-testid="fees-empty">
+            <Search size={40} className="mx-auto mb-3 opacity-40" aria-hidden="true" />
+            <p className="text-sm">{isArabic ? 'لا توجد خدمات مطابقة للتصفية.' : 'No services match the current filter.'}</p>
+          </div>
         ) : (
           <table className="w-full text-sm" data-testid="fees-table">
             <thead className="bg-gray-50 text-xs text-gray-600 uppercase">
               <tr>
-                <th className="px-4 py-2 text-start">{isArabic ? 'الرمز' : 'Code'}</th>
-                <th className="px-4 py-2 text-start">{isArabic ? 'الاسم' : 'Name'}</th>
-                <th className="px-4 py-2 text-start">{isArabic ? 'النوع' : 'Type'}</th>
-                <th className="px-4 py-2 text-start">{isArabic ? 'المبلغ / السعر' : 'Amount / Rate'}</th>
-                <th className="px-4 py-2 text-start">{isArabic ? 'العملة' : 'Currency'}</th>
+                <SortHeader label={isArabic ? 'الرمز' : 'Code'}         k="code"     sortKey={sortKey} sortDir={sortDir} onToggle={toggle} className="!px-4" />
+                <SortHeader label={isArabic ? 'الاسم' : 'Name'}         k="name"     sortKey={sortKey} sortDir={sortDir} onToggle={toggle} className="!px-4" />
+                <SortHeader label={isArabic ? 'النوع' : 'Type'}         k="type"     sortKey={sortKey} sortDir={sortDir} onToggle={toggle} className="!px-4" />
+                <SortHeader label={isArabic ? 'المبلغ / السعر' : 'Amount / Rate'} k="amount"   sortKey={sortKey} sortDir={sortDir} onToggle={toggle} className="!px-4" />
+                <SortHeader label={isArabic ? 'العملة' : 'Currency'}    k="currency" sortKey={sortKey} sortDir={sortDir} onToggle={toggle} className="!px-4" />
                 <th className="px-4 py-2"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {filtered.map(row => {
+              {sorted.map(row => {
                 const d = drafts[row.id] ?? draftFromRow(row);
                 const isPlaceholder = row.fee?.type === 'fixed'
                   && Number(row.fee?.amount) === PLACEHOLDER_AMOUNT;

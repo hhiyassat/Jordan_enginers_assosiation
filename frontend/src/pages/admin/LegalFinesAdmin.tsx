@@ -1,7 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AlertCircle, CheckCircle2, Circle, DollarSign, Plus, Scale } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Circle, Download, DollarSign, Plus, Scale } from 'lucide-react';
 import { adminApi } from '../../api/client';
+import { useSortableRows } from '../../utils/useSortableRows';
+import { downloadCsv } from '../../utils/csv';
+import { SortHeader } from '../../utils/SortHeader';
 
 /**
  * LegalFinesAdmin — JORD-82 UI
@@ -50,6 +53,34 @@ export function LegalFinesAdmin() {
   const [payTarget, setPayTarget] = useState<Fine | null>(null);
   const [payReference, setPayReference] = useState('');
   const [paying, setPaying] = useState(false);
+
+  const sortColumns = useMemo(() => ([
+    { key: 'target' as const, get: (f: Fine) => f.target_display },
+    { key: 'kind'   as const, get: (f: Fine) => f.kind },
+    { key: 'amount' as const, get: (f: Fine) => parseFloat(f.amount_jod) },
+    { key: 'status' as const, get: (f: Fine) => f.paid_at ? 1 : 0 },
+    { key: 'issued' as const, get: (f: Fine) => new Date(f.issued_at) },
+  ]), []);
+  const { sorted, sortKey, sortDir, toggle } = useSortableRows(fines, sortColumns, 'issued', 'desc');
+
+  const handleExport = () => {
+    downloadCsv(
+      `legal-fines-${new Date().toISOString().slice(0, 10)}`,
+      sorted,
+      [
+        { header: 'ID',        get: f => f.id },
+        { header: 'Kind',      get: f => f.kind },
+        { header: 'Owner',     get: f => f.target_display },
+        { header: 'Amount',    get: f => f.amount_jod },
+        { header: 'Area (m2)', get: f => f.project_area_m2 ?? '' },
+        { header: 'Reference', get: f => f.application?.reference_number ?? '' },
+        { header: 'Reason',    get: f => f.reason },
+        { header: 'Issued at', get: f => f.issued_at },
+        { header: 'Paid at',   get: f => f.paid_at ?? '' },
+        { header: 'Payment ref', get: f => f.payment_reference ?? '' },
+      ],
+    );
+  };
 
   const load = () => {
     setLoading(true);
@@ -133,13 +164,27 @@ export function LegalFinesAdmin() {
       )}
 
       <section aria-labelledby="fines-list-heading" className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
+        <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between gap-2">
           <h2 id="fines-list-heading" className="text-sm font-bold text-gray-800">
             {isArabic ? 'الغرامات المُصدَرة' : 'Issued fines'}
           </h2>
-          <span className="text-xs text-gray-500">
-            {fines.length} {isArabic ? 'غرامة' : 'items'}
-          </span>
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-gray-500">
+              {fines.length} {isArabic ? 'غرامة' : 'items'}
+            </span>
+            {fines.length > 0 && (
+              <button
+                type="button"
+                onClick={handleExport}
+                data-testid="fines-export-csv"
+                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50"
+                title={isArabic ? 'تصدير CSV' : 'Export CSV'}
+              >
+                <Download size={12} aria-hidden="true" />
+                {isArabic ? 'تصدير' : 'CSV'}
+              </button>
+            )}
+          </div>
         </div>
         {fines.length === 0 ? (
           <div className="text-center py-16 text-gray-400">
@@ -150,15 +195,15 @@ export function LegalFinesAdmin() {
           <table className="w-full text-sm" data-testid="fines-table">
             <thead className="bg-gray-50 text-xs text-gray-600 uppercase">
               <tr>
-                <th className="px-5 py-2 text-start">{isArabic ? 'المالك' : 'Owner'}</th>
-                <th className="px-5 py-2 text-start">{isArabic ? 'النوع' : 'Kind'}</th>
-                <th className="px-5 py-2 text-start">{isArabic ? 'المبلغ' : 'Amount'}</th>
-                <th className="px-5 py-2 text-start">{isArabic ? 'الحالة' : 'Status'}</th>
+                <SortHeader label={isArabic ? 'المالك' : 'Owner'}  k="target" sortKey={sortKey} sortDir={sortDir} onToggle={toggle} />
+                <SortHeader label={isArabic ? 'النوع' : 'Kind'}    k="kind"   sortKey={sortKey} sortDir={sortDir} onToggle={toggle} />
+                <SortHeader label={isArabic ? 'المبلغ' : 'Amount'} k="amount" sortKey={sortKey} sortDir={sortDir} onToggle={toggle} />
+                <SortHeader label={isArabic ? 'الحالة' : 'Status'} k="status" sortKey={sortKey} sortDir={sortDir} onToggle={toggle} />
                 <th className="px-5 py-2"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {fines.map(f => {
+              {sorted.map(f => {
                 const isPaid = f.paid_at !== null;
                 return (
                   <tr key={f.id} data-testid={`fine-row-${f.id}`}>

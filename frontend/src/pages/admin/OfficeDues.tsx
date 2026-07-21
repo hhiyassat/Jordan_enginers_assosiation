@@ -1,8 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, ArrowRight, CheckCircle2, Circle, DollarSign, FileText, Plus, AlertCircle } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CheckCircle2, Circle, DollarSign, Download, FileText, Plus, AlertCircle } from 'lucide-react';
 import { adminApi } from '../../api/client';
+import { useSortableRows } from '../../utils/useSortableRows';
+import { downloadCsv } from '../../utils/csv';
+import { SortHeader } from '../../utils/SortHeader';
 
 /**
  * OfficeDues — JORD-79 UI
@@ -78,6 +81,34 @@ export function OfficeDues() {
       .finally(() => setLoading(false));
   };
   useEffect(load, [officeId]);
+
+  const sortColumns = useMemo(() => ([
+    { key: 'kind'   as const, get: (o: Obligation) => o.kind },
+    { key: 'year'   as const, get: (o: Obligation) => o.period_year },
+    { key: 'amount' as const, get: (o: Obligation) => parseFloat(o.amount_jod) },
+    { key: 'due'    as const, get: (o: Obligation) => o.due_date },
+    { key: 'status' as const, get: (o: Obligation) => o.paid_at ? 1 : 0 },
+  ]), []);
+  const { sorted, sortKey, sortDir, toggle } = useSortableRows(obligations, sortColumns, 'year', 'desc');
+
+  const handleExport = () => {
+    if (!office) return;
+    downloadCsv(
+      `office-${office.id}-dues-${new Date().toISOString().slice(0, 10)}`,
+      sorted,
+      [
+        { header: 'ID',              get: o => o.id },
+        { header: 'Kind',            get: o => o.kind },
+        { header: 'Year',            get: o => o.period_year },
+        { header: 'Amount JOD',      get: o => o.amount_jod },
+        { header: 'Due date',        get: o => o.due_date },
+        { header: 'Late surcharge',  get: o => o.late_surcharge_jod },
+        { header: 'Paid at',         get: o => o.paid_at ?? '' },
+        { header: 'Total paid JOD',  get: o => o.total_paid_jod ?? '' },
+        { header: 'Payment ref',     get: o => o.payment_reference ?? '' },
+      ],
+    );
+  };
 
   const currentYear = new Date().getFullYear();
   const hasCurrentRegistration = useMemo(
@@ -215,28 +246,43 @@ export function OfficeDues() {
           <h2 id="obligations-heading" className="text-sm font-bold text-gray-800">
             {isArabic ? 'الالتزامات' : 'Obligations'}
           </h2>
-          <span className="text-xs text-gray-500">
-            {obligations.length} {isArabic ? 'التزام' : 'items'}
-          </span>
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-gray-500">
+              {obligations.length} {isArabic ? 'التزام' : 'items'}
+            </span>
+            {obligations.length > 0 && (
+              <button
+                type="button"
+                onClick={handleExport}
+                data-testid="dues-export-csv"
+                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50"
+                title={isArabic ? 'تصدير CSV' : 'Export CSV'}
+              >
+                <Download size={12} aria-hidden="true" />
+                {isArabic ? 'تصدير' : 'CSV'}
+              </button>
+            )}
+          </div>
         </div>
         {obligations.length === 0 ? (
-          <p className="text-sm text-gray-400 text-center py-10">
-            {isArabic ? 'لا توجد التزامات مسجّلة.' : 'No obligations on file.'}
-          </p>
+          <div className="text-center py-14 text-gray-400" data-testid="obligations-empty">
+            <FileText size={40} className="mx-auto mb-3 opacity-40" aria-hidden="true" />
+            <p className="text-sm">{isArabic ? 'لا توجد التزامات مسجّلة.' : 'No obligations on file.'}</p>
+          </div>
         ) : (
           <table className="w-full text-sm" data-testid="obligations-table">
             <thead className="bg-gray-50 text-xs text-gray-600 uppercase">
               <tr>
-                <th className="px-5 py-2 text-start">{isArabic ? 'النوع' : 'Kind'}</th>
-                <th className="px-5 py-2 text-start">{isArabic ? 'السنة' : 'Year'}</th>
-                <th className="px-5 py-2 text-start">{isArabic ? 'المبلغ' : 'Amount'}</th>
-                <th className="px-5 py-2 text-start">{isArabic ? 'الاستحقاق' : 'Due'}</th>
-                <th className="px-5 py-2 text-start">{isArabic ? 'الحالة' : 'Status'}</th>
+                <SortHeader label={isArabic ? 'النوع' : 'Kind'}      k="kind"   sortKey={sortKey} sortDir={sortDir} onToggle={toggle} />
+                <SortHeader label={isArabic ? 'السنة' : 'Year'}      k="year"   sortKey={sortKey} sortDir={sortDir} onToggle={toggle} />
+                <SortHeader label={isArabic ? 'المبلغ' : 'Amount'}   k="amount" sortKey={sortKey} sortDir={sortDir} onToggle={toggle} />
+                <SortHeader label={isArabic ? 'الاستحقاق' : 'Due'}   k="due"    sortKey={sortKey} sortDir={sortDir} onToggle={toggle} />
+                <SortHeader label={isArabic ? 'الحالة' : 'Status'}   k="status" sortKey={sortKey} sortDir={sortDir} onToggle={toggle} />
                 <th className="px-5 py-2"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {obligations.map(o => {
+              {sorted.map(o => {
                 const isPaid = o.paid_at !== null;
                 const surcharge = parseFloat(o.late_surcharge_jod);
                 return (
