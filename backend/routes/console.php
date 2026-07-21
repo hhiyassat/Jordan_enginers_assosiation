@@ -44,3 +44,20 @@ Schedule::command('audit:prune')
             'Audit log pruning failed — NFR-006 (7-year retention) at risk'
         );
     });
+
+// ── JORD-79: annual dues cron (JEA manual pp.96-97) ────────────────
+//
+// Every February 1 at 04:00 UTC create the F-05 annual-dues
+// obligation for every active office. RecurringDuesService is
+// idempotent via its composite unique so a re-run mid-month
+// is a no-op.
+
+Schedule::command('dues:open-annual')
+    ->yearlyOn(2, 1, '04:00')
+    ->withoutOverlapping()
+    ->runInBackground()
+    ->onFailure(function () {
+        \Illuminate\Support\Facades\Log::critical(
+            'Annual-dues opening failed — offices not billed for the year'
+        );
+    });

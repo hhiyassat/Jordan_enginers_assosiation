@@ -171,6 +171,13 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'token.inactivity', 'password.p
         Route::get('admin/offices/{id}',                            [\App\Http\Controllers\Api\OfficeSettingsController::class, 'show']);
         Route::patch('admin/offices/{id}',                          [\App\Http\Controllers\Api\OfficeSettingsController::class, 'update']);
         Route::patch('admin/offices/{officeId}/engineers/{engineerId}', [\App\Http\Controllers\Api\OfficeSettingsController::class, 'updateEngineer']);
+
+        // JORD-79: recurring obligations (F-04 registration + F-05
+        // annual dues + 15%/30% late surcharge). Admin marks paid;
+        // cron creates annual dues Feb 1 every year.
+        Route::get('admin/offices/{id}/dues',            [\App\Http\Controllers\Api\RecurringDuesController::class, 'index']);
+        Route::post('admin/offices/{id}/dues/register',  [\App\Http\Controllers\Api\RecurringDuesController::class, 'seedRegistration']);
+        Route::post('admin/dues/{obligationId}/pay',     [\App\Http\Controllers\Api\RecurringDuesController::class, 'pay']);
     });
 
     // ── User management ─────────────────────────────────────────────────

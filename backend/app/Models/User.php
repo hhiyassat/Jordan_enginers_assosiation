@@ -31,6 +31,10 @@ class User extends Authenticatable
         // in the JEA data model is a User with role='applicant',
         // not the enclosing Organization.
         'has_excellence_award', 'is_bit_khibra', 'has_iso_cert',
+        // JORD-79: office classification tier per JEA p.96-97.
+        // Drives F-04 registration + F-05 annual dues amounts via
+        // RecurringDuesService::RATES.
+        'office_classification',
     ];
 
     protected $hidden = ['password', 'remember_token'];
