@@ -54,15 +54,27 @@ class QuotaLedger
     public function recordApproval(Application $app): void
     {
         $data = is_array($app->data) ? $app->data : [];
-        $engineerId = $data['engineer_id'] ?? null;
-        $area       = $data['area_m2'] ?? null;
+        $svc  = $app->serviceDefinition;
+
+        // JORD-75: basis field defaults to 'area_m2'; SRV-006 overrides
+        // to 'length_lm'. The `m2` column on quota_consumptions stores
+        // whatever unit the schema declared — reads elsewhere never
+        // mix units because both consumption + ceiling for the same
+        // (org, discipline, year) use the same unit by construction.
+        $basisField = $svc ? data_get($svc->schema, 'quota_basis_field', 'area_m2') : 'area_m2';
+        if (!is_string($basisField) || $basisField === '') {
+            $basisField = 'area_m2';
+        }
+
+        $engineerId = $data['engineer_id']  ?? null;
+        $quantity   = $data[$basisField]    ?? null;
 
         if (!is_int($engineerId) && !(is_numeric($engineerId) && (int) $engineerId > 0)) {
             $this->debug($app, 'no engineer_id in form data — skipping consumption');
             return;
         }
-        if (!is_numeric($area) || (int) $area <= 0) {
-            $this->debug($app, 'no area_m2 in form data — skipping consumption');
+        if (!is_numeric($quantity) || (int) $quantity <= 0) {
+            $this->debug($app, "no {$basisField} in form data — skipping consumption");
             return;
         }
 
@@ -84,7 +96,6 @@ class QuotaLedger
         // wide bucket ('materials_testing'), not the engineer's own
         // discipline. schema.quota_discipline_override lets a service
         // opt into that redirect without duplicating the whole engine.
-        $svc = $app->serviceDefinition;
         $override = $svc ? data_get($svc->schema, 'quota_discipline_override') : null;
         $discipline = is_string($override) && $override !== ''
             ? $override
@@ -105,7 +116,11 @@ class QuotaLedger
             [
                 'organization_id' => $app->organization_id,
                 'year'            => (int) now()->year,
-                'm2'              => (int) $area,
+                // The `m2` column stores the quantity in whatever unit
+                // the schema.quota_basis_field declared — see the
+                // "one unit per (org, discipline, year)" invariant note
+                // on remainingOfficeCeiling.
+                'm2'              => (int) $quantity,
                 // JORD-71: governorate lets the 90%→+10% overflow rule
                 // scope by governorate. Nullable when the form doesn't
                 // ask (older services or non-drawings) — those rows

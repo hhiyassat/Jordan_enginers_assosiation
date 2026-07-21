@@ -61,6 +61,9 @@ class DatabaseSeeder extends Seeder
             // SRV-008/009 into the quota-tracked path via
             // schema.quota_discipline_override.
             MaterialsTestingQuotaSeeder::class,
+            // JORD-75: government-bidder site-survey linear-meter
+            // quota (JEA p.125). SRV-006 with length_lm basis.
+            GovernmentSurveyQuotaSeeder::class,
             // JeaDrawingsSeeder omitted — its 7 DRW-* rows duplicate the
             // richer DRW-P-* set produced by ServicePlan2026Seeder + the
             // real workflows attached by CatalogWorkflowsSeeder.
