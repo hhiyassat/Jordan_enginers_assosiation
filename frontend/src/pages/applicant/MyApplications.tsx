@@ -132,11 +132,17 @@ function FilterTab({ active, onClick, count, children }: {
 
 function ApplicationRow({ app }: { app: Application }) {
   const { t, i18n } = useTranslation();
+  const isArabic = i18n.language.startsWith('ar');
   const style = STATUS_STYLE[app.status] ?? { color: 'bg-gray-100 text-gray-600', icon: '❓' };
   const statusLabel = t(`status.${app.status}`, { defaultValue: app.status });
   const needsAction = app.status === 'modifications_requested';
   const stages = app.service_definition?.schema?.workflow?.stages ?? [];
-  const dateLocale = i18n.language.startsWith('ar') ? 'ar-EG' : 'en-JO';
+  const dateLocale = isArabic ? 'ar-EG' : 'en-JO';
+  // JORD-60: prefer the localised service name so the English view
+  // doesn't render Arabic-only service labels.
+  const serviceName = isArabic
+    ? (app.service_definition?.name_ar || app.service_definition?.name_en || '—')
+    : (app.service_definition?.name_en || app.service_definition?.name_ar || '—');
 
   return (
     <Link
@@ -170,7 +176,7 @@ function ApplicationRow({ app }: { app: Application }) {
           </div>
 
           <p className="font-semibold text-gray-900 mt-2">
-            {app.service_definition?.name_ar || '—'}
+            {serviceName}
           </p>
 
           <div className="flex items-center gap-4 mt-2 text-xs text-gray-400 flex-wrap">

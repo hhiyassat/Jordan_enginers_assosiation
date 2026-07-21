@@ -156,6 +156,7 @@ function RecentApplicationsCard({ recent, isArabic, heading, emptyLabel, viewAll
   emptyLabel: string;
   viewAllLabel: string;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="md:col-span-2 bg-white rounded-xl border border-gray-200 p-6">
       <div className="flex items-center justify-between mb-4">
@@ -180,7 +181,8 @@ function RecentApplicationsCard({ recent, isArabic, heading, emptyLabel, viewAll
                 <p className="text-xs text-gray-500">{app.applicant?.name ?? '—'}</p>
               </div>
               <span className="text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-600 shrink-0">
-                {app.status}
+                {/* JORD-87: raw enum was leaking through untranslated. */}
+                {t(`status.${app.status}`, { defaultValue: app.status })}
               </span>
             </li>
           ))}

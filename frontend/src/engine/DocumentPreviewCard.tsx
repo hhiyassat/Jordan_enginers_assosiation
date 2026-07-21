@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import type { SchemaDocument } from '../types';
 
 /**
@@ -6,7 +7,7 @@ import type { SchemaDocument } from '../types';
  *
  * A visual clone of the applicant's DocumentSlot (from DocumentUploader),
  * but wired for the admin PREVIEW surface. The upload button is disabled
- * and carries a "معاينة" badge so nobody mistakes it for a live control —
+ * and carries a "preview" badge so nobody mistakes it for a live control —
  * but the layout, accept list, size hint, required badge, and dashed
  * border for optional slots match what the applicant actually sees.
  *
@@ -16,15 +17,14 @@ import type { SchemaDocument } from '../types';
  * concluded the change hadn't taken. Rendering the real widget (in
  * disabled form) makes the schema's intent immediately verifiable.
  *
- * JORD-54: pass `onToggleRequired` to expose an inline checkbox that
- * flips the document's `required` flag. When the callback is omitted
- * the card stays read-only (the previous behavior, still used by the
- * NewService creation preview and any consumer that shouldn't mutate
- * the schema from this surface).
+ * JORD-95: retrofit with react-i18next. The `locale` prop still works
+ * for callers that need to force a specific rendering (e.g. a preview
+ * of the Arabic view from an English admin) but is now optional —
+ * absent → read the current language from i18n.
  */
 export function DocumentPreviewCard({
   doc,
-  locale = 'ar',
+  locale,
   onToggleRequired,
 }: {
   doc: SchemaDocument;
@@ -33,9 +33,12 @@ export function DocumentPreviewCard({
    *  and calls back with the new value. Absent = read-only preview. */
   onToggleRequired?: (docId: string, nextRequired: boolean) => void;
 }) {
-  const label     = locale === 'ar' ? doc.label_ar : doc.label_en;
-  const borderCls = doc.required ? 'border-gray-300' : 'border-dashed border-gray-300';
-  const editable  = typeof onToggleRequired === 'function';
+  const { t, i18n } = useTranslation();
+  const effectiveLocale: 'ar' | 'en' = locale ?? (i18n.language.startsWith('ar') ? 'ar' : 'en');
+  const label       = effectiveLocale === 'ar' ? doc.label_ar : (doc.label_en || doc.label_ar);
+  const description = effectiveLocale === 'ar' ? doc.description_ar : (doc.description_en || doc.description_ar);
+  const borderCls   = doc.required ? 'border-gray-300' : 'border-dashed border-gray-300';
+  const editable    = typeof onToggleRequired === 'function';
 
   return (
     <div
@@ -49,25 +52,25 @@ export function DocumentPreviewCard({
             <span className="text-sm font-medium text-gray-800">{label}</span>
             {doc.required && !editable && (
               <span className="text-xs text-red-500 bg-red-50 px-1.5 py-0.5 rounded">
-                {locale === 'ar' ? 'إلزامي' : 'Required'}
+                {t('documentUploader.required')}
               </span>
             )}
             {doc.conditional && (
               <span className="text-xs text-orange-500 bg-orange-50 px-1.5 py-0.5 rounded">
-                {locale === 'ar' ? 'شرطي' : 'Conditional'}
+                {t('documentUploader.conditional')}
               </span>
             )}
             <span className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-blue-50 border border-blue-200 text-blue-700">
-              معاينة
+              {t('documentUploader.preview')}
             </span>
           </div>
-          {doc.description_ar && locale === 'ar' && (
-            <p className="text-xs text-gray-500 mt-0.5">{doc.description_ar}</p>
+          {description && (
+            <p className="text-xs text-gray-500 mt-0.5">{description}</p>
           )}
           <p className="text-xs text-gray-400 mt-1">
-            {locale === 'ar' ? 'الصيغ المقبولة:' : 'Accepted:'} {doc.accept.join(', ')}
+            {t('documentUploader.accepted')} {doc.accept.join(', ')}
             {' · '}
-            {locale === 'ar' ? 'الحد الأقصى:' : 'Max:'} {doc.max_size_mb}MB
+            {t('documentUploader.maxSize')} {doc.max_size_mb}MB
           </p>
 
           {/* Inline required toggle — only when onToggleRequired is passed.
@@ -85,14 +88,12 @@ export function DocumentPreviewCard({
                 checked={!!doc.required}
                 onChange={e => onToggleRequired!(doc.id, e.target.checked)}
                 className="w-4 h-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
-                aria-label={locale === 'ar'
-                  ? `إلزامي: ${doc.label_ar}`
-                  : `Required: ${doc.label_en}`}
+                aria-label={`${t('documentUploader.required')}: ${label}`}
               />
               <span className={doc.required ? 'text-red-600 font-semibold' : 'text-gray-500'}>
-                {locale === 'ar'
-                  ? (doc.required ? 'إلزامي — يمنع تجاوز المرحلة قبل الإرفاق' : 'اختياري')
-                  : (doc.required ? 'Required — blocks stage advance until uploaded' : 'Optional')}
+                {doc.required
+                  ? t('documentUploader.requiredHint')
+                  : t('documentUploader.optional')}
               </span>
             </label>
           )}
@@ -103,10 +104,10 @@ export function DocumentPreviewCard({
             type="button"
             disabled
             aria-disabled="true"
-            title="لا يمكن الرفع من شاشة المعاينة — يظهر هذا الزر عند المتقدم"
+            title={t('documentUploader.previewDisabledTitle')}
             className="px-3 py-2 text-xs rounded-lg font-medium bg-blue-600 text-white opacity-40 cursor-not-allowed"
           >
-            {locale === 'ar' ? 'رفع الملف' : 'Upload'}
+            {t('documentUploader.upload')}
           </button>
         </div>
       </div>

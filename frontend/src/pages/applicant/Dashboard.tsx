@@ -256,7 +256,14 @@ function QuickAction({ to, title, desc, Icon }: {
 }
 
 function RecentProjectRow({ project }: { project: Project }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  // JORD-57: prefer the localised project name so the "Latest
+  // projects" widget doesn't leak Arabic-only rows into the
+  // English view. Falls back to whichever side has data.
+  const isArabic = i18n.language.startsWith('ar');
+  const projectName = isArabic
+    ? (project.name_ar || project.name_en)
+    : (project.name_en || project.name_ar);
   const statusPill =
     project.status === 'active'
       ? { label: t('projectStatus.active'),   cls: 'bg-emerald-100 text-emerald-700 border-emerald-200' }
@@ -276,7 +283,7 @@ function RecentProjectRow({ project }: { project: Project }) {
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="text-sm font-black text-jea-text">{project.name_ar}</h3>
+            <h3 className="text-sm font-black text-jea-text">{projectName}</h3>
             <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${statusPill.cls}`}>
               {statusPill.label}
             </span>

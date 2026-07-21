@@ -1,4 +1,5 @@
 import React from 'react';
+import i18n from '../i18n';
 
 /**
  * Route-level error boundary.
@@ -11,6 +12,11 @@ import React from 'react';
  * Boundaries only catch render/lifecycle errors — event-handler and
  * async-request failures are handled by the api client's central
  * error surface (see api/client.ts). Two complementary layers.
+ *
+ * JORD-96: use i18n.t() directly (not the hook — class components
+ * can't call hooks) with defaultValue fallbacks. If translations
+ * haven't loaded (async race) the defaults still render, so the
+ * boundary keeps working even in a truly degraded state.
  */
 interface State {
   error: Error | null;
@@ -44,33 +50,35 @@ export class ErrorBoundary extends React.Component<Props, State> {
 
     if (this.props.fallback) return this.props.fallback(error, this.reset);
 
+    const isRtl = (i18n.language || 'ar').startsWith('ar');
+    // Existing i18n.error.* keys already carry the copy — no new keys needed.
+    const title = i18n.t('error.unexpected', { defaultValue: 'حدث خطأ غير متوقع' });
+    const body = i18n.t('error.sorry', {
+      defaultValue: 'نأسف على الإزعاج. يمكنك تحديث الصفحة أو المحاولة مرة أخرى.',
+    });
+    const retry = i18n.t('error.retry',   { defaultValue: 'إعادة المحاولة' });
+    const reload = i18n.t('error.refresh', { defaultValue: 'تحديث الصفحة' });
+
     return (
-      <div dir="rtl" className="min-h-screen flex items-center justify-center bg-jea-bg p-6">
+      <div dir={isRtl ? 'rtl' : 'ltr'} className="min-h-screen flex items-center justify-center bg-jea-bg p-6">
         <div className="max-w-md w-full bg-white border border-red-200 rounded-lg p-6 shadow-sm text-center">
           <div className="text-red-600 text-4xl mb-3" aria-hidden="true">⚠</div>
-          <h1 className="text-lg font-bold text-jea-text mb-1" lang="ar">
-            حدث خطأ غير متوقع
-          </h1>
-          <p className="text-xs text-jea-muted mb-4" lang="en" dir="ltr">
-            Something went wrong
-          </p>
-          <p className="text-sm text-jea-muted mb-5">
-            نأسف على الإزعاج. يمكنك تحديث الصفحة أو المحاولة مرة أخرى.
-          </p>
+          <h1 className="text-lg font-bold text-jea-text mb-3">{title}</h1>
+          <p className="text-sm text-jea-muted mb-5">{body}</p>
           <div className="flex gap-2 justify-center">
             <button
               type="button"
               onClick={this.reset}
               className="px-4 py-2 rounded bg-jea-primary text-white text-sm font-semibold hover:opacity-90"
             >
-              إعادة المحاولة
+              {retry}
             </button>
             <button
               type="button"
               onClick={() => window.location.reload()}
               className="px-4 py-2 rounded border border-jea-border text-sm font-semibold text-jea-text hover:bg-jea-bg"
             >
-              تحديث الصفحة
+              {reload}
             </button>
           </div>
         </div>

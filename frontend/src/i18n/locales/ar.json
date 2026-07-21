@@ -93,6 +93,40 @@
     "rejected": "مرفوض",
     "certificate_issued": "صدرت الشهادة"
   },
+  "projectContextHeader": {
+    "title":       "معلومات المشروع",
+    "regionLabel": "معلومات المشروع (للقراءة فقط)",
+    "readOnly":    "للقراءة فقط",
+    "name":        "اسم المشروع",
+    "contract":    "رقم العقد",
+    "request":     "رقم الطلب",
+    "area":        "المساحة (م²)",
+    "city":        "المدينة",
+    "type":        "النوع"
+  },
+  "applyError": {
+    "hasFieldErrors": "يوجد أخطاء في الحقول المحددة أدناه — يرجى مراجعتها والمتابعة.",
+    "generic":        "تعذر إرسال الطلب — راجع الأخطاء المذكورة.",
+    "otherKeys": {
+      "project_id":   "المشروع",
+      "service_code": "رمز الخدمة",
+      "data":         "بيانات الطلب"
+    }
+  },
+  "documentUploader": {
+    "required":    "إلزامي",
+    "conditional": "شرطي",
+    "accepted":    "الصيغ المقبولة:",
+    "maxSize":     "الحد الأقصى:",
+    "uploading":   "جارٍ الرفع...",
+    "replace":     "تغيير",
+    "upload":      "رفع الملف",
+    "requiredHint": "إلزامي — يمنع تجاوز المرحلة قبل الإرفاق",
+    "optional":    "اختياري",
+    "preview":     "معاينة",
+    "previewDisabledTitle": "لا يمكن الرفع من شاشة المعاينة — يظهر هذا الزر عند المتقدم",
+    "sizeExceeded": "الحجم الأقصى {{max}} ميغابايت"
+  },
   "projectStatus": {
     "active": "نشط",
     "pending": "قيد المراجعة",

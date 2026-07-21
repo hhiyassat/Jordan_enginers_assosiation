@@ -18,8 +18,12 @@ describe('ProjectContextHeader', () => {
       contract_no: 'C-100', request_no: 'R-200', city: 'عمّان', area_m2: 350, type: 'سكني',
     })} />);
 
+    // JORD-89: name is now localised (one row, not two). Under the
+    // default Arabic test locale the name_ar wins; name_en shows
+    // only when the app is in English. We assert on the visible
+    // side so the test tracks real user experience.
     expect(screen.getByText('إسكان حسين')).toBeInTheDocument();
-    expect(screen.getByText('Hussein Housing')).toBeInTheDocument();
+    expect(screen.queryByText('Hussein Housing')).toBeNull();
     expect(screen.getByText('C-100')).toBeInTheDocument();
     expect(screen.getByText('R-200')).toBeInTheDocument();
     expect(screen.getByText('عمّان')).toBeInTheDocument();

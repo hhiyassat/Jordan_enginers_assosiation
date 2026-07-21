@@ -93,6 +93,40 @@
     "rejected": "Rejected",
     "certificate_issued": "Certificate Issued"
   },
+  "projectContextHeader": {
+    "title":       "Project information",
+    "regionLabel": "Project information (read-only)",
+    "readOnly":    "read-only",
+    "name":        "Project name",
+    "contract":    "Contract no.",
+    "request":     "Request no.",
+    "area":        "Area (m²)",
+    "city":        "City",
+    "type":        "Type"
+  },
+  "applyError": {
+    "hasFieldErrors": "There are errors in the highlighted fields below — please review and continue.",
+    "generic":        "Failed to submit — please review the errors above.",
+    "otherKeys": {
+      "project_id":   "Project",
+      "service_code": "Service code",
+      "data":         "Request data"
+    }
+  },
+  "documentUploader": {
+    "required":    "Required",
+    "conditional": "Conditional",
+    "accepted":    "Accepted:",
+    "maxSize":     "Max:",
+    "uploading":   "Uploading…",
+    "replace":     "Replace",
+    "upload":      "Upload",
+    "requiredHint": "Required — blocks stage advance until uploaded",
+    "optional":    "Optional",
+    "preview":     "Preview",
+    "previewDisabledTitle": "Cannot upload from the preview screen — this button appears to the applicant.",
+    "sizeExceeded": "Maximum size is {{max}} MB"
+  },
   "projectStatus": {
     "active": "Active",
     "pending": "Pending Review",

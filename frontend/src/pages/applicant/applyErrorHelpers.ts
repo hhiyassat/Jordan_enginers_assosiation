@@ -1,4 +1,5 @@
 import type { ServiceSchema } from '../../types';
+import i18n from '../../i18n';
 
 // The Apply page catches errors from three distinct backend paths:
 //
@@ -74,23 +75,34 @@ export function normalizeApplyError(err: ApiError, schema?: ServiceSchema): Norm
 
   // The top-level message is the summary. If the backend didn't provide
   // one and we have field errors, use a generic prompt.
+  // JORD-90: pull the fallback copy from i18n so English users don't
+  // see an Arabic "please review the highlighted fields" line. The
+  // defaultValue keeps the Arabic in place if the key hasn't been
+  // added (or i18n hasn't finished loading yet).
   const summary = err.message
     || (Object.keys(fieldErrors).length > 0
-        ? 'يوجد أخطاء في الحقول المحددة أدناه — يرجى مراجعتها والمتابعة.'
-        : 'تعذر إرسال الطلب — راجع الأخطاء المذكورة.');
+        ? i18n.t('applyError.hasFieldErrors',
+            { defaultValue: 'يوجد أخطاء في الحقول المحددة أدناه — يرجى مراجعتها والمتابعة.' })
+        : i18n.t('applyError.generic',
+            { defaultValue: 'تعذر إرسال الطلب — راجع الأخطاء المذكورة.' }));
 
   return { summary, fieldErrors, otherErrors };
 }
 
 /**
- * Human-readable Arabic label for the meta-field keys that turn up in
+ * Human-readable label for the meta-field keys that turn up in
  * otherErrors. Falls back to the raw key if we don't know it.
+ * JORD-90: routes through i18n; defaults preserve the previous
+ * Arabic copy so translations can be filled in later without
+ * regressing the current UX.
  */
 export function labelForOtherKey(key: string): string {
-  const known: Record<string, string> = {
+  const defaults: Record<string, string> = {
     project_id:   'المشروع',
     service_code: 'رمز الخدمة',
     data:         'بيانات الطلب',
   };
-  return known[key] ?? key;
+  const fallback = defaults[key];
+  if (!fallback) return key;
+  return i18n.t(`applyError.otherKeys.${key}`, { defaultValue: fallback });
 }
