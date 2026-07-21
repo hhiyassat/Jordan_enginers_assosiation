@@ -76,10 +76,20 @@ class CapacityGuard
         // the quota math so the applicant sees BOTH problems at once.
         if (isset($errors['area_m2'])) return $errors;
 
-        $discipline = Disciplines::normalize((string) ($engineer->specialization ?? ''));
-        if ($discipline === '') {
-            $errors['engineer_id'] = 'المهندس المحدد بدون اختصاص هندسي — يجب تحديث بياناته.';
-            return $errors;
+        // JORD-74: schema.quota_discipline_override redirects the
+        // capacity check to a service-wide bucket (e.g. 'materials_testing'
+        // on SRV-008/009). The engineer picker still runs — the office
+        // needs to attribute the work — but their own specialization
+        // doesn't gate the check.
+        $override = data_get($service->schema, 'quota_discipline_override');
+        if (is_string($override) && $override !== '') {
+            $discipline = $override;
+        } else {
+            $discipline = Disciplines::normalize((string) ($engineer->specialization ?? ''));
+            if ($discipline === '') {
+                $errors['engineer_id'] = 'المهندس المحدد بدون اختصاص هندسي — يجب تحديث بياناته.';
+                return $errors;
+            }
         }
 
         $year   = (int) now()->year;

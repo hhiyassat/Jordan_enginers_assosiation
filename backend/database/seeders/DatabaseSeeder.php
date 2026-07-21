@@ -56,6 +56,11 @@ class DatabaseSeeder extends Seeder
             // so the applicant picks the responsible engineer. Frontend
             // fetches options from /engineers at render time.
             DrawingEngineerPickerSeeder::class,
+            // JORD-74: materials-testing per-lab quota (JEA p.125).
+            // Seeds the materials_testing office ceiling + wires
+            // SRV-008/009 into the quota-tracked path via
+            // schema.quota_discipline_override.
+            MaterialsTestingQuotaSeeder::class,
             // JeaDrawingsSeeder omitted — its 7 DRW-* rows duplicate the
             // richer DRW-P-* set produced by ServicePlan2026Seeder + the
             // real workflows attached by CatalogWorkflowsSeeder.

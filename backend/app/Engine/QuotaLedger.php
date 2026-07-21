@@ -78,7 +78,17 @@ class QuotaLedger
         // discipline (folded through the alias map). If the app spans
         // multiple disciplines each needing its own engineer, that's a
         // JORD-72+ scenario — the current schema is 1 engineer per app.
-        $discipline = Disciplines::normalize((string) ($engineer->specialization ?? ''));
+        //
+        // JORD-74: services like SRV-008/009 (materials testing) still
+        // have an engineer picker but are quota'd against a service-
+        // wide bucket ('materials_testing'), not the engineer's own
+        // discipline. schema.quota_discipline_override lets a service
+        // opt into that redirect without duplicating the whole engine.
+        $svc = $app->serviceDefinition;
+        $override = $svc ? data_get($svc->schema, 'quota_discipline_override') : null;
+        $discipline = is_string($override) && $override !== ''
+            ? $override
+            : Disciplines::normalize((string) ($engineer->specialization ?? ''));
         if ($discipline === '') {
             Log::warning('QuotaLedger: engineer has no specialization', [
                 'application_id' => $app->id, 'engineer_id' => $engineer->id,
