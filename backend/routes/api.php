@@ -97,6 +97,13 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'token.inactivity', 'password.p
         // endpoints live in the admin group further below.
         Route::post('complaints',      [\App\Http\Controllers\Api\ComplaintController::class, 'store']);
 
+        // JORD-84: applicant self-service view of own dues + complaints
+        // filed against them + sanctions on them. Read-only — pay +
+        // decide stay admin-only per manual policy.
+        Route::get('my/dues',          [\App\Http\Controllers\Api\MyOfficeController::class, 'dues']);
+        Route::get('my/complaints',    [\App\Http\Controllers\Api\MyOfficeController::class, 'complaints']);
+        Route::get('my/sanctions',     [\App\Http\Controllers\Api\MyOfficeController::class, 'sanctions']);
+
         // FR-002 to FR-007: Application CRUD
         Route::get('applications',                            [ApplicationController::class, 'index']);
         Route::post('applications',                           [ApplicationController::class, 'store']);

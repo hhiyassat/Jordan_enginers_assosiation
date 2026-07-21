@@ -19,7 +19,7 @@ describe('navItemsForRole', () => {
 
   it('gives applicants only the applicant lanes', () => {
     const links = paths('applicant');
-    expect(links).toEqual(['/dashboard', '/services', '/my-applications']);
+    expect(links).toEqual(['/dashboard', '/services', '/my-applications', '/my-office']);
   });
 
   it('gives staff only the review lane — no admin surface', () => {

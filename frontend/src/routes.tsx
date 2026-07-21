@@ -23,6 +23,7 @@ const ProjectDetail           = React.lazy(() => import('./pages/applicant/Proje
 const Dashboard               = React.lazy(() => import('./pages/applicant/Dashboard').then(m => ({ default: m.Dashboard })));
 const Apply                   = React.lazy(() => import('./pages/applicant/Apply').then(m => ({ default: m.Apply })));
 const MyApplications          = React.lazy(() => import('./pages/applicant/MyApplications').then(m => ({ default: m.MyApplications })));
+const MyOffice                = React.lazy(() => import('./pages/applicant/MyOffice').then(m => ({ default: m.MyOffice })));
 const ReviewQueue             = React.lazy(() => import('./pages/reviewer/ReviewQueue').then(m => ({ default: m.ReviewQueue })));
 const ReviewPanel             = React.lazy(() => import('./pages/reviewer/ReviewPanel').then(m => ({ default: m.ReviewPanel })));
 const AdminDashboard          = React.lazy(() => import('./pages/admin/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
@@ -63,6 +64,8 @@ export function AppRoutes(): JSX.Element {
       <Route path="/projects/:projectId"     element={<RequireApplicant><Layout><ProjectDetail /></Layout></RequireApplicant>} />
       <Route path="/apply/:serviceCode"      element={<RequireApplicant><Layout><Apply /></Layout></RequireApplicant>} />
       <Route path="/my-applications"         element={<RequireApplicant><Layout><MyApplications /></Layout></RequireApplicant>} />
+      {/* JORD-84: applicant self-service — own dues + complaints + sanctions. */}
+      <Route path="/my-office"               element={<RequireApplicant><Layout><MyOffice /></Layout></RequireApplicant>} />
 
       {/* Reviewer — staff / auditor / admin. Applicants navigating here
           used to see the page render followed by a backend 403; now the

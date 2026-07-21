@@ -26,6 +26,8 @@ export function navItemsForRole(role: User['role'] | undefined): NavItem[] {
     items.push({ to: '/dashboard',       labelKey: 'nav.dashboard',    Icon: LayoutDashboard });
     items.push({ to: '/services',        labelKey: 'nav.services',     Icon: Home });
     items.push({ to: '/my-applications', labelKey: 'nav.myRequests',   Icon: FileText });
+    // JORD-84: own dues + complaints + sanctions.
+    items.push({ to: '/my-office',       labelKey: 'nav.myOffice',     Icon: Building2 });
   }
   if (role === 'staff' || role === 'auditor' || role === 'admin') {
     items.push({ to: '/review/queue',    labelKey: 'nav.review',       Icon: ShieldCheck });
