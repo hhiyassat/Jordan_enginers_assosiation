@@ -21,7 +21,10 @@ import { queryClient } from './api/queryClient';
 export default function App(): JSX.Element {
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
+      {/* JORD-86: opt into the v7 startTransition behaviour now so the
+          React Router future-flag warning stops firing on every load
+          and we're already on the code path v7 will make default. */}
+      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <ErrorBoundary>
           <AuthProvider>
             <RouteSuspense>

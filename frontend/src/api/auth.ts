@@ -15,7 +15,10 @@ export const authApi = {
       captcha_id:     captcha?.id,
       captcha_answer: captcha?.answer,
     }),
-  me:     () => request<{ user: User }>('GET', '/auth/me'),
+  // JORD-84 (PM): /auth/me is now a public probe. Guest → {user: null}
+  // with 200; authenticated → {user: <payload>}. Consumers must
+  // null-check `user` before using it.
+  me:     () => request<{ user: User | null }>('GET', '/auth/me'),
   logout: () => request<void>('POST', '/auth/logout'),
   changePassword: (current_password: string, password: string, password_confirmation: string, email?: string) =>
     request<{ message: string }>('POST', '/auth/password/change', {

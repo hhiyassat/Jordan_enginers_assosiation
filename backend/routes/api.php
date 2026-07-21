@@ -57,6 +57,13 @@ Route::prefix('v1')->group(function () {
     Route::post('auth/login',    [AuthController::class, 'login'])->middleware(['throttle:login', 'captcha']);
     Route::post('auth/register', [AuthController::class, 'register'])->middleware(['throttle:register', 'captcha']);
 
+    // JORD-84 (PM): identity probe. Returns {user: null} when there's
+    // no valid session cookie/token, so a blind first-load call
+    // doesn't paint a red 401 in the browser console. The controller
+    // resolves the user through Sanctum's guard manually since this
+    // route intentionally sits outside auth:sanctum.
+    Route::get('auth/me',                          [AuthController::class, 'me']);
+
     // FR-013: Public certificate verification
     Route::get('certificates/verify/{certNumber}', [ApplicationController::class, 'verifyCertificate']);
 
@@ -72,7 +79,11 @@ Route::prefix('v1')->group(function () {
 Route::prefix('v1')->middleware(['auth:sanctum', 'token.inactivity', 'password.policy', 'track.activity'])->group(function () {
 
     // Auth
-    Route::get('auth/me',                  [AuthController::class, 'me']);
+    // NOTE: GET /auth/me lives OUTSIDE the auth:sanctum group (see the
+    // public routes block above) so an unauthenticated first-load probe
+    // returns 200 + {user: null} instead of a 401 that surfaces as a
+    // red row in the browser console (JORD-84 PM). PATCH /auth/me
+    // stays protected — profile updates require an active session.
     Route::post('auth/logout',             [AuthController::class, 'logout']);
     Route::post('auth/password/change',    [AuthController::class, 'changePassword']);
     // JORD-10: user updates their own profile (name + phone).

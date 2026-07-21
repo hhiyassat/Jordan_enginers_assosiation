@@ -138,8 +138,17 @@ class HttpOnlyCookieAuthTest extends TestCase
         $me->assertOk()->assertJsonPath('user.email', 'ap-cookie@t.esp');
     }
 
-    public function test_missing_cookie_and_missing_header_still_401s(): void
+    /**
+     * JORD-84 (PM): GET /auth/me is now a public identity probe.
+     * A missing cookie and missing header return 200 + {user: null}
+     * instead of 401 so a blind first-load call doesn't surface as
+     * a red row in the browser console. Any actual protected route
+     * still 401s — that invariant lives in other tests.
+     */
+    public function test_missing_cookie_and_missing_header_returns_null_user_200(): void
     {
-        $this->getJson('/api/v1/auth/me')->assertStatus(401);
+        $this->getJson('/api/v1/auth/me')
+            ->assertOk()
+            ->assertExactJson(['user' => null]);
     }
 }

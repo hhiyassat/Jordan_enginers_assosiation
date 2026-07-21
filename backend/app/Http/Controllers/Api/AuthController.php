@@ -57,9 +57,27 @@ class AuthController extends Controller
             ->withCookie($this->buildSessionCookie($token));
     }
 
+    /**
+     * JORD-84 (PM): identity probe. Returns 200 in every case:
+     *   • {user: <payload>} when a valid session cookie/token resolves.
+     *   • {user: null}      when there's no session (guest first load).
+     *
+     * Sitting outside the auth:sanctum group means an unauthenticated
+     * probe no longer paints a red 401 in the browser console — the
+     * frontend's AuthProvider always got a 200 back and just checked
+     * whether `user` was populated. We resolve the user manually via
+     * Sanctum's guard because the middleware isn't in the stack for
+     * this route.
+     */
     public function me(Request $request): JsonResponse
     {
-        return response()->json(['user' => $this->userPayload($request->user())]);
+        // Try the token/cookie promoted by ReadTokenFromCookie (global).
+        // sanctum guard reads the Authorization header and returns null
+        // for guests instead of throwing / redirecting.
+        $user = auth('sanctum')->user();
+        return response()->json([
+            'user' => $user instanceof User ? $this->userPayload($user) : null,
+        ]);
     }
 
     public function logout(Request $request): JsonResponse

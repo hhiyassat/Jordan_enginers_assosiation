@@ -35,8 +35,8 @@ describe('downloadCsv', () => {
   it('triggers a click on an <a> with a blob URL and the .csv extension', () => {
     const createObjectURL = vi.fn(() => 'blob:test');
     const revokeObjectURL = vi.fn();
-    (global.URL as unknown as { createObjectURL: typeof createObjectURL; revokeObjectURL: typeof revokeObjectURL }).createObjectURL = createObjectURL;
-    (global.URL as unknown as { createObjectURL: typeof createObjectURL; revokeObjectURL: typeof revokeObjectURL }).revokeObjectURL = revokeObjectURL;
+    (globalThis.URL as unknown as { createObjectURL: typeof createObjectURL; revokeObjectURL: typeof revokeObjectURL }).createObjectURL = createObjectURL;
+    (globalThis.URL as unknown as { createObjectURL: typeof createObjectURL; revokeObjectURL: typeof revokeObjectURL }).revokeObjectURL = revokeObjectURL;
     const clicks: string[] = [];
     const origCreate = document.createElement.bind(document);
     vi.spyOn(document, 'createElement').mockImplementation((tag: string) => {

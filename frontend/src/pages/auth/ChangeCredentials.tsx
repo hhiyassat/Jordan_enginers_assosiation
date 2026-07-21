@@ -65,6 +65,15 @@ export function ChangeCredentials() {
       // wanted (home / dashboard). Token arg is ignored post-JORD-30
       // (session lives in a httpOnly cookie); passing null is fine.
       const me = await authApi.me();
+      // JORD-84 (PM): /auth/me can return null for a guest. That
+      // shouldn't happen here — the user just completed a password
+      // change and the server rotated their token — but if the
+      // session somehow got dropped between login and this fetch,
+      // bounce back to /login rather than crashing the app.
+      if (me.user === null) {
+        navigate('/login', { replace: true });
+        return;
+      }
       login(token, me.user);
       navigate('/', { replace: true });
     } catch (err) {

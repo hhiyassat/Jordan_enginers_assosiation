@@ -81,7 +81,11 @@ class AdminPresenceTest extends TestCase
         Sanctum::actingAs($user);
 
         $this->assertNull($user->fresh()->last_seen_at);
-        $this->getJson('/api/v1/auth/me')->assertOk();
+        // JORD-84 (PM): /auth/me moved outside auth:sanctum so it no
+        // longer runs the track.activity middleware. Poll the unread-count
+        // endpoint instead — it's the frontend's actual "am I alive"
+        // heartbeat and is inside the authenticated group.
+        $this->getJson('/api/v1/notifications/unread-count')->assertOk();
         $this->assertNotNull($user->fresh()->last_seen_at);
     }
 
@@ -94,7 +98,11 @@ class AdminPresenceTest extends TestCase
         $stampBefore = $user->fresh()->last_seen_at;
         Sanctum::actingAs($user);
 
-        $this->getJson('/api/v1/auth/me')->assertOk();
+        // JORD-84 (PM): /auth/me moved outside auth:sanctum so it no
+        // longer runs the track.activity middleware. Poll the unread-count
+        // endpoint instead — it's the frontend's actual "am I alive"
+        // heartbeat and is inside the authenticated group.
+        $this->getJson('/api/v1/notifications/unread-count')->assertOk();
         $this->assertTrue($stampBefore->equalTo($user->fresh()->last_seen_at));
     }
 }

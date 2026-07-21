@@ -119,13 +119,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }): JSX.E
       // only if the answer really is a different user.
       authApi.me()
         .then(r => {
+          // JORD-84 (PM): /auth/me now returns {user: null} for guests
+          // instead of 401. Treat null the same as a peer sign-out —
+          // clear the local session, no lock modal.
+          if (r.user === null) {
+            if (current) setUser(null);
+            return;
+          }
           if (r.user.id !== current?.id) {
             setStaleTabNotice({ newUser: r.user });
           }
         })
         .catch(() => {
-          // Server says we're not logged in either. Treat as a silent
-          // logout — no lock modal.
+          // Network / server error. Treat as a silent logout — no lock modal.
           if (current) setUser(null);
         });
     });
@@ -149,7 +155,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }): JSX.E
   };
 
   const logout = (): void => {
-    authApi.logout().catch(() => {});
+    // JORD-80: the backend call is fire-and-forget from the UI's
+    // perspective — the local session must clear even if the network
+    // is down — but a swallowed error hid genuine failures (revoked
+    // token still valid on the backend, cookie couldn't be forgotten,
+    // etc.). Route the failure through console.warn so it lands in
+    // the same channel any error-reporter (Sentry, etc.) picks up
+    // without blocking the local logout flow.
+    authApi.logout().catch((err: unknown) => {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.warn('[auth] logout request failed (local session cleared anyway):', msg);
+    });
     setUser(null);
     broadcastAuthChange(null);
   };
