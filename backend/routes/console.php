@@ -61,3 +61,16 @@ Schedule::command('dues:open-annual')
             'Annual-dues opening failed — offices not billed for the year'
         );
     });
+
+// ── JORD-80: retention reminders (5-yr drawing + 6-mo supervision) ─
+//
+// Daily 05:00 UTC scan of approved applications. Emits 30/7/1-day
+// reminders for drawing approvals nearing their 60-month validity
+// (JORD-58) and supervision contracts nearing their 6-month window
+// (JORD-59). NotificationService dedupes on (app_id, kind, threshold)
+// so daily re-runs during the 30-day window don't spam.
+
+Schedule::command('retention:remind')
+    ->dailyAt('05:00')
+    ->withoutOverlapping()
+    ->runInBackground();

@@ -86,6 +86,69 @@ final class NotificationService
     }
 
     /**
+     * JORD-80: retention reminder — fires from the daily
+     * RemindExpiries cron when a drawing approval or supervision
+     * contract has X days left before it lapses. Idempotent per
+     * (application_id × kind × threshold_days): a duplicate call
+     * with the same tuple returns the existing notification rather
+     * than spamming the applicant.
+     *
+     * @param  'output_validity'|'supervision' $kind
+     */
+    public function emitExpiryReminder(
+        Application $app,
+        string $kind,
+        int $daysRemaining,
+    ): Notification {
+        $recipient = $app->applicant;
+        if (!$recipient) {
+            throw new \InvalidArgumentException('Application has no applicant to notify.');
+        }
+
+        $type = "reminder.{$kind}_expiry";
+        $payloadTag = ['threshold_days' => $daysRemaining];
+
+        // Idempotency: query for a prior reminder for this same
+        // (app, kind, threshold). Prevents the cron from re-sending
+        // the "7 days left" notice every day it re-runs during that
+        // 7-day window.
+        $existing = Notification::where('related_type', Application::class)
+            ->where('related_id', $app->id)
+            ->where('type', $type)
+            ->where('payload->threshold_days', $daysRemaining)
+            ->first();
+        if ($existing) return $existing;
+
+        $labels = [
+            'output_validity' => [
+                'ar' => 'صلاحية المخططات',
+                'en' => 'Drawing approval',
+            ],
+            'supervision' => [
+                'ar' => 'صلاحية عقد الإشراف',
+                'en' => 'Supervision contract',
+            ],
+        ][$kind] ?? ['ar' => 'صلاحية', 'en' => 'Expiry'];
+
+        return $this->dispatch(
+            recipient: $recipient,
+            type:      $type,
+            title:     sprintf('%s — تنتهي خلال %d %s',
+                          $labels['ar'],
+                          $daysRemaining,
+                          $daysRemaining === 1 ? 'يوم' : 'أيام'),
+            body:      sprintf('طلبك رقم %s: %s ستنتهي خلال %d %s. يُنصح باتخاذ الإجراء اللازم.',
+                          $app->reference_number,
+                          $labels['ar'],
+                          $daysRemaining,
+                          $daysRemaining === 1 ? 'يوم' : 'أيام'),
+            link:      "/my-applications",
+            app:       $app,
+            payload:   $payloadTag,
+        );
+    }
+
+    /**
      * Central builder. Every emit* method funnels through here so
      * organization_id, related_type/id, and payload defaults land in one place.
      *
