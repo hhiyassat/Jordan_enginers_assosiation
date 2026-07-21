@@ -15,7 +15,8 @@
     "users": "إدارة المستخدمين",
     "officesSettings": "إعدادات المكاتب",
     "complaints": "الشكاوى",
-    "legalFines": "الغرامات القانونية"
+    "legalFines": "الغرامات القانونية",
+    "supervisionTransfers": "نقل الإشراف"
   },
   "layout": {
     "sidebarLabel": "القائمة الجانبية",

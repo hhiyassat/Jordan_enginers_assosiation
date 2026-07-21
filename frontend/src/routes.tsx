@@ -38,6 +38,7 @@ const OfficeSettings          = React.lazy(() => import('./pages/admin/OfficeSet
 const OfficeDues              = React.lazy(() => import('./pages/admin/OfficeDues').then(m => ({ default: m.OfficeDues })));
 const ComplaintsAdmin         = React.lazy(() => import('./pages/admin/ComplaintsAdmin').then(m => ({ default: m.ComplaintsAdmin })));
 const LegalFinesAdmin         = React.lazy(() => import('./pages/admin/LegalFinesAdmin').then(m => ({ default: m.LegalFinesAdmin })));
+const SupervisionTransfersAdmin = React.lazy(() => import('./pages/admin/SupervisionTransfersAdmin').then(m => ({ default: m.SupervisionTransfersAdmin })));
 const ChangeCredentials       = React.lazy(() => import('./pages/auth/ChangeCredentials').then(m => ({ default: m.ChangeCredentials })));
 const Profile                 = React.lazy(() => import('./pages/auth/Profile').then(m => ({ default: m.Profile })));
 
@@ -90,6 +91,9 @@ export function AppRoutes(): JSX.Element {
 
       {/* JORD-82 UI: legal fines (Art.14 unlicensed-contractor) */}
       <Route path="/admin/legal-fines"          element={<RequireAdmin><Layout><LegalFinesAdmin /></Layout></RequireAdmin>} />
+
+      {/* JORD-83 UI: supervision transfer queue */}
+      <Route path="/admin/supervision-transfers" element={<RequireAdmin><Layout><SupervisionTransfersAdmin /></Layout></RequireAdmin>} />
 
       {/* User management — admin + superuser */}
       <Route path="/admin/users" element={<RequireUserManager><Layout><UserManagement /></Layout></RequireUserManager>} />

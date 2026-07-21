@@ -15,7 +15,8 @@
     "users": "Users",
     "officesSettings": "Offices",
     "complaints": "Complaints",
-    "legalFines": "Legal Fines"
+    "legalFines": "Legal Fines",
+    "supervisionTransfers": "Supervision Transfers"
   },
   "layout": {
     "sidebarLabel": "Sidebar navigation",

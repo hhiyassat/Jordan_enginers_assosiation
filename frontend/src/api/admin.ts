@@ -289,4 +289,36 @@ export const adminApi = {
 
   payLegalFine: (id: number, payment_reference: string) =>
     request<{ message: string }>('POST', `/admin/legal-fines/${id}/pay`, { payment_reference }),
+
+  /**
+   * JORD-83 UI: supervision transfer queue. Auto-populated by
+   * ComplaintController on suspension_2yr / deregistration; admin
+   * assigns receiving office; target accepts or declines.
+   */
+  listSupervisionTransfers: (status?: 'pending' | 'assigned' | 'accepted' | 'declined') =>
+    request<{
+      transfers: Array<{
+        id: number;
+        status: 'pending' | 'assigned' | 'accepted' | 'declined';
+        fee_waived: boolean;
+        notes: string | null;
+        assigned_at: string | null;
+        accepted_at: string | null;
+        created_at: string;
+        application: {
+          id: number;
+          reference_number: string;
+          status: string;
+          service_definition: { id: number; code: string; name_ar: string; name_en: string } | null;
+        } | null;
+        source_office: { id: number; name: string; email: string } | null;
+        target_office: { id: number; name: string; email: string } | null;
+      }>;
+    }>('GET', status ? `/admin/supervision-transfers?status=${status}` : '/admin/supervision-transfers'),
+
+  assignSupervisionTransfer: (id: number, target_office_user_id: number, notes?: string) =>
+    request<{ message: string }>('POST', `/admin/supervision-transfers/${id}/assign`, { target_office_user_id, notes }),
+
+  acceptOrDeclineSupervisionTransfer: (id: number, outcome: 'accept' | 'decline', notes?: string) =>
+    request<{ message: string }>('POST', `/admin/supervision-transfers/${id}/accept-decline`, { outcome, notes }),
 };
