@@ -141,11 +141,30 @@ class ComplaintController extends Controller
             'decision_notes'     => $data['notes'] ?? null,
         ]);
 
+        // JORD-83: if the sanction is severe enough (long suspension
+        // or deregistration), the manual (p.30) requires every
+        // pending supervision contract to be transferred to another
+        // office. Auto-flag them all here so the admin queue has
+        // work waiting when they view the transfers page.
+        $transfersOpened = 0;
+        if ($sanction) {
+            $svc = app(\App\Services\SupervisionTransferService::class);
+            if ($svc->sanctionRequiresTransfer($sanction)) {
+                $target = \App\Models\User::find($complaint->target_office_user_id);
+                if ($target) {
+                    $transfersOpened = $svc->openTransfersFor($target, $sanction);
+                }
+            }
+        }
+
         return response()->json([
-            'complaint' => $complaint->fresh(),
-            'sanction'  => $sanction,
-            'message'   => $data['decision'] === 'sanction'
-                ? 'تم إصدار العقوبة.'
+            'complaint'         => $complaint->fresh(),
+            'sanction'          => $sanction,
+            'transfers_opened'  => $transfersOpened,
+            'message'           => $data['decision'] === 'sanction'
+                ? 'تم إصدار العقوبة.' . ($transfersOpened > 0
+                    ? " تم فتح {$transfersOpened} طلب نقل إشراف."
+                    : '')
                 : 'تم رفض الشكوى.',
         ]);
     }

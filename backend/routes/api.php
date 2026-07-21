@@ -194,6 +194,13 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'token.inactivity', 'password.p
         Route::get('admin/legal-fines',                  [\App\Http\Controllers\Api\LegalFineController::class, 'index']);
         Route::post('admin/legal-fines',                 [\App\Http\Controllers\Api\LegalFineController::class, 'store']);
         Route::post('admin/legal-fines/{id}/pay',        [\App\Http\Controllers\Api\LegalFineController::class, 'pay']);
+
+        // JORD-83: supervision transfer queue (C-07, p.30). Auto-
+        // populated when a suspension_2yr / deregistration sanction
+        // fires; admin assigns receiving office; target accepts/declines.
+        Route::get('admin/supervision-transfers',                        [\App\Http\Controllers\Api\SupervisionTransferController::class, 'index']);
+        Route::post('admin/supervision-transfers/{id}/assign',           [\App\Http\Controllers\Api\SupervisionTransferController::class, 'assign']);
+        Route::post('admin/supervision-transfers/{id}/accept-decline',   [\App\Http\Controllers\Api\SupervisionTransferController::class, 'acceptOrDecline']);
     });
 
     // ── User management ─────────────────────────────────────────────────
