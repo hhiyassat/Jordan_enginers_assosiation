@@ -48,6 +48,10 @@ class DatabaseSeeder extends Seeder
             // the earlier seeders set (matrix on DRW-P-*, per_unit on
             // DRW-P-006 + SRV-007/012).
             FeeSurchargesSeeder::class,
+            // JORD-67: engineer quotas + office ceilings (JEA Ch. 9).
+            // Data-model foundation; consumption + enforcement land in
+            // JORD-68/69. Depends on Engineers seeded upstream.
+            QuotasAndCeilingsSeeder::class,
             // JeaDrawingsSeeder omitted — its 7 DRW-* rows duplicate the
             // richer DRW-P-* set produced by ServicePlan2026Seeder + the
             // real workflows attached by CatalogWorkflowsSeeder.
