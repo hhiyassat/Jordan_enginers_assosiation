@@ -95,6 +95,38 @@ export const adminApi = {
   updateServiceStatus: (id: number, status: 'active' | 'inactive' | 'draft') =>
     request<{ service: ServiceDefinition }>('PATCH', `/services/${id}/status`, { status }),
 
+  /** JORD-85: compact fee-only listing for the admin fee editor grid.
+   *  Returns one row per service with just the fee sub-block. */
+  listServiceFees: () => request<{
+    fees: Array<{
+      id: number;
+      code: string;
+      parent_code: string | null;
+      name_ar: string;
+      name_en: string;
+      status: 'active' | 'inactive' | 'draft';
+      is_locked: boolean;
+      fee: {
+        type?: 'fixed' | 'per_unit' | 'free';
+        amount?: number;
+        currency?: string;
+        basis?: string;
+        rate?: number;
+        source?: string;
+      } | null;
+    }>;
+  }>('GET', '/admin/service-fees'),
+
+  /** JORD-85: focused fee editor. Sends only the fee payload — no need
+   *  to round-trip the whole schema for a rate change. */
+  updateServiceFee: (
+    id: number,
+    payload:
+      | { type: 'fixed'; amount: number; currency?: string; notes?: string }
+      | { type: 'per_unit'; basis: string; rate: number; currency?: string; notes?: string }
+      | { type: 'free'; notes?: string }
+  ) => request<{ service: ServiceDefinition }>('PATCH', `/admin/services/${id}/fee`, payload),
+
   /** Update service schema/metadata */
   updateService: (id: number, data: Partial<{
     name_ar: string; name_en: string; description_ar: string;

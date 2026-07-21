@@ -1,6 +1,7 @@
 import {
   LayoutDashboard, Home, FileText, ShieldCheck, Settings, ClipboardList,
   PlusCircle, Zap, User as UserIcon, Building2, Gavel, Scale, ArrowRightLeft,
+  DollarSign,
   type LucideIcon,
 } from 'lucide-react';
 import type { User } from '../types';
@@ -49,6 +50,8 @@ export function navItemsForRole(role: User['role'] | undefined): NavItem[] {
     items.push({ to: '/admin/complaints',             labelKey: 'nav.complaints',           Icon: Gavel });
     items.push({ to: '/admin/legal-fines',            labelKey: 'nav.legalFines',           Icon: Scale });
     items.push({ to: '/admin/supervision-transfers',  labelKey: 'nav.supervisionTransfers', Icon: ArrowRightLeft });
+    // JORD-85: admin fee editor for every service.
+    items.push({ to: '/admin/service-fees',           labelKey: 'nav.serviceFees',          Icon: DollarSign });
   }
   return items;
 }

@@ -17,7 +17,8 @@
     "officesSettings": "Offices",
     "complaints": "Complaints",
     "legalFines": "Legal Fines",
-    "supervisionTransfers": "Supervision Transfers"
+    "supervisionTransfers": "Supervision Transfers",
+    "serviceFees": "Service Fees"
   },
   "layout": {
     "sidebarLabel": "Sidebar navigation",

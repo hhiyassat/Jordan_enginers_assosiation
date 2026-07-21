@@ -17,7 +17,8 @@
     "officesSettings": "إعدادات المكاتب",
     "complaints": "الشكاوى",
     "legalFines": "الغرامات القانونية",
-    "supervisionTransfers": "نقل الإشراف"
+    "supervisionTransfers": "نقل الإشراف",
+    "serviceFees": "رسوم الخدمات"
   },
   "layout": {
     "sidebarLabel": "القائمة الجانبية",

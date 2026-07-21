@@ -67,6 +67,11 @@ class DatabaseSeeder extends Seeder
             // JORD-78: site-survey base fees (150 fils/lm + 1% syndicate)
             // per JEA p.96. Wires SRV-001..006 with real per-lm pricing.
             SiteSurveyFeesSeeder::class,
+            // JORD-85: admin-editable fee defaults for every service
+            // whose fee block is still the placeholder `fixed 0` — sets
+            // 50000 JOD until the F-07 amounts are wired per-service
+            // through the admin fee editor.
+            ServiceFeeDefaultsSeeder::class,
             // JeaDrawingsSeeder omitted — its 7 DRW-* rows duplicate the
             // richer DRW-P-* set produced by ServicePlan2026Seeder + the
             // real workflows attached by CatalogWorkflowsSeeder.

@@ -160,6 +160,10 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'token.inactivity', 'password.p
         Route::post('services',                            [ServiceCatalogController::class, 'store']);
         Route::put('services/{id}',                        [ServiceCatalogController::class, 'update']);
         Route::patch('services/{id}/status',               [ServiceCatalogController::class, 'updateStatus']);
+        // JORD-85: focused fee editor. Compact fee payload only —
+        // avoids sending the whole schema for a rate change.
+        Route::get('admin/service-fees',                   [ServiceCatalogController::class, 'adminFeesIndex']);
+        Route::patch('admin/services/{id}/fee',            [ServiceCatalogController::class, 'updateFee']);
         // Lock/unlock — every mutation above refuses when is_locked=true,
         // so unlocking is an explicit action separate from ordinary edits.
         Route::post('admin/services/{id}/lock',            [ServiceCatalogController::class, 'lock']);

@@ -37,6 +37,7 @@ const UserManagement          = React.lazy(() => import('./pages/admin/UserManag
 const OfficesList             = React.lazy(() => import('./pages/admin/OfficesList').then(m => ({ default: m.OfficesList })));
 const OfficeSettings          = React.lazy(() => import('./pages/admin/OfficeSettings').then(m => ({ default: m.OfficeSettings })));
 const OfficeDues              = React.lazy(() => import('./pages/admin/OfficeDues').then(m => ({ default: m.OfficeDues })));
+const ServiceFeesAdmin        = React.lazy(() => import('./pages/admin/ServiceFeesAdmin').then(m => ({ default: m.ServiceFeesAdmin })));
 const ComplaintsAdmin         = React.lazy(() => import('./pages/admin/ComplaintsAdmin').then(m => ({ default: m.ComplaintsAdmin })));
 const LegalFinesAdmin         = React.lazy(() => import('./pages/admin/LegalFinesAdmin').then(m => ({ default: m.LegalFinesAdmin })));
 const SupervisionTransfersAdmin = React.lazy(() => import('./pages/admin/SupervisionTransfersAdmin').then(m => ({ default: m.SupervisionTransfersAdmin })));
@@ -97,6 +98,9 @@ export function AppRoutes(): JSX.Element {
 
       {/* JORD-83 UI: supervision transfer queue */}
       <Route path="/admin/supervision-transfers" element={<RequireAdmin><Layout><SupervisionTransfersAdmin /></Layout></RequireAdmin>} />
+
+      {/* JORD-85: admin fee editor for every service */}
+      <Route path="/admin/service-fees"          element={<RequireAdmin><Layout><ServiceFeesAdmin /></Layout></RequireAdmin>} />
 
       {/* User management — admin + superuser */}
       <Route path="/admin/users" element={<RequireUserManager><Layout><UserManagement /></Layout></RequireUserManager>} />
