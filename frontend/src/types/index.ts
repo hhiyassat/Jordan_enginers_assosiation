@@ -53,6 +53,14 @@ export interface SchemaField {
   min?: number;
   max?: number;
   options?: SchemaFieldOption[];
+  /**
+   * JORD-69: dynamic-options endpoint for select fields whose choices
+   * change per-tenant / per-user (e.g. the office's engineer roster).
+   * When present, DynamicForm fetches from this API path on mount
+   * and uses the response as options[]. Backend accepts either
+   * static options or this endpoint, not both.
+   */
+  options_endpoint?: string;
   conditional?: { field: string; value: string };
   /**
    * JORD-48a: optional render order within a section. When set,

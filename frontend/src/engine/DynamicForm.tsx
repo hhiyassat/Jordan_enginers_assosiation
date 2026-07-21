@@ -287,20 +287,15 @@ function FieldInput({ field, value, onChange, onBlur, disabled, hasError, placeh
 
     case 'select':
       return (
-        <select
-          className={cls}
-          value={String(value ?? '')}
-          onChange={e => onChange(e.target.value)}
+        <DynamicSelect
+          field={field}
+          cls={cls}
+          value={value}
+          onChange={onChange}
           onBlur={onBlur}
           disabled={disabled}
-        >
-          <option value="">— {locale === 'ar' ? 'اختر' : 'Select'} —</option>
-          {field.options?.map(opt => (
-            <option key={opt.value} value={opt.value}>
-              {locale === 'ar' ? opt.label_ar : opt.label_en}
-            </option>
-          ))}
-        </select>
+          locale={locale}
+        />
       );
 
     case 'radio':
@@ -408,4 +403,74 @@ function FieldInput({ field, value, onChange, onBlur, disabled, hasError, placeh
         />
       );
   }
+}
+
+/**
+ * JORD-69: select with either static options[] or a runtime-fetched
+ * option list from field.options_endpoint. Split out of FieldInput's
+ * switch because it needs its own useEffect / useState — the switch
+ * arms can't hold hooks. Any select field without options_endpoint
+ * behaves exactly as before (options[] passed in).
+ */
+interface DynamicSelectProps {
+  field: SchemaField;
+  cls: string;
+  value: unknown;
+  onChange: (v: unknown) => void;
+  onBlur: () => void;
+  disabled: boolean;
+  locale: 'ar' | 'en';
+}
+
+function DynamicSelect({ field, cls, value, onChange, onBlur, disabled, locale }: DynamicSelectProps) {
+  const [dynamicOptions, setDynamicOptions] = React.useState<SchemaField['options'] | null>(null);
+  const [loading, setLoading] = React.useState<boolean>(!!field.options_endpoint);
+
+  React.useEffect(() => {
+    if (!field.options_endpoint) return;
+    // The endpoint is expected to return `{ <collection>: [{ id, name_ar, ... }] }`.
+    // /engineers is the only consumer today so we specialize:
+    //  - shape: { engineers: [{ id, name_ar, name_en, specialization }] }
+    //  - value: engineer.id (numeric)
+    //  - label: engineer.name_ar (with (specialization) suffix)
+    // Future endpoints will need their own mapper here; a generic
+    // "list at .data[]" shape is the natural next extension.
+    import('../api/http').then(({ request }) => {
+      return request<{ engineers?: Array<{ id: number; name_ar: string; name_en?: string; specialization?: string }> }>(
+        'GET', field.options_endpoint!
+      );
+    }).then(res => {
+      const list = res.engineers ?? [];
+      setDynamicOptions(list.map(e => ({
+        value: String(e.id),
+        label_ar: e.specialization ? `${e.name_ar} (${e.specialization})` : e.name_ar,
+        label_en: e.name_en ?? e.name_ar,
+      })));
+    }).catch(() => {
+      setDynamicOptions([]);
+    }).finally(() => setLoading(false));
+  }, [field.options_endpoint]);
+
+  const options = dynamicOptions ?? field.options ?? [];
+
+  return (
+    <select
+      className={cls}
+      value={String(value ?? '')}
+      onChange={e => onChange(e.target.value)}
+      onBlur={onBlur}
+      disabled={disabled || loading}
+    >
+      <option value="">
+        {loading
+          ? (locale === 'ar' ? 'جارٍ التحميل…' : 'Loading…')
+          : `— ${locale === 'ar' ? 'اختر' : 'Select'} —`}
+      </option>
+      {options.map(opt => (
+        <option key={opt.value} value={opt.value}>
+          {locale === 'ar' ? opt.label_ar : opt.label_en}
+        </option>
+      ))}
+    </select>
+  );
 }

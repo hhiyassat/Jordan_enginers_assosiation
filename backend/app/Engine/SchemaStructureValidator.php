@@ -170,9 +170,14 @@ class SchemaStructureValidator
             }
 
             // select/radio/multiselect/checkbox_group must have options
+            // OR an options_endpoint that the frontend fetches at render
+            // time (JORD-69). Either satisfies the "there must be
+            // choices" contract; both empty simultaneously is invalid.
             if (in_array($field['type'] ?? '', ['select', 'radio', 'multiselect', 'checkbox_group'])) {
-                if (! isset($field['options']) || ! is_array($field['options']) || count($field['options']) === 0) {
-                    $this->errors[$prefix . '.options'] = "الحقل [{$i}] من نوع {$field['type']} يجب أن يحتوي على قائمة options غير فارغة.";
+                $hasStaticOptions   = isset($field['options']) && is_array($field['options']) && count($field['options']) > 0;
+                $hasDynamicEndpoint = !empty($field['options_endpoint']) && is_string($field['options_endpoint']);
+                if (!$hasStaticOptions && !$hasDynamicEndpoint) {
+                    $this->errors[$prefix . '.options'] = "الحقل [{$i}] من نوع {$field['type']} يجب أن يحتوي على قائمة options أو options_endpoint.";
                 }
             }
 

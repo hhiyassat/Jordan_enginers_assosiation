@@ -247,6 +247,18 @@ class ApplicationController extends Controller
             ], 422);
         }
 
+        // JORD-69: capacity gate — engineer's yearly discipline quota AND
+        // the office's yearly ceiling must have room for this submission's
+        // area_m2. Only fires on services that declare an area_m2 field;
+        // returns [] (pass-through) for everything else.
+        $capacityErrors = app(\App\Engine\CapacityGuard::class)->validate($app);
+        if ($capacityErrors) {
+            return response()->json([
+                'message' => 'الرصيد الهندسي غير كافٍ. يرجى مراجعة الحصة والسقف السنوي.',
+                'errors'  => $capacityErrors,
+            ], 422);
+        }
+
         // WF-001: delegate to WorkflowEngine (EDA B-5, B-9)
         $engine = new WorkflowEngine($service);
         $app    = $engine->submit($app, $request->user());

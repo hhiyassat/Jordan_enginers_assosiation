@@ -52,6 +52,10 @@ class DatabaseSeeder extends Seeder
             // Data-model foundation; consumption + enforcement land in
             // JORD-68/69. Depends on Engineers seeded upstream.
             QuotasAndCeilingsSeeder::class,
+            // JORD-69: adds `engineer_id` select field to every DRW-P-*
+            // so the applicant picks the responsible engineer. Frontend
+            // fetches options from /engineers at render time.
+            DrawingEngineerPickerSeeder::class,
             // JeaDrawingsSeeder omitted — its 7 DRW-* rows duplicate the
             // richer DRW-P-* set produced by ServicePlan2026Seeder + the
             // real workflows attached by CatalogWorkflowsSeeder.
