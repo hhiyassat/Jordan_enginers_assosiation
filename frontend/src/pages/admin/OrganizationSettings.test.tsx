@@ -42,29 +42,96 @@ describe('OrganizationSettings (JORD-76)', () => {
     render(<MemoryRouter><OrganizationSettings /></MemoryRouter>);
 
     await waitFor(() => expect(screen.getByText(/جائزة الملك عبد الله للتميز/)).toBeInTheDocument());
-    // has_iso_cert is true in the payload — its badge (+5%) renders.
+    // has_iso_cert is true in the payload → checkbox pre-checked.
     const isoRow = screen.getByTestId('org-flag-has_iso_cert');
     expect(isoRow.querySelector('input[type=checkbox]')).toBeChecked();
-    // has_excellence_award is false — unchecked, no +5% badge inside its row.
+    // has_excellence_award is false → unchecked.
     const awardRow = screen.getByTestId('org-flag-has_excellence_award');
     expect(awardRow.querySelector('input[type=checkbox]')).not.toBeChecked();
   });
 
-  it('optimistically toggles a flag and calls the API', async () => {
+  it('does not render the save bar when the page is clean', async () => {
     mockGet.mockResolvedValue(orgPayload);
-    mockUpdateOrgFlags.mockResolvedValue({ message: 'ok' });
+    render(<MemoryRouter><OrganizationSettings /></MemoryRouter>);
+    await waitFor(() => expect(screen.getByText(/جائزة الملك عبد الله للتميز/)).toBeInTheDocument());
+    expect(screen.queryByTestId('save-bar')).toBeNull();
+  });
+
+  it('toggling a flag surfaces the save bar and marks the row as unsaved', async () => {
+    mockGet.mockResolvedValue(orgPayload);
     render(<MemoryRouter><OrganizationSettings /></MemoryRouter>);
     await waitFor(() => expect(screen.getByTestId('org-flag-is_bit_khibra')).toBeInTheDocument());
 
     const bitKhibraRow = screen.getByTestId('org-flag-is_bit_khibra');
     await userEvent.click(bitKhibraRow.querySelector('input[type=checkbox]')!);
 
-    expect(mockUpdateOrgFlags).toHaveBeenCalledWith({ is_bit_khibra: true });
-    // Optimistic update: badge appears immediately.
-    await waitFor(() => expect(bitKhibraRow.querySelector('input[type=checkbox]')).toBeChecked());
+    // Save bar appears with a "1 unsaved change" counter.
+    const saveBar = screen.getByTestId('save-bar');
+    expect(saveBar).toBeInTheDocument();
+    expect(saveBar.textContent).toMatch(/1/);
+    // The row itself gets an "unsaved" badge.
+    expect(bitKhibraRow.textContent).toMatch(/تغيير غير محفوظ|unsaved/);
+    // API has NOT been called yet — save is deferred to the button.
+    expect(mockUpdateOrgFlags).not.toHaveBeenCalled();
   });
 
-  it('reverts the toggle when the save fails', async () => {
+  it('save button PATCHes only the changed subset of org flags', async () => {
+    mockGet.mockResolvedValue(orgPayload);
+    mockUpdateOrgFlags.mockResolvedValue({ message: 'ok' });
+    render(<MemoryRouter><OrganizationSettings /></MemoryRouter>);
+    await waitFor(() => expect(screen.getByTestId('org-flag-has_excellence_award')).toBeInTheDocument());
+
+    // Toggle two of the three flags, leave the third alone.
+    await userEvent.click(screen.getByTestId('org-flag-has_excellence_award').querySelector('input[type=checkbox]')!);
+    await userEvent.click(screen.getByTestId('org-flag-is_bit_khibra').querySelector('input[type=checkbox]')!);
+    await userEvent.click(screen.getByTestId('save-btn'));
+
+    await waitFor(() => expect(mockUpdateOrgFlags).toHaveBeenCalledTimes(1));
+    // The PATCH payload carries ONLY the two flipped flags — has_iso_cert
+    // was untouched and MUST NOT be resent (idempotent-safe but noisy).
+    expect(mockUpdateOrgFlags).toHaveBeenCalledWith({
+      has_excellence_award: true,
+      is_bit_khibra: true,
+    });
+    // Success banner shows and save bar disappears (page re-clean).
+    expect(screen.getByText(/تم حفظ|Changes saved/)).toBeInTheDocument();
+    expect(screen.queryByTestId('save-bar')).toBeNull();
+  });
+
+  it('save button also PATCHes each changed engineer in parallel', async () => {
+    mockGet.mockResolvedValue(orgPayload);
+    mockUpdateOrgFlags.mockResolvedValue({ message: 'ok' });
+    mockUpdateEngineer.mockResolvedValue({ message: 'ok' });
+    render(<MemoryRouter><OrganizationSettings /></MemoryRouter>);
+    await waitFor(() => expect(screen.getByText('م. أحمد')).toBeInTheDocument());
+
+    // Toggle Ahmad ON (was false) — Sara stays ON (unchanged).
+    await userEvent.click(screen.getByTestId('engineer-flag-10').querySelector('input[type=checkbox]')!);
+    await userEvent.click(screen.getByTestId('save-btn'));
+
+    await waitFor(() => expect(mockUpdateEngineer).toHaveBeenCalledTimes(1));
+    expect(mockUpdateEngineer).toHaveBeenCalledWith(10, true);
+    // Sara (id=11) MUST NOT be in the calls — she wasn't toggled.
+    expect(mockUpdateEngineer).not.toHaveBeenCalledWith(11, expect.anything());
+    // Org flags weren't touched — that PATCH must not fire either.
+    expect(mockUpdateOrgFlags).not.toHaveBeenCalled();
+  });
+
+  it('reverting drops all edits and hides the save bar', async () => {
+    mockGet.mockResolvedValue(orgPayload);
+    render(<MemoryRouter><OrganizationSettings /></MemoryRouter>);
+    await waitFor(() => expect(screen.getByTestId('org-flag-is_bit_khibra')).toBeInTheDocument());
+
+    await userEvent.click(screen.getByTestId('org-flag-is_bit_khibra').querySelector('input[type=checkbox]')!);
+    expect(screen.getByTestId('save-bar')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByTestId('reset-btn'));
+
+    expect(screen.queryByTestId('save-bar')).toBeNull();
+    expect(screen.getByTestId('org-flag-is_bit_khibra').querySelector('input[type=checkbox]')).not.toBeChecked();
+  });
+
+  it('keeps unsaved edits + shows the error when save fails', async () => {
     mockGet.mockResolvedValue(orgPayload);
     mockUpdateOrgFlags.mockRejectedValue(new Error('server error'));
     render(<MemoryRouter><OrganizationSettings /></MemoryRouter>);
@@ -72,32 +139,12 @@ describe('OrganizationSettings (JORD-76)', () => {
 
     const awardRow = screen.getByTestId('org-flag-has_excellence_award');
     await userEvent.click(awardRow.querySelector('input[type=checkbox]')!);
+    await userEvent.click(screen.getByTestId('save-btn'));
 
-    // On failure, the checkbox should revert to false and the error surfaces.
-    await waitFor(() => expect(awardRow.querySelector('input[type=checkbox]')).not.toBeChecked());
-    expect(screen.getByText(/server error/)).toBeInTheDocument();
-  });
-
-  it('renders the engineer roster with the correct pre-checked state', async () => {
-    mockGet.mockResolvedValue(orgPayload);
-    render(<MemoryRouter><OrganizationSettings /></MemoryRouter>);
-
-    await waitFor(() => expect(screen.getByText('م. أحمد')).toBeInTheDocument());
-    // Ahmad NOT spec head, Sara IS.
-    const ahmadRow = screen.getByTestId('engineer-flag-10');
-    const saraRow  = screen.getByTestId('engineer-flag-11');
-    expect(ahmadRow.querySelector('input[type=checkbox]')).not.toBeChecked();
-    expect(saraRow.querySelector('input[type=checkbox]')).toBeChecked();
-  });
-
-  it('toggles specialization-head on an engineer and calls the API', async () => {
-    mockGet.mockResolvedValue(orgPayload);
-    mockUpdateEngineer.mockResolvedValue({ message: 'ok' });
-    render(<MemoryRouter><OrganizationSettings /></MemoryRouter>);
-    await waitFor(() => expect(screen.getByText('م. أحمد')).toBeInTheDocument());
-
-    await userEvent.click(screen.getByTestId('engineer-flag-10').querySelector('input[type=checkbox]')!);
-    expect(mockUpdateEngineer).toHaveBeenCalledWith(10, true);
+    await waitFor(() => expect(screen.getByText(/server error/)).toBeInTheDocument());
+    // Draft state NOT reverted — user can retry without redoing the click.
+    expect(awardRow.querySelector('input[type=checkbox]')).toBeChecked();
+    expect(screen.getByTestId('save-bar')).toBeInTheDocument();
   });
 
   it('renders empty state when the office has no engineers', async () => {
