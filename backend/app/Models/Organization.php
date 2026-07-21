@@ -28,4 +28,22 @@ class Organization extends Model
     public function users(): HasMany        { return $this->hasMany(User::class); }
     public function services(): HasMany     { return $this->hasMany(ServiceDefinition::class); }
     public function applications(): HasMany { return $this->hasMany(Application::class); }
+
+    /**
+     * JORD-73: the coalition this office currently belongs to, if any.
+     * A membership is "active" iff both:
+     *   • the coalition itself hasn't been dissolved
+     *   • the office hasn't left it
+     * Returns null when the office is standalone (the common case).
+     */
+    public function activeCoalition(): ?OfficeCoalition
+    {
+        $member = OfficeCoalitionMember::where('organization_id', $this->id)
+            ->whereNull('left_at')
+            ->latest()
+            ->first();
+        if (!$member) return null;
+        $coalition = $member->coalition;
+        return ($coalition && $coalition->isActive()) ? $coalition : null;
+    }
 }

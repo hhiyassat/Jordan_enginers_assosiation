@@ -8,6 +8,7 @@ use App\Models\Application;
 use App\Models\Engineer;
 use App\Models\EngineerDisciplineQuota;
 use App\Models\OfficeCeiling;
+use App\Models\OfficeCoalition;
 use App\Models\Organization;
 use App\Models\QuotaConsumption;
 use Illuminate\Support\Facades\Log;
@@ -196,13 +197,23 @@ class QuotaLedger
         ?string $governorate = null,
     ): ?int {
         $discipline = Disciplines::normalize($discipline);
+
+        // JORD-73: coalition-aware branch. When this org is a member
+        // of an active coalition, the ceiling is aggregated across
+        // members using the manual's ((n-0.5)/n) × sum formula, and
+        // consumption sums include EVERY coalition member's apps.
+        $org = Organization::find($organizationId);
+        $coalition = $org?->activeCoalition();
+        if ($coalition !== null) {
+            return $this->remainingCoalitionCeiling($coalition, $discipline, $year, $governorate);
+        }
+
         $ceiling = OfficeCeiling::where('organization_id', $organizationId)
             ->where('discipline', $discipline)
             ->where('year', $year)
             ->first();
         if (!$ceiling) return null;
 
-        $org = Organization::find($organizationId);
         $boostMultiplier = 1.0
             + ($org && $org->has_excellence_award ? 0.05 : 0.0)
             + ($org && $org->is_bit_khibra        ? 0.05 : 0.0)
@@ -229,6 +240,48 @@ class QuotaLedger
             ->sum('m2');
 
         return max(0, $effective - (int) $consumed);
+    }
+
+    /**
+     * JORD-73: aggregated coalition ceiling per manual p.136:
+     *   coalition_ceiling = ((n-0.5)/n) × Σ(member_ceilings)
+     *
+     * Discounts vs pure additive (n=2 → 0.75× sum; n=3 → 0.833× sum;
+     * n→∞ → 1× sum). Consumption sums across ALL active members so
+     * quota use anywhere in the coalition counts.
+     *
+     * Boosts and governorate overflow are NOT applied at the
+     * coalition level — the manual doesn't specify boost-stacking
+     * rules for coalitions, and applying them per-member before
+     * summing would double-count. If JEA clarifies later, this is
+     * one small edit.
+     */
+    private function remainingCoalitionCeiling(
+        OfficeCoalition $coalition,
+        string $discipline,
+        int $year,
+        ?string $governorate,
+    ): ?int {
+        $memberOrgIds = $coalition->activeMembers()->pluck('organization_id')->all();
+        if (empty($memberOrgIds)) return null;
+
+        $memberCeilings = OfficeCeiling::whereIn('organization_id', $memberOrgIds)
+            ->where('discipline', $discipline)
+            ->where('year', $year)
+            ->pluck('m2_allowed')
+            ->all();
+        if (empty($memberCeilings)) return null;
+
+        $n   = count($memberOrgIds);
+        $sum = array_sum($memberCeilings);
+        $effective = (int) floor((($n - 0.5) / $n) * $sum);
+
+        $consumed = (int) QuotaConsumption::whereIn('organization_id', $memberOrgIds)
+            ->where('discipline', $discipline)
+            ->where('year', $year)
+            ->sum('m2');
+
+        return max(0, $effective - $consumed);
     }
 
     /**
@@ -275,16 +328,36 @@ class QuotaLedger
         if ($discipline === '') return null;
 
         $year = (int) now()->year;
-        $ceiling = OfficeCeiling::where('organization_id', $app->organization_id)
-            ->where('discipline', $discipline)
-            ->where('year', $year)
-            ->first();
-        if (!$ceiling || $ceiling->per_project_cap_m2 === null) return null;
+
+        // JORD-73: coalition-aware per-project cap. Manual p.136:
+        //   coalition_cap = 1.5 × mean(member per-project caps)
+        // When the org belongs to an active coalition we use the
+        // aggregated cap; otherwise fall back to the office's own row.
+        $org = Organization::find($app->organization_id);
+        $coalition = $org?->activeCoalition();
+        if ($coalition !== null) {
+            $memberOrgIds = $coalition->activeMembers()->pluck('organization_id')->all();
+            $caps = OfficeCeiling::whereIn('organization_id', $memberOrgIds)
+                ->where('discipline', $discipline)
+                ->where('year', $year)
+                ->whereNotNull('per_project_cap_m2')
+                ->pluck('per_project_cap_m2')
+                ->all();
+            if (empty($caps)) return null;
+            $perProjectCap = (int) floor(1.5 * (array_sum($caps) / count($caps)));
+        } else {
+            $ceiling = OfficeCeiling::where('organization_id', $app->organization_id)
+                ->where('discipline', $discipline)
+                ->where('year', $year)
+                ->first();
+            if (!$ceiling || $ceiling->per_project_cap_m2 === null) return null;
+            $perProjectCap = (int) $ceiling->per_project_cap_m2;
+        }
 
         $areaI = (int) $area;
-        if ($areaI <= $ceiling->per_project_cap_m2) return null;
+        if ($areaI <= $perProjectCap) return null;
 
-        $excess = $areaI - $ceiling->per_project_cap_m2;
+        $excess = $areaI - $perProjectCap;
 
         // Base rate lookup — reuse the service's fee block. For matrix
         // fees we need the applicant's governorate + building_class to
