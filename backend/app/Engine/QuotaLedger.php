@@ -174,6 +174,129 @@ class QuotaLedger
         return max(0, $effective - (int) $consumed);
     }
 
+    /**
+     * JORD-72: overflow surcharge when this application's area exceeds
+     * the office's per-project cap for the engineer's discipline.
+     *
+     * The manual (p. 129) allows the excess with a 25% overflow fee
+     * on the excess m² × base rate. We compute the amount live from
+     * the application's current form data + the office's ceiling
+     * row — no persisted state, so the calculation stays in sync when
+     * the office's cap or the applicant's area changes.
+     *
+     * Returns null when the rule doesn't apply:
+     *   • The service isn't quota-tracked (no area_m2 field).
+     *   • The office has no per_project_cap_m2 configured for the
+     *     engineer's discipline (null = pass-through).
+     *   • Area is within the cap.
+     *   • Missing engineer_id / area_m2 (edge — submit gate catches).
+     *
+     * Returns a surcharge-shaped array (same shape as
+     * schema.fee.surcharges entries) when it does apply. Caller
+     * appends to breakdown['surcharges'].
+     *
+     * @return array<string, mixed>|null
+     */
+    public function overflowSurchargeFor(Application $app): ?array
+    {
+        $svc = $app->serviceDefinition;
+        if (!$svc) return null;
+
+        $fields = data_get($svc->schema, 'fields', []);
+        $hasArea = collect($fields)->contains(fn ($f) => ($f['id'] ?? null) === 'area_m2');
+        if (!$hasArea) return null;
+
+        $data = is_array($app->data) ? $app->data : [];
+        $engineerId = $data['engineer_id'] ?? null;
+        $area       = $data['area_m2']     ?? null;
+        if (!is_numeric($engineerId) || !is_numeric($area)) return null;
+
+        $engineer = Engineer::find((int) $engineerId);
+        if (!$engineer) return null;
+
+        $discipline = Disciplines::normalize((string) ($engineer->specialization ?? ''));
+        if ($discipline === '') return null;
+
+        $year = (int) now()->year;
+        $ceiling = OfficeCeiling::where('organization_id', $app->organization_id)
+            ->where('discipline', $discipline)
+            ->where('year', $year)
+            ->first();
+        if (!$ceiling || $ceiling->per_project_cap_m2 === null) return null;
+
+        $areaI = (int) $area;
+        if ($areaI <= $ceiling->per_project_cap_m2) return null;
+
+        $excess = $areaI - $ceiling->per_project_cap_m2;
+
+        // Base rate lookup — reuse the service's fee block. For matrix
+        // fees we need the applicant's governorate + building_class to
+        // find their per-m² rate; for per_unit we take the fee.rate.
+        // Any other fee type has no reliable "per m² rate" so we
+        // conservatively return null (no surcharge — better than an
+        // arbitrary guess).
+        $fee = data_get($svc->schema, 'fee', []);
+        $baseRate = $this->resolveBaseRatePerM2($fee, $data);
+        if ($baseRate === null || $baseRate <= 0) return null;
+
+        // 25% × excess × base rate. Option A per the JORD-72 product
+        // decision (literal 25%, no discipline weighting). If JEA
+        // later publishes discipline weights, extend this line only.
+        $amount = round(0.25 * $excess * $baseRate, 2);
+
+        return [
+            'code'     => 'per_project_cap_overflow_25pct',
+            'kind'     => 'percent_of_excess',
+            'label_ar' => sprintf(
+                'رسم تجاوز سقف المشروع الواحد (25%% × %d م² زائدة)',
+                $excess,
+            ),
+            'label_en' => sprintf(
+                'Per-project cap overflow (25%% × %d m² excess)',
+                $excess,
+            ),
+            'amount'   => (float) $amount,
+            'source'   => 'كتاب التعليمات الفنية 2025 ص 129',
+        ];
+    }
+
+    /**
+     * Extract the effective per-m² rate from a service's fee config
+     * for the applicant's specific form values. Returns null when the
+     * fee shape doesn't have an area-scaled rate we can decompose
+     * cleanly (fixed / tiered / formula fees don't cleanly map to
+     * "JOD per m²" so we skip rather than approximate).
+     */
+    private function resolveBaseRatePerM2(array $fee, array $formData): ?float
+    {
+        $type = $fee['type'] ?? null;
+
+        if ($type === 'per_unit' && ($fee['basis'] ?? null) === 'area_m2' && is_numeric($fee['rate'] ?? null)) {
+            return (float) $fee['rate'];
+        }
+
+        if ($type === 'matrix' && ($fee['basis'] ?? null) === 'area_m2') {
+            // Reproduce matrix lookup: compose bucketized key, look up rate.
+            $keys    = is_array($fee['keys'] ?? null)    ? $fee['keys']    : [];
+            $rates   = is_array($fee['rates'] ?? null)   ? $fee['rates']   : [];
+            $buckets = is_array($fee['buckets'] ?? null) ? $fee['buckets'] : [];
+            $parts = [];
+            foreach ($keys as $key) {
+                if (!is_string($key)) return null;
+                $raw = $formData[$key] ?? null;
+                if (!is_string($raw) && !is_int($raw)) return null;
+                $bucketMap = is_array($buckets[$key] ?? null) ? $buckets[$key] : [];
+                $parts[] = (string) ($bucketMap[$raw] ?? $raw);
+            }
+            $lookup = implode('|', $parts);
+            if (isset($rates[$lookup]) && is_numeric($rates[$lookup])) {
+                return (float) $rates[$lookup];
+            }
+        }
+
+        return null;
+    }
+
     private function debug(Application $app, string $reason): void
     {
         Log::debug('QuotaLedger: ' . $reason, [

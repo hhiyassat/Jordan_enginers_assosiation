@@ -14,11 +14,16 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class OfficeCeiling extends Model
 {
-    protected $fillable = ['organization_id', 'discipline', 'year', 'm2_allowed'];
+    protected $fillable = [
+        'organization_id', 'discipline', 'year', 'm2_allowed',
+        // JORD-72: per-single-project cap per JEA p.129. Null = no cap.
+        'per_project_cap_m2',
+    ];
 
     protected $casts = [
-        'year'        => 'integer',
-        'm2_allowed'  => 'integer',
+        'year'               => 'integer',
+        'm2_allowed'         => 'integer',
+        'per_project_cap_m2' => 'integer',
     ];
 
     public function organization(): BelongsTo

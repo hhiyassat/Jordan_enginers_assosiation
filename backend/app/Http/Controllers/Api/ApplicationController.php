@@ -113,6 +113,21 @@ class ApplicationController extends Controller
             try {
                 $feeBreakdown = (new \App\Engine\FeeCalculator($service))
                     ->calculateBreakdown(is_array($app->data) ? $app->data : []);
+
+                // JORD-72: overflow surcharge for per-project-cap breach.
+                // Computed live from the application (not the schema)
+                // because the cap lives on OfficeCeiling and depends on
+                // the applicant's office+discipline, not the service.
+                // Appended AFTER the schema surcharges so it renders
+                // last in the itemized preview.
+                $overflow = app(\App\Engine\QuotaLedger::class)->overflowSurchargeFor($app);
+                if ($overflow !== null) {
+                    $feeBreakdown['surcharges'][] = $overflow;
+                    $feeBreakdown['total'] = round(
+                        (float) $feeBreakdown['total'] + (float) $overflow['amount'],
+                        2,
+                    );
+                }
             } catch (\Throwable) {
                 $feeBreakdown = null;
             }
