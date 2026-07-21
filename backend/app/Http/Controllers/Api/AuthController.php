@@ -91,14 +91,22 @@ class AuthController extends Controller
     }
 
     /**
-     * JORD-30: build the httpOnly session cookie.
+     * JORD-30 / JORD-52 (PM): build the httpOnly session cookie.
+     *
      *   • name:      esp_session (COOKIE_NAME on the reader middleware)
      *   • value:     the Sanctum plain-text token
-     *   • lifetime:  8 hours — matches typical office-day sessions;
-     *                short enough to bound stolen-cookie damage
+     *   • lifetime:  configurable via ESP_SESSION_LIFETIME_MINUTES
+     *                (default 480 = 8h). "reload kicks to login" was
+     *                often traced to a very short default here — ops
+     *                now tunes this per-tenant without a code change.
      *   • path:      '/' so both /api and the SPA see it
      *   • domain:    null → current host (subdomain-safe)
-     *   • secure:    true in production, false in local http:// dev
+     *   • secure:    ESP_SESSION_COOKIE_SECURE:
+     *                  'auto' (default) → true only under APP_ENV=production
+     *                  'true'  → force Secure on (production over HTTPS)
+     *                  'false' → force Secure off (production over HTTP —
+     *                            e.g. behind a TLS-terminating LB where
+     *                            the browser still sees plain http://)
      *   • httpOnly:  true — invisible to JavaScript, defeats XSS
      *   • sameSite:  'strict' — browser refuses to attach on cross-
      *                site navigations, so classic CSRF POSTs from
@@ -109,14 +117,41 @@ class AuthController extends Controller
         return Cookie::make(
             name:     ReadTokenFromCookie::COOKIE_NAME,
             value:    $token,
-            minutes:  60 * 8,
+            minutes:  self::sessionLifetimeMinutes(),
             path:     '/',
             domain:   null,
-            secure:   app()->environment('production'),
+            secure:   self::cookieSecureFlag(),
             httpOnly: true,
             raw:      false,
             sameSite: 'strict',
         );
+    }
+
+    /**
+     * JORD-52 (PM): lifetime resolution — env var wins, otherwise
+     * 8 hours. Clamped to a sane range so a config typo can't
+     * emit a 100-year cookie or a 0-minute one.
+     */
+    private static function sessionLifetimeMinutes(): int
+    {
+        $raw = (int) env('ESP_SESSION_LIFETIME_MINUTES', 480);
+        return max(30, min($raw, 60 * 24 * 30)); // 30 min .. 30 days
+    }
+
+    /**
+     * JORD-52 (PM): tri-state secure flag. 'auto' means "production
+     * yes, dev no" — the safe default. Ops can override when the
+     * app runs behind a TLS-terminating LB where the browser sees
+     * http:// (Secure cookies wouldn't come back).
+     */
+    private static function cookieSecureFlag(): bool
+    {
+        $mode = strtolower((string) env('ESP_SESSION_COOKIE_SECURE', 'auto'));
+        return match ($mode) {
+            'true', '1', 'yes'  => true,
+            'false', '0', 'no'  => false,
+            default             => app()->environment('production'),
+        };
     }
 
     public function register(Request $request): JsonResponse
