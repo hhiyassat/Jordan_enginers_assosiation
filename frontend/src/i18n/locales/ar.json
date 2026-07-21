@@ -13,7 +13,8 @@
     "newService": "خدمة جديدة",
     "integration": "التكامل",
     "users": "إدارة المستخدمين",
-    "officesSettings": "إعدادات المكاتب"
+    "officesSettings": "إعدادات المكاتب",
+    "complaints": "الشكاوى"
   },
   "layout": {
     "sidebarLabel": "القائمة الجانبية",

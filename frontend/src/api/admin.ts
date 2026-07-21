@@ -227,4 +227,32 @@ export const adminApi = {
 
   payDue: (obligationId: number, payment_reference: string) =>
     request<{ message: string }>('POST', `/admin/dues/${obligationId}/pay`, { payment_reference }),
+
+  /**
+   * JORD-81 UI: disciplinary complaints. Intake (POST /complaints)
+   * lives outside the admin scope — any authenticated user can file.
+   * These two are admin-only queue + decision endpoints.
+   */
+  listComplaints: () => request<{
+    complaints: Array<{
+      id: number;
+      kind: 'fee_undercutting' | 'contracting_ban' | 'safety_violation' | 'other';
+      description: string;
+      status: 'open' | 'investigating' | 'decided' | 'dismissed';
+      investigation_deadline: string;
+      decided_at: string | null;
+      created_at: string;
+      target_office: { id: number; name: string } | null;
+      reporter: { id: number; name: string } | null;
+      reporter_display: string | null;
+      sanctions: Array<{ id: number; kind: string; effective_from: string; effective_until: string | null }>;
+    }>;
+  }>('GET', '/admin/complaints'),
+
+  decideComplaint: (
+    id: number,
+    payload:
+      | { decision: 'sanction'; sanction_kind: 'warning' | 'suspension_1yr' | 'suspension_2yr' | 'deregistration'; reason: string; notes?: string }
+      | { decision: 'dismiss'; notes?: string }
+  ) => request<{ message: string; transfers_opened?: number }>('POST', `/admin/complaints/${id}/decide`, payload),
 };

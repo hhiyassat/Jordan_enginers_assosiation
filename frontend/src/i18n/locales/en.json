@@ -13,7 +13,8 @@
     "newService": "New Service",
     "integration": "Integration",
     "users": "Users",
-    "officesSettings": "Offices"
+    "officesSettings": "Offices",
+    "complaints": "Complaints"
   },
   "layout": {
     "sidebarLabel": "Sidebar navigation",

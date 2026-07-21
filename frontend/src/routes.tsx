@@ -36,6 +36,7 @@ const UserManagement          = React.lazy(() => import('./pages/admin/UserManag
 const OfficesList             = React.lazy(() => import('./pages/admin/OfficesList').then(m => ({ default: m.OfficesList })));
 const OfficeSettings          = React.lazy(() => import('./pages/admin/OfficeSettings').then(m => ({ default: m.OfficeSettings })));
 const OfficeDues              = React.lazy(() => import('./pages/admin/OfficeDues').then(m => ({ default: m.OfficeDues })));
+const ComplaintsAdmin         = React.lazy(() => import('./pages/admin/ComplaintsAdmin').then(m => ({ default: m.ComplaintsAdmin })));
 const ChangeCredentials       = React.lazy(() => import('./pages/auth/ChangeCredentials').then(m => ({ default: m.ChangeCredentials })));
 const Profile                 = React.lazy(() => import('./pages/auth/Profile').then(m => ({ default: m.Profile })));
 
@@ -82,6 +83,9 @@ export function AppRoutes(): JSX.Element {
       <Route path="/admin/offices"              element={<RequireAdmin><Layout><OfficesList /></Layout></RequireAdmin>} />
       <Route path="/admin/offices/:id"          element={<RequireAdmin><Layout><OfficeSettings /></Layout></RequireAdmin>} />
       <Route path="/admin/offices/:id/dues"     element={<RequireAdmin><Layout><OfficeDues /></Layout></RequireAdmin>} />
+
+      {/* JORD-81 UI: disciplinary complaints queue */}
+      <Route path="/admin/complaints"           element={<RequireAdmin><Layout><ComplaintsAdmin /></Layout></RequireAdmin>} />
 
       {/* User management — admin + superuser */}
       <Route path="/admin/users" element={<RequireUserManager><Layout><UserManagement /></Layout></RequireUserManager>} />
