@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services;
+namespace Plugins\Captcha\Services;
 
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;

@@ -1,14 +1,16 @@
 <?php
 
 use App\Http\Controllers\Api\AdminDashboardController;
-use App\Http\Controllers\Api\AiSchemaController;
 use App\Http\Controllers\Api\AuthController;
-use App\Http\Controllers\Api\CaptchaController;
 // Workstream 8A: EngineerController + ProjectController + OfficeSettingsController
 // moved to Modules\JeaProjects.
 // Workstream 8C: ApplicationController + ReviewDashboardController +
 // ReviewQueueController + PaymentsController + CertificatesController +
 // ServiceCatalogController + ServiceFeesController moved to Modules\JeaServices.
+// Workstream 13: AiSchemaController + CaptchaController moved to
+// Plugins\AiSchema and Plugins\Captcha. GET /captcha now lives in the
+// captcha plugin's routes.php; the 'captcha' middleware alias is
+// registered by the captcha plugin's service provider.
 use App\Http\Controllers\Api\GsbController;
 use App\Http\Controllers\Api\IntegrationController;
 use App\Http\Controllers\Api\UserManagementController;
@@ -50,8 +52,9 @@ Route::prefix('integration')
 
 Route::prefix('v1')->group(function () {
 
-    // Captcha challenge for public forms (unauthed, rate-limited)
-    Route::get('captcha', [CaptchaController::class, 'issue'])->middleware('throttle:captcha-issue');
+    // Workstream 13: GET /captcha moved to Plugins\Captcha\routes.php.
+    // Removing 'captcha' from config/plugins.enabled drops the route
+    // AND the 'captcha' middleware alias below.
 
     // SEC-009: named limiters registered in AppServiceProvider::registerRateLimiters().
     // Each named limiter has a custom response callback that logs the trip
@@ -117,18 +120,10 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'token.inactivity', 'password.p
         // Workstream 8C: admin service catalog + fee editor + lock/unlock
         // routes moved to the jea-services module.
 
-        // FR-018 + FR-019: every Claude-backed AI endpoint shares the
-        // 'ai-schema' bucket — 10 calls/hour per user is generous for
-        // interactive authoring but stops a runaway loop from burning
-        // through the API budget in minutes.
-        // Workstream 5C: AI schema generator extracted. Tagged PLG —
-        // Workstream 13 lifts this into backend/plugins/ai-schema/.
-        Route::post('admin/services/generate-schema',           [AiSchemaController::class, 'generateSchema'])
-            ->middleware('throttle:ai-schema');
-        Route::post('admin/services/generate-schema-from-file', [AiSchemaController::class, 'generateSchemaFromFile'])
-            ->middleware('throttle:ai-schema');
-        Route::post('admin/services/chat-schema',               [AiSchemaController::class, 'chatUpdateSchema'])
-            ->middleware('throttle:ai-schema');
+        // Workstream 13: FR-018/019 Claude AI schema endpoints moved to
+        // the ai-schema plugin (backend/plugins/AiSchema/routes.php).
+        // Removing 'ai-schema' from config/plugins.enabled drops all
+        // three /admin/services/*-schema routes.
 
         // Workstream 8A: office-scoped boost flags + specialization-head
         // routes moved to the jea-projects module.

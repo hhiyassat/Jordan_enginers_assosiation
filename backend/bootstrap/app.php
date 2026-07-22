@@ -6,7 +6,9 @@ use App\Http\Middleware\LogApiAccess;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\TokenInactivityCheck;
 use App\Http\Middleware\ValidateIntegrationKey;
-use App\Http\Middleware\VerifyCaptcha;
+// Workstream 13: VerifyCaptcha moved to Plugins\Captcha. The 'captcha'
+// middleware alias is registered by CaptchaServiceProvider so disabling
+// the plugin (config/plugins.enabled) drops the alias with it.
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -51,8 +53,11 @@ return Application::configure(basePath: dirname(__DIR__))
             'integration.key'  => ValidateIntegrationKey::class,
             // GSB: MODEE Annex 4.15 §4.5 rule 11 — IP whitelist for GSB routes
             'gsb.ip_whitelist' => \App\Http\Middleware\GsbIpWhitelist::class,
-            // Text captcha for public forms (login, register, tracking)
-            'captcha'          => VerifyCaptcha::class,
+            // Workstream 13: 'captcha' alias is registered by
+            // Plugins\Captcha\Providers\CaptchaServiceProvider — routes
+            // that use ->middleware('captcha') break if the plugin is
+            // removed from config/plugins.enabled while those routes
+            // still reference it (login/register/etc.).
             // JORD-24: bump users.last_seen_at (coalesced to 1 write/min)
             'track.activity'   => \App\Http\Middleware\TrackUserActivity::class,
         ]);

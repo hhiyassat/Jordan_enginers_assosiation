@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\JeaDiscipline\Console\Commands;
 
-use App\Models\Application;
+use Modules\JeaServices\Models\Application;
 use App\Services\Notifications\NotificationService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;

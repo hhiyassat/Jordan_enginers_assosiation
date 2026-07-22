@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\JeaProjects\Engine;
 
-use App\Models\Application;
+use Modules\JeaServices\Models\Application;
 use Modules\JeaProjects\Models\Engineer;
 
 /**

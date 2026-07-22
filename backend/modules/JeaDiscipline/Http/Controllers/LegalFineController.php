@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Modules\JeaDiscipline\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Models\Application;
+use Modules\JeaServices\Models\Application;
 use Modules\JeaDiscipline\Models\LegalFine;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;

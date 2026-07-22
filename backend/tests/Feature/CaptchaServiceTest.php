@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Services\CaptchaService;
+use Plugins\Captcha\Services\CaptchaService;
 use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
 

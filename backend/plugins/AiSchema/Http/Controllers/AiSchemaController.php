@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Controllers\Api;
+namespace Plugins\AiSchema\Http\Controllers;
 
 use App\Http\Concerns\RequiresAdminTier;
 use App\Http\Controllers\Controller;

@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Http\Middleware;
+namespace Plugins\Captcha\Http\Middleware;
 
-use App\Services\CaptchaService;
+use Plugins\Captcha\Services\CaptchaService;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
