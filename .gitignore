@@ -5,3 +5,19 @@ frontend/.env
 mcp/node_modules/
 *.log
 .DS_Store
+
+# PHPUnit cache
+backend/.phpunit.cache/
+
+# Demo / packaged distributions that shouldn't live in git.
+# Anchor to root so it doesn't collide with e.g. frontend/src/api/platform/
+# (Workstream 6 domain split).
+/platform/
+*.zip
+
+# Playwright output — screenshots, videos, HTML report, per-run artifacts
+node_modules/
+test-results/
+playwright-report/
+/blob-report/
+/playwright/.cache/

@@ -1,0 +1,638 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Method App\\Engine\\Exceptions\\RoleMismatchException\:\:extraBody\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Engine/Exceptions/RoleMismatchException.php
+
+		-
+			message: '#^Method App\\Engine\\Exceptions\\WorkflowException\:\:extraBody\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Engine/Exceptions/WorkflowException.php
+
+		-
+			message: '#^Method App\\Engine\\FeeCalculator\:\:calculate\(\) has parameter \$formData with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: modules/JeaServices/Engine/FeeCalculator.php
+
+		-
+			message: '#^Method App\\Engine\\FeeCalculator\:\:formula\(\) has parameter \$fee with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: modules/JeaServices/Engine/FeeCalculator.php
+
+		-
+			message: '#^Method App\\Engine\\FeeCalculator\:\:formula\(\) has parameter \$formData with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: modules/JeaServices/Engine/FeeCalculator.php
+
+		-
+			message: '#^Method App\\Engine\\FeeCalculator\:\:tiered\(\) has parameter \$fee with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: modules/JeaServices/Engine/FeeCalculator.php
+
+		-
+			message: '#^Method App\\Engine\\FeeCalculator\:\:tiered\(\) has parameter \$formData with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: modules/JeaServices/Engine/FeeCalculator.php
+
+		-
+			message: '#^Method App\\Engine\\SchemaStructureValidator\:\:checkDocuments\(\) has parameter \$schema with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: modules/JeaServices/Engine/SchemaStructureValidator.php
+
+		-
+			message: '#^Method App\\Engine\\SchemaStructureValidator\:\:checkFee\(\) has parameter \$schema with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: modules/JeaServices/Engine/SchemaStructureValidator.php
+
+		-
+			message: '#^Method App\\Engine\\SchemaStructureValidator\:\:checkFields\(\) has parameter \$schema with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: modules/JeaServices/Engine/SchemaStructureValidator.php
+
+		-
+			message: '#^Method App\\Engine\\SchemaStructureValidator\:\:checkWorkflow\(\) has parameter \$schema with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: modules/JeaServices/Engine/SchemaStructureValidator.php
+
+		-
+			message: '#^Method App\\Engine\\SchemaValidator\:\:validateType\(\) has parameter \$field with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: modules/JeaServices/Engine/SchemaValidator.php
+
+		-
+			message: '#^Method App\\Engine\\WorkflowEngine\:\:decide\(\) has parameter \$annotations with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: modules/JeaServices/Engine/WorkflowEngine.php
+
+		-
+			message: '#^Offset ''under_review'' on array\{draft\: array\{''submitted''\}, submitted\: array\{''under_review''\}, under_review\: array\{''approved'', ''rejected'', ''modifications…''\}, modifications_requested\: array\{''submitted''\}, approved\: array\{''certificate_issued''\}, rejected\: array\{\}, certificate_issued\: array\{\}\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: modules/JeaServices/Engine/WorkflowEngine.php
+
+		-
+			message: '#^Comparison operation "\>" between int\<1, max\> and 0 is always true\.$#'
+			identifier: greater.alwaysTrue
+			count: 1
+			path: app/Http/Controllers/Api/AdminController.php
+
+		-
+			message: '#^Method App\\Http\\Controllers\\Api\\AdminController\:\:buildAuditRecord\(\) has parameter \$blockers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Http/Controllers/Api/AdminController.php
+
+		-
+			message: '#^Method App\\Http\\Controllers\\Api\\AdminController\:\:buildAuditRecord\(\) has parameter \$hukmIR with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Http/Controllers/Api/AdminController.php
+
+		-
+			message: '#^Method App\\Http\\Controllers\\Api\\AdminController\:\:buildAuditRecord\(\) has parameter \$schema with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Http/Controllers/Api/AdminController.php
+
+		-
+			message: '#^Method App\\Http\\Controllers\\Api\\AdminController\:\:buildAuditRecord\(\) has parameter \$validation with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Http/Controllers/Api/AdminController.php
+
+		-
+			message: '#^Method App\\Http\\Controllers\\Api\\AdminController\:\:buildAuditRecord\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Http/Controllers/Api/AdminController.php
+
+		-
+			message: '#^Method App\\Http\\Controllers\\Api\\AdminController\:\:detectBlockers\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Http/Controllers/Api/AdminController.php
+
+		-
+			message: '#^Method App\\Http\\Controllers\\Api\\AdminController\:\:extractHukmIR\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Http/Controllers/Api/AdminController.php
+
+		-
+			message: '#^Method App\\Http\\Controllers\\Api\\AdminController\:\:validateSchema\(\) has parameter \$schema with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Http/Controllers/Api/AdminController.php
+
+		-
+			message: '#^Method App\\Http\\Controllers\\Api\\AdminController\:\:validateSchema\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Http/Controllers/Api/AdminController.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between float and 100 will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Http/Controllers/Api/AdminController.php
+
+		-
+			message: '#^Unable to resolve the template type TKey in call to function collect$#'
+			identifier: argument.templateType
+			count: 3
+			path: app/Http/Controllers/Api/AdminController.php
+
+		-
+			message: '#^Unable to resolve the template type TValue in call to function collect$#'
+			identifier: argument.templateType
+			count: 3
+			path: app/Http/Controllers/Api/AdminController.php
+
+		-
+			message: '#^Method App\\Http\\Controllers\\Api\\AuthController\:\:userPayload\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Http/Controllers/Api/AuthController.php
+
+		-
+			message: '#^Parameter \#1 \$string of function str_pad expects string, int\<1, max\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: integrations/Nashmi/Http/Controllers/IntegrationController.php
+
+		-
+			message: '#^Parameter \#1 \$boolean of function abort_unless expects bool, App\\Models\\User\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Controller.php
+
+		-
+			message: '#^Parameter \#1 \$boolean of function abort_unless expects bool, int\<0, max\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Controller.php
+
+		-
+			message: '#^Called ''env'' outside of the config directory which returns null when the config is cached, use ''config''\.$#'
+			identifier: larastan.noEnvCallsOutsideOfConfig
+			count: 1
+			path: app/Http/Middleware/EnforcePasswordPolicy.php
+
+		-
+			message: '#^Constant App\\Http\\Middleware\\LogApiAccess\:\:MASKED_HEADERS is unused\.$#'
+			identifier: classConstant.unused
+			count: 1
+			path: app/Http/Middleware/LogApiAccess.php
+
+		-
+			message: '#^Method App\\Http\\Middleware\\LogApiAccess\:\:maskSensitiveFields\(\) has parameter \$data with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Http/Middleware/LogApiAccess.php
+
+		-
+			message: '#^Method App\\Http\\Middleware\\LogApiAccess\:\:maskSensitiveFields\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Http/Middleware/LogApiAccess.php
+
+		-
+			message: '#^Called ''env'' outside of the config directory which returns null when the config is cached, use ''config''\.$#'
+			identifier: larastan.noEnvCallsOutsideOfConfig
+			count: 1
+			path: app/Http/Middleware/SecurityHeaders.php
+
+		-
+			message: '#^Called ''env'' outside of the config directory which returns null when the config is cached, use ''config''\.$#'
+			identifier: larastan.noEnvCallsOutsideOfConfig
+			count: 1
+			path: app/Http/Middleware/TokenInactivityCheck.php
+
+		-
+			message: '#^Left side of && is always true\.$#'
+			identifier: booleanAnd.leftAlwaysTrue
+			count: 1
+			path: app/Http/Middleware/TokenInactivityCheck.php
+
+		-
+			message: '#^Method App\\Http\\Requests\\ConfirmPaymentRequest\:\:rules\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: modules/JeaServices/Http/Requests/ConfirmPaymentRequest.php
+
+		-
+			message: '#^Method App\\Http\\Requests\\DecideApplicationRequest\:\:rules\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: modules/JeaServices/Http/Requests/DecideApplicationRequest.php
+
+		-
+			message: '#^Method App\\Http\\Requests\\StoreApplicationRequest\:\:rules\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: modules/JeaServices/Http/Requests/StoreApplicationRequest.php
+
+		-
+			message: '#^Method App\\Models\\Application\:\:applicant\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: modules/JeaServices/Models/Application.php
+
+		-
+			message: '#^Method App\\Models\\Application\:\:assignedReviewer\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: modules/JeaServices/Models/Application.php
+
+		-
+			message: '#^Method App\\Models\\Application\:\:certificate\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\HasOne does not specify its types\: TRelatedModel, TDeclaringModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: modules/JeaServices/Models/Application.php
+
+		-
+			message: '#^Method App\\Models\\Application\:\:documents\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\HasMany does not specify its types\: TRelatedModel, TDeclaringModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: modules/JeaServices/Models/Application.php
+
+		-
+			message: '#^Method App\\Models\\Application\:\:project\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: modules/JeaServices/Models/Application.php
+
+		-
+			message: '#^Method App\\Models\\Application\:\:reviews\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\HasMany does not specify its types\: TRelatedModel, TDeclaringModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: modules/JeaServices/Models/Application.php
+
+		-
+			message: '#^Method App\\Models\\Application\:\:serviceDefinition\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: modules/JeaServices/Models/Application.php
+
+		-
+			message: '#^Method App\\Models\\ApplicationDocument\:\:application\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: modules/JeaServices/Models/ApplicationDocument.php
+
+		-
+			message: '#^Method App\\Models\\ApplicationDocument\:\:uploader\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: modules/JeaServices/Models/ApplicationDocument.php
+
+		-
+			message: '#^Method App\\Models\\ApplicationReview\:\:application\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: modules/JeaServices/Models/ApplicationReview.php
+
+		-
+			message: '#^Method App\\Models\\ApplicationReview\:\:reviewer\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: modules/JeaServices/Models/ApplicationReview.php
+
+		-
+			message: '#^Method App\\Models\\AuditLog\:\:auditable\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\MorphTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: app/Models/AuditLog.php
+
+		-
+			message: '#^Method App\\Models\\AuditLog\:\:organization\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: app/Models/AuditLog.php
+
+		-
+			message: '#^Method App\\Models\\AuditLog\:\:record\(\) has parameter \$extra with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Models/AuditLog.php
+
+		-
+			message: '#^Method App\\Models\\AuditLog\:\:redact\(\) has parameter \$data with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Models/AuditLog.php
+
+		-
+			message: '#^Method App\\Models\\AuditLog\:\:redact\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Models/AuditLog.php
+
+		-
+			message: '#^Method App\\Models\\AuditLog\:\:user\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: app/Models/AuditLog.php
+
+		-
+			message: '#^Method App\\Models\\Certificate\:\:application\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: modules/JeaServices/Models/Certificate.php
+
+		-
+			message: '#^Method App\\Models\\Certificate\:\:issuedBy\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: modules/JeaServices/Models/Certificate.php
+
+		-
+			message: '#^Method App\\Models\\Certificate\:\:issuedTo\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: modules/JeaServices/Models/Certificate.php
+
+		-
+			message: '#^Method App\\Models\\GsbCallLog\:\:scopeCitizenData\(\) has no return type specified\.$#'
+			identifier: missingType.return
+			count: 1
+			path: integrations/Gsb/Models/GsbCallLog.php
+
+		-
+			message: '#^Method App\\Models\\GsbCallLog\:\:scopeCitizenData\(\) has parameter \$query with no type specified\.$#'
+			identifier: missingType.parameter
+			count: 1
+			path: integrations/Gsb/Models/GsbCallLog.php
+
+		-
+			message: '#^Method App\\Models\\GsbCallLog\:\:scopeExpired\(\) has no return type specified\.$#'
+			identifier: missingType.return
+			count: 1
+			path: integrations/Gsb/Models/GsbCallLog.php
+
+		-
+			message: '#^Method App\\Models\\GsbCallLog\:\:scopeExpired\(\) has parameter \$query with no type specified\.$#'
+			identifier: missingType.parameter
+			count: 1
+			path: integrations/Gsb/Models/GsbCallLog.php
+
+		-
+			message: '#^Method App\\Models\\GsbCallLog\:\:scopeFailed\(\) has no return type specified\.$#'
+			identifier: missingType.return
+			count: 1
+			path: integrations/Gsb/Models/GsbCallLog.php
+
+		-
+			message: '#^Method App\\Models\\GsbCallLog\:\:scopeFailed\(\) has parameter \$query with no type specified\.$#'
+			identifier: missingType.parameter
+			count: 1
+			path: integrations/Gsb/Models/GsbCallLog.php
+
+		-
+			message: '#^Method App\\Models\\GsbCallLog\:\:scopeUnauthorizedSource\(\) has no return type specified\.$#'
+			identifier: missingType.return
+			count: 1
+			path: integrations/Gsb/Models/GsbCallLog.php
+
+		-
+			message: '#^Method App\\Models\\GsbCallLog\:\:scopeUnauthorizedSource\(\) has parameter \$query with no type specified\.$#'
+			identifier: missingType.parameter
+			count: 1
+			path: integrations/Gsb/Models/GsbCallLog.php
+
+		-
+			message: '#^Method App\\Models\\GsbCallLog\:\:user\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: integrations/Gsb/Models/GsbCallLog.php
+
+		-
+			message: '#^Method App\\Models\\Organization\:\:applications\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\HasMany does not specify its types\: TRelatedModel, TDeclaringModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: app/Models/Organization.php
+
+		-
+			message: '#^Method App\\Models\\Organization\:\:services\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\HasMany does not specify its types\: TRelatedModel, TDeclaringModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: app/Models/Organization.php
+
+		-
+			message: '#^Method App\\Models\\Organization\:\:users\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\HasMany does not specify its types\: TRelatedModel, TDeclaringModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: app/Models/Organization.php
+
+		-
+			message: '#^Method App\\Models\\Project\:\:owner\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: modules/JeaProjects/Models/Project.php
+
+		-
+			message: '#^Method App\\Models\\ServiceDefinition\:\:applications\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\HasMany does not specify its types\: TRelatedModel, TDeclaringModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: modules/JeaServices/Models/ServiceDefinition.php
+
+		-
+			message: '#^Class App\\Models\\User uses generic trait Illuminate\\Database\\Eloquent\\Factories\\HasFactory but does not specify its types\: TFactory$#'
+			identifier: missingType.generics
+			count: 1
+			path: app/Models/User.php
+
+		-
+			message: '#^Method App\\Models\\User\:\:organization\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: app/Models/User.php
+
+		-
+			message: '#^Anonymous function has an unused use \$imageFields\.$#'
+			identifier: closure.unusedUse
+			count: 1
+			path: integrations/Gsb/Services/GsbClient.php
+
+		-
+			message: '#^Method App\\Services\\Gsb\\GsbClient\:\:call\(\) has parameter \$context with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: integrations/Gsb/Services/GsbClient.php
+
+		-
+			message: '#^Method App\\Services\\Gsb\\GsbClient\:\:call\(\) has parameter \$payload with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: integrations/Gsb/Services/GsbClient.php
+
+		-
+			message: '#^Method App\\Services\\Gsb\\GsbClient\:\:call\(\) has parameter \$query with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: integrations/Gsb/Services/GsbClient.php
+
+		-
+			message: '#^Method App\\Services\\Gsb\\GsbClient\:\:call\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: integrations/Gsb/Services/GsbClient.php
+
+		-
+			message: '#^Method App\\Services\\Gsb\\GsbClient\:\:get\(\) has parameter \$context with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: integrations/Gsb/Services/GsbClient.php
+
+		-
+			message: '#^Method App\\Services\\Gsb\\GsbClient\:\:get\(\) has parameter \$query with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: integrations/Gsb/Services/GsbClient.php
+
+		-
+			message: '#^Method App\\Services\\Gsb\\GsbClient\:\:get\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: integrations/Gsb/Services/GsbClient.php
+
+		-
+			message: '#^Method App\\Services\\Gsb\\GsbClient\:\:logCall\(\) has parameter \$ctx with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: integrations/Gsb/Services/GsbClient.php
+
+		-
+			message: '#^Method App\\Services\\Gsb\\GsbClient\:\:post\(\) has parameter \$context with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: integrations/Gsb/Services/GsbClient.php
+
+		-
+			message: '#^Method App\\Services\\Gsb\\GsbClient\:\:post\(\) has parameter \$payload with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: integrations/Gsb/Services/GsbClient.php
+
+		-
+			message: '#^Method App\\Services\\Gsb\\GsbClient\:\:post\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: integrations/Gsb/Services/GsbClient.php
+
+		-
+			message: '#^Method App\\Services\\Gsb\\GsbClient\:\:recursiveStripKeys\(\) has parameter \$data with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: integrations/Gsb/Services/GsbClient.php
+
+		-
+			message: '#^Method App\\Services\\Gsb\\GsbClient\:\:recursiveStripKeys\(\) has parameter \$keys with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: integrations/Gsb/Services/GsbClient.php
+
+		-
+			message: '#^Method App\\Services\\Gsb\\GsbClient\:\:recursiveStripKeys\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: integrations/Gsb/Services/GsbClient.php
+
+		-
+			message: '#^Method App\\Services\\Gsb\\GsbClient\:\:stripImageFields\(\) has parameter \$data with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: integrations/Gsb/Services/GsbClient.php
+
+		-
+			message: '#^Method App\\Services\\Gsb\\GsbClient\:\:stripImageFields\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: integrations/Gsb/Services/GsbClient.php
+
+		-
+			message: '#^Method App\\Services\\NashmiIntegrationService\:\:buildCodeDoneDescription\(\) has parameter \$summary with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: integrations/Nashmi/Services/NashmiIntegrationService.php
+
+		-
+			message: '#^Method App\\Services\\NashmiIntegrationService\:\:generateCodeDoneDoc\(\) has parameter \$summary with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: integrations/Nashmi/Services/NashmiIntegrationService.php
+
+		-
+			message: '#^Method App\\Services\\NashmiIntegrationService\:\:notifyCodeDone\(\) has parameter \$codeSummary with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: integrations/Nashmi/Services/NashmiIntegrationService.php
+
+		-
+			message: '#^Method App\\Services\\NashmiIntegrationService\:\:notifyCodeDone\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: integrations/Nashmi/Services/NashmiIntegrationService.php
+
+		-
+			message: '#^Method App\\Services\\NashmiIntegrationService\:\:pushService\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: integrations/Nashmi/Services/NashmiIntegrationService.php
+
+		# Workstream 8 aftermath: trait analysed alone because its consumers
+		# moved to modules/ which are out of PHPStan scope.
+		-
+			message: '#^Trait App\\Http\\Concerns\\RespondsWithLockedService is used zero times and is not analysed\.$#'
+			identifier: trait.unused
+			count: 1
+			path: app/Http/Concerns/RespondsWithLockedService.php
+
+		-
+			message: '#^Trait App\\Models\\Concerns\\BelongsToOrganization is used zero times and is not analysed\.$#'
+			identifier: trait.unused
+			count: 1
+			path: app/Models/Concerns/BelongsToOrganization.php
+
+		# Pre-existing: env() outside config — kept for auth login-throttle.
+		-
+			message: "#^Called 'env' outside of the config directory which returns null when the config is cached, use 'config'\\.$#"
+			identifier: larastan.noEnvCallsOutsideOfConfig
+			count: 2
+			path: app/Http/Controllers/Api/AuthController.php
+
+		# User.php activeCoalition — line-level PHPStan can't follow the
+		# hasOne-through relationship chain across module boundaries.
+		-
+			message: "#^Call to an undefined method Illuminate\\\\Database\\\\Eloquent\\\\Model\\:\\:isActive\\(\\)\\.$#"
+			identifier: method.notFound
+			count: 1
+			path: app/Models/User.php
+
+		-
+			message: "#^Method App\\\\Models\\\\User\\:\\:activeCoalition\\(\\) should return Modules\\\\JeaProjects\\\\Models\\\\OfficeCoalition\\|null but returns Illuminate\\\\Database\\\\Eloquent\\\\Model\\|null\\.$#"
+			identifier: return.type
+			count: 1
+			path: app/Models/User.php
+
+		# NotificationService — the "always exists" check misreads the null
+		# coalesce as dead code, but the array can be reduced dynamically.
+		-
+			message: "#^Offset 'output_validity'\\|'supervision' on array.*on left side of \\?\\? always exists and is not nullable\\.$#"
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Services/Notifications/NotificationService.php

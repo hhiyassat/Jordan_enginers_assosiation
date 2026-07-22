@@ -63,8 +63,29 @@ class LogApiAccess
             'body_keys'   => array_keys($safeBody), // log field names only, not values of safe fields
         ]);
 
-        // Forward the request-id to the client for correlation
+        // NFR-001: warn when read requests exceed the SLO (default 500ms).
+        // Emitted on the same channel with a distinct event key so dashboards can
+        // trigger alerts. Only reads (GET/HEAD) are held to this budget — writes
+        // legitimately take longer due to validation, workflow, and audit writes.
+        // config('esp.slow_request_ms') resolves the env var inside config/esp.php.
+        $sloMs = (int) config('esp.slow_request_ms', 500);
+        if ($sloMs > 0 && in_array($request->method(), ['GET', 'HEAD'], true) && $durationMs > $sloMs) {
+            Log::channel('api_access')->warning('slow_request', [
+                'ts'          => now()->toIso8601String(),
+                'request_id'  => $requestId,
+                'method'      => $request->method(),
+                'path'        => $request->path(),
+                'duration_ms' => $durationMs,
+                'slo_ms'      => $sloMs,
+                'user_id'     => $user?->id,
+                'role'        => $user?->role,
+            ]);
+        }
+
+        // Forward the request-id to the client for correlation, plus timing
+        // header so tests, CI, and browser devtools can see the budget.
         $response->headers->set('X-Request-ID', $requestId);
+        $response->headers->set('Server-Timing', "app;dur={$durationMs}");
 
         return $response;
     }

@@ -1,0 +1,29 @@
+includes:
+    - ./vendor/larastan/larastan/extension.neon
+    - ./phpstan-baseline.neon
+
+parameters:
+    # SEC-011: PHPStan level 6 required. Bump higher over time.
+    level: 6
+
+    # Scope: analyse the application code. Routes/seeders/factories are
+    # Laravel-heavy and add noise at level 6 — expand later once the app/
+    # baseline stays green.
+    #
+    # Post-refactor NOTE: modules/, plugins/, and integrations/ are NOT
+    # analysed today. Expanding coverage to those trees is a follow-up
+    # workstream — it will surface hundreds of pre-existing missing-generics
+    # and iterable-value warnings that predate the refactor and should be
+    # cleaned up module-by-module rather than in one giant baseline bump.
+    paths:
+        - app
+
+    # Baseline captures legacy findings (see phpstan-baseline.neon). Many
+    # entries were rewritten in the refactor commit to point at their new
+    # module/plugin/integration locations — outside phpstan's current path
+    # scope, so those entries neither help nor hurt today. The flag below
+    # tolerates them until analysis coverage is expanded.
+    #
+    # Regenerate the baseline (after paths expansion or intentional cleanup):
+    #     ./vendor/bin/phpstan analyse --generate-baseline
+    reportUnmatchedIgnoredErrors: false

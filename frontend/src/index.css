@@ -1,22 +1,45 @@
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* RTL base */
 *, *::before, *::after {
   box-sizing: border-box;
 }
 
 body {
   margin: 0;
-  font-family: 'Segoe UI', 'Arial', sans-serif;
-  background-color: #f8fafc;
-  color: #1e293b;
+  font-family: 'Cairo', 'Segoe UI', 'Arial', sans-serif;
+  background-color: #EEF7FC;
+  color: #1e2c3a;
   direction: rtl;
 }
 
-/* Mono numbers always LTR */
 .font-mono {
   direction: ltr;
   display: inline-block;
+}
+
+/* ── NFR-004: Global accessibility defaults ───────────────────────── */
+
+/* Focus-visible ring for every keyboard-focused interactive element.
+   Only appears on keyboard/AT navigation (never on mouse click) thanks to
+   :focus-visible. The primitives in components/ui/ override with a
+   themed ring; this is the safety net for any element we forgot to style. */
+:where(a, button, [role="button"], input, textarea, select):focus-visible {
+  outline: 2px solid #1A77BC;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Respect the user's system preference: kill non-essential motion for
+   users with prefers-reduced-motion. Keeps opacity + color transitions. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

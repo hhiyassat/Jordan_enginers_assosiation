@@ -25,4 +25,38 @@ return [
     'rate_limit_login'  => (int) env('RATE_LIMIT_LOGIN', 5),   // per minute
     'rate_limit_api'    => (int) env('RATE_LIMIT_API', 120),    // per minute
 
+    // API read SLO (NFR-001) — LogApiAccess middleware emits `slow_request`
+    // warnings when GET/HEAD requests exceed this (ms).
+    'slow_request_ms' => (int) env('SLOW_REQUEST_MS', 500),
+
+    // Audit log retention (NFR-006) — audit:prune command deletes rows
+    // older than now()->subYears(this).
+    // JORD-57: bumped 7 → 10 to match the JEA 2025 technical-instructions
+    // manual (p. 20 & 44 / Art.23-e): "الاحتفاظ بأصول عقود الخدمات الهندسية
+    // ومرفقاتها ... لمدة لا تقل عن عشر سنوات". Also aligns with A-02
+    // (10-yr window on issuable project reports).
+    'audit_retention_years' => (int) env('AUDIT_LOG_RETENTION_YEARS', 10),
+
+    // Text captcha — see App\Services\CaptchaService and app/Http/Middleware/VerifyCaptcha.
+    // JORD-55: default flipped to false so dev / demo / friend-of-dev
+    // installs don't need to solve a captcha on every login. Any
+    // production deployment that wants the bot mitigation back should
+    // set CAPTCHA_ENABLED=true in its .env (and set VITE_CAPTCHA_ENABLED=true
+    // on the frontend so the widget renders again).
+    'captcha_enabled'     => filter_var(env('CAPTCHA_ENABLED', false), FILTER_VALIDATE_BOOLEAN),
+    'captcha_ttl_minutes' => (int) env('CAPTCHA_TTL_MINUTES', 5),
+
+    // Login rate limit (per IP per minute). Production keeps this at 5
+    // to blunt brute-force attacks. E2E / Playwright bumps it via env
+    // because the suite performs a fresh login on every test's setUp.
+    'login_rate_limit_per_minute' => (int) env('LOGIN_RATE_LIMIT_PER_MINUTE', 5),
+
+    // JORD-59: supervision-contract binding window in months from the
+    // date the drawings were approved. Per the JEA 2025 manual (p. 27):
+    //   "يكون عقد الاشراف ملزماً ... ستة اشهر من تاريخ اجازة المخططات"
+    // If work starts within this window the supervision period extends
+    // per the contract's stated period; if it lapses without work
+    // starting the contract is considered expired.
+    'supervision_window_months' => (int) env('SUPERVISION_WINDOW_MONTHS', 6),
+
 ];

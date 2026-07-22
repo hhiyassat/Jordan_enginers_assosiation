@@ -3,7 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Organization;
-use App\Models\ServiceDefinition;
+use Modules\JeaServices\Models\ServiceDefinition;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -20,7 +20,7 @@ class DemoSeeder extends Seeder
             'is_active' => true,
         ]);
 
-        // Create demo users — 4 roles
+        // Create demo users — 4 role-scoped demos + 1 superuser
         $users = [
             ['name' => 'مدير النظام',    'email' => 'admin@demo.esp',   'role' => 'admin'],
             ['name' => 'موظف المراجعة',  'email' => 'staff@demo.esp',   'role' => 'staff'],
@@ -38,29 +38,31 @@ class DemoSeeder extends Seeder
             ]);
         }
 
-        // Load Business License schema — backend/ is one level below esp-v2/
-        $schemaPath = base_path('../schemas/business-license.json');
-
-        $schema = file_exists($schemaPath)
-            ? json_decode(file_get_contents($schemaPath), true)
-            : $this->defaultSchema();
-
-        ServiceDefinition::create([
-            'organization_id' => $org->id,
-            'code'            => 'BL-001',
-            'name_ar'         => 'رخصة تجارية',
-            'name_en'         => 'Business License',
-            'description_ar'  => 'طلب الحصول على رخصة تجارية لمزاولة النشاط التجاري',
-            'description_en'  => 'Apply for a business license to operate a commercial activity',
-            'currency'        => 'JOD',
-            'schema'          => $schema,
-            'status'          => 'active',
+        // Superuser — created with a shared bootstrap password AND the
+        // must_change_password flag flipped. On first login the change-password
+        // endpoint lets a superuser change BOTH email and password (see
+        // AuthController::changePassword), and after the flag flips off every
+        // subsequent API rotation is refused: only `php artisan user:credentials`
+        // can rotate the superuser's credentials from then on.
+        User::create([
+            'organization_id'      => $org->id,
+            'name'                 => 'المستخدم الأعلى',
+            'email'                => 'hhiyassat@eqratech.com',
+            'role'                 => 'superuser',
+            'password'             => Hash::make('796080604Hh%%'),
+            'must_change_password' => true,
+            'is_active'            => true,
         ]);
+
+        // Business License (BL-001) was retired — it fell outside the
+        // seven JEA portal tiles as the catalog matured. The defaultSchema()
+        // helper below is kept for reference in case a similar standalone
+        // service needs a starting point.
 
         $this->command->info('✓ Demo organization created: demo');
         $this->command->info('✓ Users: admin@demo.esp / staff@demo.esp / auditor@demo.esp / ahmed@demo.esp');
         $this->command->info('✓ Password: Demo1234!');
-        $this->command->info('✓ Service: BL-001 رخصة تجارية (active)');
+        $this->command->info('✓ Superuser: hhiyassat@eqratech.com (bootstrap: 796080604Hh%%, must change on first login)');
     }
 
     private function defaultSchema(): array

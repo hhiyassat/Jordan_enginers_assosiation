@@ -1,0 +1,174 @@
+import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
+import DOMPurify from 'dompurify';
+import { RefreshCw } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { request } from '../../api/http';
+import { errorMessage } from '../../platform/utils/errorMessage';
+
+/**
+ * Captcha — text captcha wrapper for public forms
+ *
+ * Fetches a 6-char SVG challenge from GET /api/v1/captcha on mount, renders
+ * it with a reload button, and exposes an input for the user's answer.
+ * Reports {id, answer} to the parent via onChange so the parent can submit
+ * them alongside the form (backend expects captcha_id + captcha_answer).
+ *
+ * The parent is responsible for calling `reload()` after a failed submit —
+ * the backend consumes the challenge on any verify attempt (single-use).
+ * The `resetKey` prop is a convenience: bump it and the widget auto-reloads.
+ */
+interface CaptchaChallenge {
+  id: string;
+  svg: string;
+}
+
+interface CaptchaProps {
+  /** Called whenever id or answer changes so parent can attach to form. */
+  onChange: (data: { id: string; answer: string }) => void;
+  /** Bump this to force a fresh challenge (e.g., after a failed submit). */
+  resetKey?: number;
+  /** Optional server error text shown under the input. */
+  error?: string;
+}
+
+export function Captcha({ onChange, resetKey, error }: CaptchaProps) {
+  const { t } = useTranslation();
+  const rawId  = useId();
+  const inputId = `captcha-${rawId}`;
+  const errId   = error ? `${inputId}-error` : undefined;
+
+  const [challenge, setChallenge] = useState<CaptchaChallenge | null>(null);
+  const [answer,    setAnswer]    = useState('');
+  const [loading,   setLoading]   = useState(false);
+  const [loadErr,   setLoadErr]   = useState('');
+
+  // JORD-44: React StrictMode runs effects twice in dev, which used to
+  // fire two captcha requests back-to-back and burn the single-use
+  // challenge on the throwaway render. inFlight coalesces the pair so
+  // only one request actually hits the server per resetKey change.
+  const inFlight = useRef(false);
+
+  const load = useCallback(async () => {
+    if (inFlight.current) return;
+    inFlight.current = true;
+    setLoading(true);
+    setLoadErr('');
+    setAnswer('');
+    try {
+      // JORD-43 fix: previously this used raw fetch() and surfaced
+      // "HTTP 500" verbatim to the user on any 5xx. Routing through the
+      // shared api client picks up friendlyMessage() (localized Arabic
+      // for each status class), the 30s AbortController timeout
+      // (JORD-28), credentials: 'include' for the httpOnly cookie
+      // (JORD-30), and the central 401 handler (JORD-29).
+      const data = await request<CaptchaChallenge>('GET', '/captcha');
+      setChallenge(data);
+      onChange({ id: data.id, answer: '' });
+    } catch (err: unknown) {
+      // The api client already returns a friendly localized message; if
+      // for any reason it's empty, fall back to the captcha-specific
+      // hint so the user isn't staring at a blank error region.
+      const msg = errorMessage(err, '').trim();
+      setLoadErr(msg.length > 0 ? msg : t('auth.captchaRequired'));
+    } finally {
+      setLoading(false);
+      inFlight.current = false;
+    }
+  }, [onChange, t]);
+
+  // Initial load + on resetKey bump. JORD-72: `load` is stable
+  // (useCallback), so we can put it in the deps array honestly
+  // instead of muting the exhaustive-deps rule.
+  useEffect(() => { load(); }, [resetKey, load]);
+
+  const onInput = (v: string) => {
+    // Uppercase + strip whitespace; server compares case-insensitively but
+    // showing the user their input in the canonical form reduces confusion.
+    const clean = v.toUpperCase().replace(/\s/g, '').slice(0, 6);
+    setAnswer(clean);
+    if (challenge) onChange({ id: challenge.id, answer: clean });
+  };
+
+  return (
+    <div>
+      <label htmlFor={inputId} className="block text-sm font-bold text-jea-text mb-1.5">
+        <span lang="ar">رمز التحقق</span>
+        <span className="text-jea-muted font-normal text-xs" lang="en" dir="ltr"> · Captcha</span>
+        <span className="text-jea-danger mx-1" aria-hidden="true">*</span>
+      </label>
+
+      <div className="flex items-center gap-2" dir="ltr">
+        {/* SVG image. JORD-45: even though the SVG comes from our own
+            server, we run it through DOMPurify with SVG profile ON as
+            defense-in-depth. If the server ever gets compromised or an
+            attacker finds a way to poison the response, the sanitizer
+            strips <script>, event handlers, and foreign HTML before it
+            reaches the DOM. useSVG lets the profile keep legitimate
+            captcha primitives (paths, text, gradients) intact. */}
+        {challenge ? (
+          <div
+            className="rounded-lg border border-jea-border bg-jea-bg overflow-hidden shrink-0"
+            style={{ width: 180, height: 60 }}
+            aria-label="captcha challenge image"
+            role="img"
+            dangerouslySetInnerHTML={{
+              __html: DOMPurify.sanitize(challenge.svg, {
+                USE_PROFILES: { svg: true, svgFilters: true },
+              }),
+            }}
+          />
+        ) : (
+          <div
+            className="rounded-lg border border-jea-border bg-jea-bg shrink-0 flex items-center justify-center"
+            style={{ width: 180, height: 60 }}
+            aria-label={loadErr || 'جارٍ تحميل رمز التحقق'}
+            role="img"
+          >
+            <span className="text-[10px] text-jea-muted">
+              {loadErr ? '⚠︎' : '...'}
+            </span>
+          </div>
+        )}
+
+        {/* Reload button */}
+        <button
+          type="button"
+          onClick={load}
+          disabled={loading}
+          aria-label="تحديث رمز التحقق"
+          className="p-2 rounded-lg text-jea-primary hover:bg-jea-accent transition-colors disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-jea-primary/40"
+        >
+          <RefreshCw size={16} className={loading ? 'animate-spin' : ''} aria-hidden="true" />
+        </button>
+      </div>
+
+      {loadErr && (
+        <p role="alert" className="text-xs text-jea-danger mt-1">{loadErr}</p>
+      )}
+
+      <input
+        id={inputId}
+        type="text"
+        value={answer}
+        onChange={e => onInput(e.target.value)}
+        placeholder="ABC123"
+        autoComplete="off"
+        inputMode="text"
+        maxLength={6}
+        aria-required
+        aria-invalid={error ? true : undefined}
+        aria-describedby={errId}
+        className={[
+          'mt-2 w-full border rounded-xl px-4 py-3 text-sm outline-none bg-white transition-all',
+          'placeholder:text-[#A0BCCC] font-mono tracking-widest text-center uppercase',
+          'focus:border-jea-primary focus:ring-2 focus:ring-jea-primary/20',
+          error ? 'border-jea-danger' : 'border-jea-border',
+        ].join(' ')}
+      />
+
+      {error && (
+        <p id={errId} role="alert" className="text-xs text-jea-danger mt-1">{error}</p>
+      )}
+    </div>
+  );
+}

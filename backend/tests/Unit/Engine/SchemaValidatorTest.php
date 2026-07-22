@@ -2,8 +2,8 @@
 
 namespace Tests\Unit\Engine;
 
-use App\Engine\SchemaValidator;
-use App\Models\ServiceDefinition;
+use Modules\JeaServices\Engine\SchemaValidator;
+use Modules\JeaServices\Models\ServiceDefinition;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -26,8 +26,7 @@ class SchemaValidatorTest extends TestCase
         return $service;
     }
 
-    /** @test */
-    public function required_field_missing_returns_error(): void
+        public function test_required_field_missing_returns_error(): void
     {
         $service   = $this->makeService([
             ['id' => 'name', 'label_ar' => 'الاسم', 'label_en' => 'Name', 'type' => 'text', 'required' => true],
@@ -40,8 +39,7 @@ class SchemaValidatorTest extends TestCase
         $this->assertArrayHasKey('name', $errors);
     }
 
-    /** @test */
-    public function all_required_fields_present_returns_null(): void
+        public function test_all_required_fields_present_returns_null(): void
     {
         $service   = $this->makeService([
             ['id' => 'name', 'label_ar' => 'الاسم', 'label_en' => 'Name', 'type' => 'text', 'required' => true],
@@ -53,8 +51,7 @@ class SchemaValidatorTest extends TestCase
         $this->assertNull($errors);
     }
 
-    /** @test */
-    public function pattern_validation_enforced_on_national_id(): void
+        public function test_pattern_validation_enforced_on_national_id(): void
     {
         $service = $this->makeService([
             [
@@ -80,8 +77,7 @@ class SchemaValidatorTest extends TestCase
         $this->assertNull($errors, 'Valid national ID must pass pattern validation');
     }
 
-    /** @test */
-    public function pattern_validation_is_never_skipped(): void
+        public function test_pattern_validation_is_never_skipped(): void
     {
         // BUILD CONTRACT P-1: This test ensures validation is not removed
         $service = $this->makeService([
@@ -102,8 +98,7 @@ class SchemaValidatorTest extends TestCase
         $this->assertNotNull($errors, 'Pattern validation must never be skipped');
     }
 
-    /** @test */
-    public function conditional_field_skipped_when_condition_not_met(): void
+        public function test_conditional_field_skipped_when_condition_not_met(): void
     {
         $service = $this->makeService([
             ['id' => 'type',   'label_ar' => 'النوع', 'label_en' => 'Type', 'type' => 'select', 'required' => true, 'options' => [['value' => 'food', 'label_ar' => 'طعام', 'label_en' => 'Food'], ['value' => 'retail', 'label_ar' => 'تجزئة', 'label_en' => 'Retail']]],
@@ -116,8 +111,7 @@ class SchemaValidatorTest extends TestCase
         $this->assertNull($errors, 'Conditional field must not be required when condition is not met');
     }
 
-    /** @test */
-    public function required_document_missing_returns_error(): void
+        public function test_required_document_missing_returns_error(): void
     {
         $service = $this->makeService([], [
             ['id' => 'id_copy', 'label_ar' => 'صورة الهوية', 'label_en' => 'ID Copy', 'required' => true],
@@ -129,8 +123,7 @@ class SchemaValidatorTest extends TestCase
         $this->assertArrayHasKey('id_copy', $errors);
     }
 
-    /** @test */
-    public function all_required_documents_present_returns_null(): void
+        public function test_all_required_documents_present_returns_null(): void
     {
         $service = $this->makeService([], [
             ['id' => 'id_copy', 'label_ar' => 'صورة الهوية', 'label_en' => 'ID Copy', 'required' => true],

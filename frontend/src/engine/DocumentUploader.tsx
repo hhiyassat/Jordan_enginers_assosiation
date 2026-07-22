@@ -1,7 +1,21 @@
 import React, { useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { Application, SchemaDocument } from '../types';
 import { applicationsApi } from '../api/client';
 
+/**
+ * DocumentUploader
+ *
+ * Renders all required (and optional) document upload slots
+ * based on the service schema's documents array.
+ * Handles conditional documents (e.g., health cert only for F&B).
+ *
+ * JORD-94: retrofit with react-i18next. The old `locale` prop still
+ * works (existing callers pass it explicitly) but it's now optional —
+ * absent → we read the current language from i18n. Every visible
+ * label routes through t() so the widget flips with the rest of
+ * the UI.
+ */
 interface Props {
   documents: SchemaDocument[];
   application: Application;
@@ -10,15 +24,11 @@ interface Props {
   locale?: 'ar' | 'en';
 }
 
-/**
- * DocumentUploader
- *
- * Renders all required (and optional) document upload slots
- * based on the service schema's documents array.
- * Handles conditional documents (e.g., health cert only for F&B).
- */
-export function DocumentUploader({ documents, application, formData, onUploaded, locale = 'ar' }: Props) {
-  const label = (doc: SchemaDocument) => locale === 'ar' ? doc.label_ar : doc.label_en;
+export function DocumentUploader({ documents, application, formData, onUploaded, locale }: Props) {
+  const { i18n } = useTranslation();
+  const effectiveLocale: 'ar' | 'en' = locale ?? (i18n.language.startsWith('ar') ? 'ar' : 'en');
+  const label = (doc: SchemaDocument) =>
+    effectiveLocale === 'ar' ? doc.label_ar : (doc.label_en || doc.label_ar);
 
   const isVisible = (doc: SchemaDocument): boolean => {
     if (!doc.conditional) return true;
@@ -28,7 +38,7 @@ export function DocumentUploader({ documents, application, formData, onUploaded,
   const uploadedIds = (application.documents || []).map(d => d.document_id);
 
   return (
-    <div dir={locale === 'ar' ? 'rtl' : 'ltr'} className="space-y-4">
+    <div dir={effectiveLocale === 'ar' ? 'rtl' : 'ltr'} className="space-y-4">
       {documents.filter(isVisible).map(doc => (
         <DocumentSlot
           key={doc.id}
@@ -37,7 +47,6 @@ export function DocumentUploader({ documents, application, formData, onUploaded,
           isUploaded={uploadedIds.includes(doc.id)}
           existingFile={application.documents?.find(d => d.document_id === doc.id)}
           onUploaded={onUploaded}
-          locale={locale}
           label={label(doc)}
         />
       ))}
@@ -51,11 +60,13 @@ interface SlotProps {
   isUploaded: boolean;
   existingFile?: { original_filename: string; status: string };
   onUploaded: () => void;
-  locale: 'ar' | 'en';
   label: string;
 }
 
-function DocumentSlot({ doc, applicationId, isUploaded, existingFile, onUploaded, locale, label }: SlotProps) {
+function DocumentSlot({ doc, applicationId, isUploaded, existingFile, onUploaded, label }: SlotProps) {
+  const { t, i18n } = useTranslation();
+  const isArabic = i18n.language.startsWith('ar');
+  const description = isArabic ? doc.description_ar : (doc.description_en || doc.description_ar);
   const [uploading, setUploading] = useState(false);
   const [error, setError]         = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -64,9 +75,8 @@ function DocumentSlot({ doc, applicationId, isUploaded, existingFile, onUploaded
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Size check
     if (file.size > doc.max_size_mb * 1024 * 1024) {
-      setError(`الحجم الأقصى ${doc.max_size_mb} ميغابايت`);
+      setError(t('documentUploader.sizeExceeded', { max: doc.max_size_mb }));
       return;
     }
 
@@ -77,13 +87,17 @@ function DocumentSlot({ doc, applicationId, isUploaded, existingFile, onUploaded
       onUploaded();
     } catch (err: unknown) {
       const e = err as Error;
-      setError(e.message || 'Upload failed');
+      setError(e.message || t('documentUploader.upload'));
     } finally {
       setUploading(false);
     }
   };
 
-  const borderColor = isUploaded ? 'border-green-400 bg-green-50' : doc.required ? 'border-gray-300' : 'border-dashed border-gray-300';
+  const borderColor = isUploaded
+    ? 'border-green-400 bg-green-50'
+    : doc.required
+      ? 'border-gray-300'
+      : 'border-dashed border-gray-300';
 
   return (
     <div className={`rounded-lg border-2 p-4 transition-colors ${borderColor}`}>
@@ -91,15 +105,17 @@ function DocumentSlot({ doc, applicationId, isUploaded, existingFile, onUploaded
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium text-gray-800">{label}</span>
-            {doc.required && <span className="text-xs text-red-500 bg-red-50 px-1.5 py-0.5 rounded">
-              {locale === 'ar' ? 'إلزامي' : 'Required'}
-            </span>}
+            {doc.required && (
+              <span className="text-xs text-red-500 bg-red-50 px-1.5 py-0.5 rounded">
+                {t('documentUploader.required')}
+              </span>
+            )}
           </div>
-          {doc.description_ar && locale === 'ar' && (
-            <p className="text-xs text-gray-500 mt-0.5">{doc.description_ar}</p>
+          {description && (
+            <p className="text-xs text-gray-500 mt-0.5">{description}</p>
           )}
           <p className="text-xs text-gray-400 mt-1">
-            {locale === 'ar' ? 'الصيغ المقبولة:' : 'Accepted:'} {doc.accept.join(', ')} · {locale === 'ar' ? 'الحد الأقصى:' : 'Max:'} {doc.max_size_mb}MB
+            {t('documentUploader.accepted')} {doc.accept.join(', ')} · {t('documentUploader.maxSize')} {doc.max_size_mb}MB
           </p>
 
           {existingFile && (
@@ -131,11 +147,10 @@ function DocumentSlot({ doc, applicationId, isUploaded, existingFile, onUploaded
             } disabled:opacity-50`}
           >
             {uploading
-              ? (locale === 'ar' ? 'جارٍ الرفع...' : 'Uploading...')
+              ? t('documentUploader.uploading')
               : isUploaded
-                ? (locale === 'ar' ? 'تغيير' : 'Replace')
-                : (locale === 'ar' ? 'رفع الملف' : 'Upload')
-            }
+                ? t('documentUploader.replace')
+                : t('documentUploader.upload')}
           </button>
           <input
             ref={inputRef}

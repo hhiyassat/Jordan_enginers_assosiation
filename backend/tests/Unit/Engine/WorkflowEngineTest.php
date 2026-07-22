@@ -2,8 +2,8 @@
 
 namespace Tests\Unit\Engine;
 
-use App\Engine\WorkflowEngine;
-use App\Models\Application;
+use Modules\JeaServices\Engine\WorkflowEngine;
+use Modules\JeaServices\Models\Application;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -14,8 +14,7 @@ use PHPUnit\Framework\TestCase;
  */
 class WorkflowEngineTest extends TestCase
 {
-    /** @test */
-    public function allowed_transitions_constant_is_complete(): void
+        public function test_allowed_transitions_constant_is_complete(): void
     {
         $transitions = WorkflowEngine::ALLOWED_TRANSITIONS;
 
@@ -39,8 +38,7 @@ class WorkflowEngineTest extends TestCase
         }
     }
 
-    /** @test */
-    public function terminal_statuses_have_no_outgoing_transitions(): void
+        public function test_terminal_statuses_have_no_outgoing_transitions(): void
     {
         $transitions = WorkflowEngine::ALLOWED_TRANSITIONS;
 
@@ -52,16 +50,14 @@ class WorkflowEngineTest extends TestCase
         }
     }
 
-    /** @test */
-    public function draft_can_only_transition_to_submitted(): void
+        public function test_draft_can_only_transition_to_submitted(): void
     {
         $allowed = WorkflowEngine::ALLOWED_TRANSITIONS[Application::STATUS_DRAFT];
 
         $this->assertSame([Application::STATUS_SUBMITTED], $allowed);
     }
 
-    /** @test */
-    public function under_review_can_transition_to_all_decision_outcomes(): void
+        public function test_under_review_can_transition_to_all_decision_outcomes(): void
     {
         $allowed = WorkflowEngine::ALLOWED_TRANSITIONS[Application::STATUS_UNDER_REVIEW];
 
@@ -70,24 +66,21 @@ class WorkflowEngineTest extends TestCase
         $this->assertContains(Application::STATUS_MODIFICATIONS_REQUESTED, $allowed);
     }
 
-    /** @test */
-    public function modifications_requested_returns_to_submitted(): void
+        public function test_modifications_requested_returns_to_submitted(): void
     {
         $allowed = WorkflowEngine::ALLOWED_TRANSITIONS[Application::STATUS_MODIFICATIONS_REQUESTED];
 
         $this->assertSame([Application::STATUS_SUBMITTED], $allowed);
     }
 
-    /** @test */
-    public function approved_can_only_issue_certificate(): void
+        public function test_approved_can_only_issue_certificate(): void
     {
         $allowed = WorkflowEngine::ALLOWED_TRANSITIONS[Application::STATUS_APPROVED];
 
         $this->assertSame([Application::STATUS_CERTIFICATE_ISSUED], $allowed);
     }
 
-    /** @test */
-    public function no_transition_skips_states(): void
+        public function test_no_transition_skips_states(): void
     {
         // draft cannot jump directly to approved or certificate_issued
         $draftTransitions = WorkflowEngine::ALLOWED_TRANSITIONS[Application::STATUS_DRAFT];

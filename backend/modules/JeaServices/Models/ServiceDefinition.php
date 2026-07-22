@@ -1,0 +1,124 @@
+<?php
+
+namespace Modules\JeaServices\Models;
+
+use App\Models\Concerns\BelongsToOrganization;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
+
+/**
+ * ServiceDefinition
+ *
+ * BR-001: schema JSON column is the source of truth for the entire service.
+ * BR-005: workflow stages are read from schema, never hardcoded.
+ */
+class ServiceDefinition extends Model
+{
+    use BelongsToOrganization, SoftDeletes;
+
+    protected $fillable = [
+        'organization_id', 'code', 'parent_code',
+        'subcategory_ar', 'subcategory_en',
+        'name_ar', 'name_en',
+        'description_ar', 'description_en', 'currency', 'base_fee', 'sla_hours',
+        'schema', 'status', 'phase', 'is_locked',
+    ];
+
+    protected $casts = [
+        'schema'    => 'array',
+        'base_fee'  => 'decimal:2',
+        'sla_hours' => 'integer',
+        'phase'     => 'integer',
+        'is_locked' => 'boolean',
+    ];
+
+    /**
+     * A locked service refuses every API-layer mutation (update, status
+     * toggle, chat-schema). Only an admin or superuser may unlock it, and
+     * the intended flow is: unlock → make the edit → re-lock. Seeders
+     * bypass this because they hit Eloquent directly, not the API.
+     */
+    public function isLocked(): bool
+    {
+        return (bool) $this->is_locked;
+    }
+
+    // ── Relationships ─────────────────────────────────────────────────
+    // organization() provided by BelongsToOrganization trait
+
+    public function applications(): HasMany
+    {
+        return $this->hasMany(Application::class);
+    }
+
+    // ── Schema accessors (typed for engine use) ────────────────────────
+
+    /** @return list<array<string, mixed>> */
+    public function getWorkflowStages(): array
+    {
+        return $this->schema['workflow']['stages'] ?? [];
+    }
+
+    /** @return array<string, mixed>|null */
+    public function getStage(string $stageId): ?array
+    {
+        foreach ($this->getWorkflowStages() as $stage) {
+            if ($stage['id'] === $stageId) {
+                return $stage;
+            }
+        }
+        return null;
+    }
+
+    /** @return array<string, mixed>|null */
+    public function getFirstStage(): ?array
+    {
+        return $this->getWorkflowStages()[0] ?? null;
+    }
+
+    /**
+     * First stage that isn't owned by the applicant — the workflow position
+     * an application should occupy AFTER submit. Applicant-owned stages
+     * (typically 'office_submission') are the draft-authoring phase; once
+     * the applicant clicks submit, the case moves to the first reviewer
+     * stage so a staff/auditor can claim it. Falls back to getFirstStage()
+     * if the entire workflow is applicant-owned (unusual but valid).
+     *
+     * @return array<string, mixed>|null
+     */
+    public function getFirstReviewerStage(): ?array
+    {
+        foreach ($this->getWorkflowStages() as $stage) {
+            if (($stage['role'] ?? null) !== 'applicant') {
+                return $stage;
+            }
+        }
+        return $this->getFirstStage();
+    }
+
+    /** @return list<array<string, mixed>> */
+    public function getFields(): array
+    {
+        return $this->schema['fields'] ?? [];
+    }
+
+    /** @return list<array<string, mixed>> */
+    public function getDocuments(): array
+    {
+        return $this->schema['documents'] ?? [];
+    }
+
+    /** @return array<string, mixed> */
+    public function getFeeConfig(): array
+    {
+        return $this->schema['fee'] ?? [];
+    }
+
+    /** @return array<string, mixed> */
+    public function getCertificateConfig(): array
+    {
+        return $this->schema['certificate'] ?? [];
+    }
+}

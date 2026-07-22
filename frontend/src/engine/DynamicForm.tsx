@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import i18n from '../i18n';
 import type { SchemaField, SchemaSection, ServiceSchema } from '../types';
 
 interface Props {
@@ -19,17 +21,42 @@ interface Props {
  * Validation:
  * - Real-time: fires on blur for required, pattern, min/max length
  * - Server: EDA-10 errors passed via `errors` prop take priority
+ *
+ * JORD-93: the `locale` prop is now optional. When absent, the widget
+ * follows the app's current i18n language. Every validation message
+ * routes through i18n keys (validation.*) so the message flips with
+ * the UI instead of leaking Arabic into the English view.
  */
-export function DynamicForm({ schema, values, errors = {}, onChange, disabled = false, locale = 'ar' }: Props) {
+export function DynamicForm({ schema, values, errors = {}, onChange, disabled = false, locale }: Props) {
+  const { i18n: hookI18n, t } = useTranslation();
+  const effectiveLocale: 'ar' | 'en' = locale ?? (hookI18n.language.startsWith('ar') ? 'ar' : 'en');
   const label = (field: { label_ar: string; label_en: string }) =>
-    locale === 'ar' ? field.label_ar : field.label_en;
+    effectiveLocale === 'ar' ? field.label_ar : (field.label_en || field.label_ar);
 
   const sections: SchemaSection[] = schema.sections || [
-    { id: '__default', label_ar: 'البيانات', label_en: 'Details' },
+    { id: '__default',
+      label_ar: t('dynamicForm.defaultSection', { lng: 'ar', defaultValue: 'البيانات' }),
+      label_en: t('dynamicForm.defaultSection', { lng: 'en', defaultValue: 'Details' }) },
   ];
 
-  const fieldsBySection = (sectionId: string) =>
-    schema.fields.filter(f => (f.section || '__default') === sectionId);
+  /**
+   * JORD-48a: fields render in schema-array order by default; when a
+   * field carries an explicit display_order integer, that wins. Stable
+   * secondary sort by original index preserves current behaviour for
+   * schemas that haven't opted in yet.
+   */
+  const fieldsBySection = (sectionId: string) => {
+    const filtered = schema.fields
+      .map((f, i) => ({ field: f, idx: i }))
+      .filter(({ field }) => (field.section || '__default') === sectionId);
+    filtered.sort((a, b) => {
+      const oa = a.field.display_order ?? Number.POSITIVE_INFINITY;
+      const ob = b.field.display_order ?? Number.POSITIVE_INFINITY;
+      if (oa !== ob) return oa - ob;
+      return a.idx - b.idx;
+    });
+    return filtered.map(x => x.field);
+  };
 
   const isVisible = (field: SchemaField): boolean => {
     if (!field.conditional) return true;
@@ -37,7 +64,7 @@ export function DynamicForm({ schema, values, errors = {}, onChange, disabled = 
   };
 
   return (
-    <div dir={locale === 'ar' ? 'rtl' : 'ltr'} className="space-y-8">
+    <div dir={effectiveLocale === 'ar' ? 'rtl' : 'ltr'} className="space-y-8">
       {sections.map(section => {
         const fields = fieldsBySection(section.id).filter(isVisible);
         if (fields.length === 0) return null;
@@ -57,7 +84,7 @@ export function DynamicForm({ schema, values, errors = {}, onChange, disabled = 
                   serverError={errors[field.id]}
                   onChange={onChange}
                   disabled={disabled}
-                  locale={locale}
+                  locale={effectiveLocale}
                 />
               ))}
             </div>
@@ -81,65 +108,98 @@ interface FieldProps {
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-function validateField(field: SchemaField, value: unknown, locale: 'ar' | 'en'): string {
-  const ar = locale === 'ar';
+/**
+ * JORD-16: exported so callers (e.g. Apply's handleSaveDraft) can
+ * re-validate every visible field client-side before hitting the
+ * backend. Returns a { fieldId → error } map with only failing rows,
+ * plus a computed .valid boolean for convenience.
+ *
+ * JORD-93: `locale` is now optional — defaults to the current i18n
+ * language. Existing callers that pass an explicit 'ar' | 'en' still
+ * work; new callers can just call `validateAll(schema, values)`.
+ */
+export function validateAll(
+  schema: ServiceSchema,
+  values: Record<string, unknown>,
+  locale?: 'ar' | 'en',
+): { valid: boolean; errors: Record<string, string> } {
+  const lng = resolveLocale(locale);
+  const errors: Record<string, string> = {};
+  for (const field of schema.fields) {
+    // Skip fields hidden by a conditional guard — you can't require
+    // the applicant to fill a field they can't see.
+    if (field.conditional && values[field.conditional.field] !== field.conditional.value) {
+      continue;
+    }
+    const msg = validateField(field, values[field.id], lng);
+    if (msg) errors[field.id] = msg;
+  }
+  return { valid: Object.keys(errors).length === 0, errors };
+}
 
+/** JORD-93: pull the current app language when a caller doesn't pass one. */
+function resolveLocale(locale?: 'ar' | 'en'): 'ar' | 'en' {
+  if (locale) return locale;
+  return (i18n.language ?? 'ar').startsWith('ar') ? 'ar' : 'en';
+}
+
+/**
+ * JORD-93: pull a validation message from the i18n bundle. Requesting a
+ * specific `lng` so validateField stays deterministic per call — a
+ * simultaneous language switch in another tab doesn't midway swap the
+ * message language for an in-flight validation pass.
+ */
+function vmsg(key: string, lng: 'ar' | 'en', params?: Record<string, unknown>): string {
+  return i18n.t(`validation.${key}`, { lng, ...(params ?? {}) }) as string;
+}
+
+function validateField(field: SchemaField, value: unknown, locale: 'ar' | 'en'): string {
   // Handle array types (multiselect / checkbox_group)
   if (field.type === 'multiselect' || field.type === 'checkbox_group') {
     const arr = Array.isArray(value) ? value : [];
-    if (field.required && arr.length === 0)
-      return ar ? 'يرجى اختيار خيار واحد على الأقل' : 'Select at least one option';
+    if (field.required && arr.length === 0) return vmsg('selectAtLeastOne', locale);
     return '';
   }
 
   const v = String(value ?? '').trim();
 
   // Required check
-  if (field.required && !v)
-    return ar ? 'هذا الحقل مطلوب' : 'This field is required';
+  if (field.required && !v) return vmsg('required', locale);
 
   if (!v) return ''; // optional + empty → no error
 
   // Type-specific format checks
-  if (field.type === 'email' && !EMAIL_RE.test(v))
-    return ar ? 'البريد الإلكتروني غير صحيح' : 'Invalid email address';
+  if (field.type === 'email' && !EMAIL_RE.test(v)) return vmsg('invalidEmail', locale);
 
   if (field.type === 'number') {
     const n = Number(v);
-    if (isNaN(n))               return ar ? 'يجب أن يكون رقماً' : 'Must be a number';
-    if (field.min !== undefined && n < field.min)
-      return ar ? `الحد الأدنى ${field.min}` : `Minimum value is ${field.min}`;
-    if (field.max !== undefined && n > field.max)
-      return ar ? `الحد الأقصى ${field.max}` : `Maximum value is ${field.max}`;
+    if (isNaN(n))               return vmsg('mustBeNumber', locale);
+    if (field.min !== undefined && n < field.min)  return vmsg('minValue', locale, { min: field.min });
+    if (field.max !== undefined && n > field.max)  return vmsg('maxValue', locale, { max: field.max });
     return '';
   }
 
-  if (field.type === 'date' && isNaN(Date.parse(v)))
-    return ar ? 'تاريخ غير صحيح' : 'Invalid date';
+  if (field.type === 'date' && isNaN(Date.parse(v))) return vmsg('invalidDate', locale);
 
   // Schema-defined pattern (e.g. national ID)
   if (field.pattern) {
     try {
-      if (!new RegExp(`^(?:${field.pattern})$`).test(v))
-        return ar ? 'صيغة غير صحيحة' : 'Invalid format';
+      if (!new RegExp(`^(?:${field.pattern})$`).test(v)) return vmsg('invalidFormat', locale);
     } catch { /* bad regex — skip */ }
   }
 
   // Length constraints
   if (field.min_length !== undefined && v.length < field.min_length)
-    return ar
-      ? `يجب أن يكون ${field.min_length} خانة على الأقل`
-      : `Minimum ${field.min_length} characters`;
+    return vmsg('minLength', locale, { min: field.min_length });
 
   if (field.max_length !== undefined && v.length > field.max_length)
-    return ar
-      ? `الحد الأقصى ${field.max_length} خانة`
-      : `Maximum ${field.max_length} characters`;
+    return vmsg('maxLength', locale, { max: field.max_length });
 
   return '';
 }
 
 function FieldWrapper({ field, value, serverError, onChange, disabled, locale }: FieldProps) {
+  const { t } = useTranslation();
   const [localError, setLocalError] = useState('');
   const [touched, setTouched] = useState(false);
 
@@ -158,7 +218,11 @@ function FieldWrapper({ field, value, serverError, onChange, disabled, locale }:
 
   // Server error (EDA-10) takes priority; then local blur error
   const displayError = serverError || (touched ? localError : '');
-  const label = locale === 'ar' ? field.label_ar : field.label_en;
+  const label = locale === 'ar' ? field.label_ar : (field.label_en || field.label_ar);
+  // JORD-93: prefer the localised placeholder + description so English
+  // users don't see Arabic hints under their fields.
+  const placeholder = (locale === 'ar' ? field.placeholder_ar : field.placeholder_en) ?? '';
+  const description = locale === 'ar' ? field.description_ar : (field.description_en || field.description_ar);
   const isWide = field.type === 'textarea';
 
   return (
@@ -175,7 +239,7 @@ function FieldWrapper({ field, value, serverError, onChange, disabled, locale }:
         onBlur={handleBlur}
         disabled={disabled}
         hasError={!!displayError}
-        placeholder={field.placeholder_ar || ''}
+        placeholder={placeholder}
         locale={locale}
       />
 
@@ -191,11 +255,11 @@ function FieldWrapper({ field, value, serverError, onChange, disabled, locale }:
         <>
           {field.min_length !== undefined && field.max_length !== undefined && field.min_length === field.max_length && (
             <p className="mt-1 text-xs text-gray-400">
-              {locale === 'ar' ? `يجب أن يكون ${field.min_length} خانة` : `Must be exactly ${field.min_length} characters`}
+              {t('validation.exactLength', { n: field.min_length })}
             </p>
           )}
-          {field.description_ar && locale === 'ar' && (
-            <p className="mt-1 text-xs text-gray-400">{field.description_ar}</p>
+          {description && (
+            <p className="mt-1 text-xs text-gray-400">{description}</p>
           )}
         </>
       )}
@@ -247,20 +311,15 @@ function FieldInput({ field, value, onChange, onBlur, disabled, hasError, placeh
 
     case 'select':
       return (
-        <select
-          className={cls}
-          value={String(value ?? '')}
-          onChange={e => onChange(e.target.value)}
+        <DynamicSelect
+          field={field}
+          cls={cls}
+          value={value}
+          onChange={onChange}
           onBlur={onBlur}
           disabled={disabled}
-        >
-          <option value="">— {locale === 'ar' ? 'اختر' : 'Select'} —</option>
-          {field.options?.map(opt => (
-            <option key={opt.value} value={opt.value}>
-              {locale === 'ar' ? opt.label_ar : opt.label_en}
-            </option>
-          ))}
-        </select>
+          locale={locale}
+        />
       );
 
     case 'radio':
@@ -368,4 +427,74 @@ function FieldInput({ field, value, onChange, onBlur, disabled, hasError, placeh
         />
       );
   }
+}
+
+/**
+ * JORD-69: select with either static options[] or a runtime-fetched
+ * option list from field.options_endpoint. Split out of FieldInput's
+ * switch because it needs its own useEffect / useState — the switch
+ * arms can't hold hooks. Any select field without options_endpoint
+ * behaves exactly as before (options[] passed in).
+ */
+interface DynamicSelectProps {
+  field: SchemaField;
+  cls: string;
+  value: unknown;
+  onChange: (v: unknown) => void;
+  onBlur: () => void;
+  disabled: boolean;
+  locale: 'ar' | 'en';
+}
+
+function DynamicSelect({ field, cls, value, onChange, onBlur, disabled, locale }: DynamicSelectProps) {
+  const [dynamicOptions, setDynamicOptions] = React.useState<SchemaField['options'] | null>(null);
+  const [loading, setLoading] = React.useState<boolean>(!!field.options_endpoint);
+
+  React.useEffect(() => {
+    if (!field.options_endpoint) return;
+    // The endpoint is expected to return `{ <collection>: [{ id, name_ar, ... }] }`.
+    // /engineers is the only consumer today so we specialize:
+    //  - shape: { engineers: [{ id, name_ar, name_en, specialization }] }
+    //  - value: engineer.id (numeric)
+    //  - label: engineer.name_ar (with (specialization) suffix)
+    // Future endpoints will need their own mapper here; a generic
+    // "list at .data[]" shape is the natural next extension.
+    import('../api/http').then(({ request }) => {
+      return request<{ engineers?: Array<{ id: number; name_ar: string; name_en?: string; specialization?: string }> }>(
+        'GET', field.options_endpoint!
+      );
+    }).then(res => {
+      const list = res.engineers ?? [];
+      setDynamicOptions(list.map(e => ({
+        value: String(e.id),
+        label_ar: e.specialization ? `${e.name_ar} (${e.specialization})` : e.name_ar,
+        label_en: e.name_en ?? e.name_ar,
+      })));
+    }).catch(() => {
+      setDynamicOptions([]);
+    }).finally(() => setLoading(false));
+  }, [field.options_endpoint]);
+
+  const options = dynamicOptions ?? field.options ?? [];
+
+  return (
+    <select
+      className={cls}
+      value={String(value ?? '')}
+      onChange={e => onChange(e.target.value)}
+      onBlur={onBlur}
+      disabled={disabled || loading}
+    >
+      <option value="">
+        {loading
+          ? i18n.t('dynamicForm.loading', { lng: locale })
+          : i18n.t('dynamicForm.selectPlaceholder', { lng: locale })}
+      </option>
+      {options.map(opt => (
+        <option key={opt.value} value={opt.value}>
+          {locale === 'ar' ? opt.label_ar : opt.label_en}
+        </option>
+      ))}
+    </select>
+  );
 }

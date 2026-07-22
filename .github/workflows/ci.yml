@@ -1,0 +1,180 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# One run per commit; supersede in-flight runs on the same ref.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend · PHPUnit + PHPStan
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          # composer.json requires ^8.3, and transitive Symfony 8.1.x
+          # packages need >= 8.4.1. Pinning to 8.4 satisfies both. Bump
+          # this in lockstep with composer.json if the minimum ever moves.
+          php-version: '8.4'
+          # bcmath: money math in FeeCalculator (JORD-4)
+          # sqlite3 + pdo_sqlite: RefreshDatabase in-memory DB the suite uses
+          # mbstring: Arabic string helpers throughout
+          extensions: bcmath, sqlite3, pdo_sqlite, mbstring, intl
+          coverage: none
+          tools: composer:v2
+
+      - name: Cache Composer packages
+        uses: actions/cache@v4
+        with:
+          path: backend/vendor
+          key: composer-${{ runner.os }}-${{ hashFiles('backend/composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      # StorageServiceProvider throws at boot when APP_ENV=production +
+      # FILESYSTEM_DISK !== object storage. package:discover runs during
+      # composer install's post-autoload-dump hook, BEFORE the .env prep
+      # step below — so we prime .env first and set safe env vars for
+      # the whole job.
+      - name: Prime .env for boot-time providers
+        run: cp .env.example .env
+
+      - name: Install PHP dependencies
+        env:
+          APP_ENV: testing
+          FILESYSTEM_DISK: local
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Finalise test environment
+        env:
+          APP_ENV: testing
+          FILESYSTEM_DISK: local
+        run: php artisan key:generate --ansi
+
+      - name: PHPUnit
+        env:
+          APP_ENV: testing
+          FILESYSTEM_DISK: local
+        run: ./vendor/bin/phpunit --colors=always
+
+      - name: PHPStan (level 6, existing baseline)
+        env:
+          APP_ENV: testing
+          FILESYSTEM_DISK: local
+        run: ./vendor/bin/phpstan analyse --memory-limit=1G --no-progress
+
+  frontend:
+    name: Frontend · Vitest
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Vitest
+        run: npm test
+
+      # JORD-26: 74 pre-existing tsc errors were cleared before wiring
+      # this step. It runs on every push so a new error fails CI the same
+      # day it's introduced, instead of piling up until nobody remembers
+      # why they exist.
+      - name: TypeScript
+        run: npm run typecheck
+
+  e2e:
+    name: E2E · Playwright (Chromium)
+    runs-on: ubuntu-latest
+    needs: [backend, frontend] # only spend E2E minutes when unit suites are green
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: bcmath, sqlite3, pdo_sqlite, mbstring, intl
+          coverage: none
+          tools: composer:v2
+
+      - name: Cache Composer packages
+        uses: actions/cache@v4
+        with:
+          path: backend/vendor
+          key: composer-${{ runner.os }}-${{ hashFiles('backend/composer.lock') }}
+
+      - name: Install PHP dependencies
+        working-directory: backend
+        env:
+          APP_ENV: testing
+          FILESYSTEM_DISK: local
+        run: |
+          cp .env.example .env
+          composer install --no-interaction --no-progress --prefer-dist
+          php artisan key:generate --ansi
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: |
+            package-lock.json
+            frontend/package-lock.json
+
+      # Root package.json ships @playwright/test; frontend/ ships the SPA
+      # deps Playwright will exercise. Both need to be installed.
+      - name: Install root (Playwright) + frontend deps
+        run: |
+          npm ci
+          cd frontend && npm ci
+
+      # Cache the Chromium download so repeat runs skip the 100MB pull.
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - name: Install Chromium + system deps
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+
+      - name: Playwright
+        env:
+          APP_ENV: testing
+          FILESYSTEM_DISK: local
+          CAPTCHA_ENABLED: 'false'
+        run: npx playwright test
+
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7

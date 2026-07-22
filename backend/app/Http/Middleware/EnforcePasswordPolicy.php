@@ -28,11 +28,17 @@ class EnforcePasswordPolicy
             return $next($request);
         }
 
-        // Allow password-change and logout routes through
+        // Allow password-change and logout routes through. Both the
+        // un-versioned paths and the /v1/ paths are listed because routes
+        // moved to the versioned group and the old paths are still declared
+        // in tests + legacy scripts.
         $allowedPaths = [
             'api/auth/password/change',
             'api/auth/logout',
             'api/auth/me',
+            'api/v1/auth/password/change',
+            'api/v1/auth/logout',
+            'api/v1/auth/me',
         ];
 
         foreach ($allowedPaths as $path) {

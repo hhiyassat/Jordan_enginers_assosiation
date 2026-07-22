@@ -28,3 +28,49 @@ Schedule::command('gsb:prune-logs')
             'GSB log pruning failed — MODEE §4.9.3 retention policy at risk'
         );
     });
+
+// ── Audit log retention — NFR-006 ────────────────────────────────────
+//
+// Prune audit_logs older than AUDIT_LOG_RETENTION_YEARS (default 7).
+// Runs on the 1st of every month at 03:00 server time — cheap enough to run
+// often, but not on the daily hot path.
+
+Schedule::command('audit:prune')
+    ->monthlyOn(1, '03:00')
+    ->withoutOverlapping()
+    ->runInBackground()
+    ->onFailure(function () {
+        \Illuminate\Support\Facades\Log::critical(
+            'Audit log pruning failed — NFR-006 (7-year retention) at risk'
+        );
+    });
+
+// ── JORD-79: annual dues cron (JEA manual pp.96-97) ────────────────
+//
+// Every February 1 at 04:00 UTC create the F-05 annual-dues
+// obligation for every active office. RecurringDuesService is
+// idempotent via its composite unique so a re-run mid-month
+// is a no-op.
+
+Schedule::command('dues:open-annual')
+    ->yearlyOn(2, 1, '04:00')
+    ->withoutOverlapping()
+    ->runInBackground()
+    ->onFailure(function () {
+        \Illuminate\Support\Facades\Log::critical(
+            'Annual-dues opening failed — offices not billed for the year'
+        );
+    });
+
+// ── JORD-80: retention reminders (5-yr drawing + 6-mo supervision) ─
+//
+// Daily 05:00 UTC scan of approved applications. Emits 30/7/1-day
+// reminders for drawing approvals nearing their 60-month validity
+// (JORD-58) and supervision contracts nearing their 6-month window
+// (JORD-59). NotificationService dedupes on (app_id, kind, threshold)
+// so daily re-runs during the 30-day window don't spam.
+
+Schedule::command('retention:remind')
+    ->dailyAt('05:00')
+    ->withoutOverlapping()
+    ->runInBackground();
