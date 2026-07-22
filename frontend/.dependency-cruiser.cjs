@@ -1,27 +1,33 @@
 /**
- * Architecture Enforcement — Workstream 3 (baseline)
+ * Architecture Enforcement — Workstream 15 (strict promotion).
  *
- * Rules are intentionally NARROW to match today's directory shape.
- * They enforce layering that already holds ("data layer doesn't
- * import UI", "utils don't import pages", "no cycles"), not the
- * FUTURE platform/modules/plugins split — that arrives in later
- * workstreams and this file grows to match.
+ * Post-W10 layout: src/ is now cleanly split into
+ *   platform/     — domain-neutral
+ *   modules/*     — domain (JEA) service modules
+ *   integrations/ — external-system adapters
+ *   plugins/      — optional capabilities (frontend-only currently empty)
+ *   api/, auth/, engine/, i18n/, layout/, types/, test/  — pre-split code
  *
- * Every rule is currently `severity: 'warn'`. Workstream 15
- * promotes them to `error` once the module split is complete.
- * That's why `npm run arch:check` returns exit 0 today.
+ * These rules enforce the dep-graph direction from §4 of the plan:
  *
- * The composition roots (App.tsx, main.tsx, routes.tsx) are
- * excluded from the "can't import pages" rules because they are
- * exactly where the top-level lazy route table lives — that's
- * their whole purpose.
+ *   platform  ← modules ← integrations ← plugins
+ *
+ * Modules may read the platform. Platform must never read modules.
+ * Same for integrations and plugins.
+ *
+ * `severity: 'error'` — Workstream 15 promotion. `npm run arch:check`
+ * now fails CI on any violation.
+ *
+ * Composition roots (App.tsx, main.tsx, routes.tsx) are excluded from
+ * dep-direction rules because they're where the top-level page
+ * registry lives — that's their WHOLE purpose.
  */
 module.exports = {
   forbidden: [
     /* ── Cycles ─────────────────────────────────────────────── */
     {
       name: 'no-circular',
-      severity: 'warn',
+      severity: 'error',
       comment:
         'Circular dependencies make it impossible to reason about ' +
         'module load order and quietly break tree-shaking.',
@@ -29,92 +35,77 @@ module.exports = {
       to:   { circular: true },
     },
 
-    /* ── Layer rules — data layer / infrastructure ──────────── */
+    /* ── Dep-direction rules (post-W10) ─────────────────────── */
     {
-      name: 'utils-cannot-import-pages',
-      severity: 'warn',
+      name: 'platform-cannot-import-modules',
+      severity: 'error',
       comment:
-        'src/utils/* is meant to be dependency-free reusable ' +
-        'primitives. Reaching into src/pages/* means the util has ' +
-        'a page-specific assumption and belongs in that page.',
-      from: { path: '^src/utils/' },
-      to:   { path: '^src/pages/' },
+        'Platform code (src/platform/**) is domain-neutral. Importing ' +
+        'a specific module means the platform has JEA knowledge and ' +
+        'no longer works on another tenant. If a platform file needs ' +
+        'a module capability, invert: expose a contract from the ' +
+        'platform, have the module implement it.',
+      from: { path: '^src/platform/' },
+      to:   { path: '^src/(modules|integrations|plugins)/' },
     },
     {
-      name: 'api-cannot-import-pages',
-      severity: 'warn',
+      name: 'platform-cannot-import-domain-pages',
+      severity: 'error',
       comment:
-        'Data-fetching layer must not know about screens. If an ' +
-        'api client needs a page-specific type, extract the type.',
-      from: { path: '^src/api/' },
-      to:   { path: '^src/pages/' },
+        'A platform component reaching into a module page means it ' +
+        'depends on a specific JEA screen. Same violation as above ' +
+        'stated for the pages/ subtree specifically.',
+      from: { path: '^src/platform/' },
+      to:   { path: '^src/modules/[^/]+/pages/' },
     },
     {
-      name: 'components-ui-cannot-import-pages',
-      severity: 'warn',
+      name: 'auth-cannot-import-modules',
+      severity: 'error',
       comment:
-        'src/components/ui/* is the design system. Design system ' +
-        'primitives must not depend on any specific page.',
-      from: { path: '^src/components/ui/' },
-      to:   { path: '^src/pages/' },
-    },
-    {
-      name: 'layout-cannot-import-pages',
-      severity: 'warn',
-      comment:
-        'Layout wraps pages via router outlets. Direct imports of ' +
-        'a specific page from the layout mean the layout has ' +
-        'domain knowledge that belongs in a route registry.',
-      from: { path: '^src/layout/' },
-      to:   { path: '^src/pages/' },
-    },
-    {
-      name: 'auth-cannot-import-pages',
-      severity: 'warn',
-      comment:
-        'Auth (provider, context, guards) is a platform primitive. ' +
-        'Guarding a specific page from inside the auth folder ' +
-        'reverses the dependency direction.',
+        'Auth (context / guards / login page) is a platform primitive. ' +
+        'Guarding a specific JEA page from inside src/auth means the ' +
+        'auth layer has domain knowledge.',
       from: { path: '^src/auth/' },
-      to:   { path: '^src/pages/' },
+      to:   { path: '^src/(modules|integrations)/' },
     },
     {
-      name: 'i18n-cannot-import-pages',
-      severity: 'warn',
+      name: 'api-cannot-import-modules',
+      severity: 'error',
       comment:
-        'i18n framework must remain generic. Page-specific keys ' +
-        'live in per-module locale files, not the i18n bootstrap.',
+        'Data-fetching layer must not know about screens. If an api ' +
+        'client needs a page-specific type, extract the type into ' +
+        'src/types/ or src/modules/<M>/types/ instead.',
+      from: { path: '^src/api/' },
+      to:   { path: '^src/modules/[^/]+/pages/' },
+    },
+    {
+      name: 'i18n-cannot-import-modules',
+      severity: 'error',
+      comment:
+        'i18n framework must remain generic. Per-module keys live in ' +
+        'per-module locale files, not in the i18n bootstrap.',
       from: { path: '^src/i18n/' },
-      to:   { path: '^src/pages/' },
-    },
-    {
-      name: 'engine-cannot-import-pages',
-      severity: 'warn',
-      comment:
-        'DynamicForm / DocumentUploader etc. render schemas — they ' +
-        'must not know about the specific pages that host them.',
-      from: { path: '^src/engine/' },
-      to:   { path: '^src/pages/' },
+      to:   { path: '^src/modules/' },
     },
     {
       name: 'types-cannot-import-runtime',
-      severity: 'warn',
+      severity: 'error',
       comment:
         'The types module is a shape declaration. Importing runtime ' +
         'code from it drags the runtime into every consumer of a ' +
         'type-only import.',
       from: { path: '^src/types/' },
-      to:   { path: '^src/(api|auth|components|engine|layout|pages|utils)/' },
+      to:   { path: '^src/(api|auth|components|engine|layout|modules|integrations|platform)/' },
     },
 
     /* ── Hygiene ────────────────────────────────────────────── */
     {
       name: 'no-orphans',
-      severity: 'warn',
+      severity: 'error',
       comment:
-        'Orphan modules (nothing imports them) are usually dead ' +
-        'code. The composition root files are excluded because ' +
-        'Vite / Vitest / TypeScript load them by convention.',
+        'Orphan modules (nothing imports them) are usually dead code. ' +
+        'The composition root files are excluded because Vite / ' +
+        'Vitest / TypeScript load them by convention.',
       from: {
         orphan: true,
         pathNot: [
