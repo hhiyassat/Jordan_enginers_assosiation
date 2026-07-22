@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Engine\Disciplines;
+use Modules\JeaProjects\Engine\Disciplines;
 use App\Models\Application;
 use App\Models\ApplicationReview;
 use App\Models\Notification;

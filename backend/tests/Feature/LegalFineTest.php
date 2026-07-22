@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Models\LegalFine;
+use Modules\JeaDiscipline\Models\LegalFine;
 use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;

@@ -2,12 +2,12 @@
 
 namespace Tests\Feature;
 
-use App\Engine\Disciplines;
-use App\Engine\QuotaLedger;
+use Modules\JeaProjects\Engine\Disciplines;
+use Modules\JeaProjects\Engine\QuotaLedger;
 use App\Models\Application;
-use App\Models\Engineer;
-use App\Models\EngineerDisciplineQuota;
-use App\Models\OfficeCeiling;
+use Modules\JeaProjects\Models\Engineer;
+use Modules\JeaProjects\Models\EngineerDisciplineQuota;
+use Modules\JeaProjects\Models\OfficeCeiling;
 use App\Models\Organization;
 use App\Models\ServiceDefinition;
 use App\Models\User;

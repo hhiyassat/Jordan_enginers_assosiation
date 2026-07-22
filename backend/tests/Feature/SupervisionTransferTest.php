@@ -3,13 +3,13 @@
 namespace Tests\Feature;
 
 use App\Models\Application;
-use App\Models\Complaint;
+use Modules\JeaDiscipline\Models\Complaint;
 use App\Models\Organization;
-use App\Models\Sanction;
+use Modules\JeaDiscipline\Models\Sanction;
 use App\Models\ServiceDefinition;
-use App\Models\SupervisionTransfer;
+use Modules\JeaDiscipline\Models\SupervisionTransfer;
 use App\Models\User;
-use App\Services\SupervisionTransferService;
+use Modules\JeaDiscipline\Services\SupervisionTransferService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;

@@ -2,9 +2,9 @@
 
 namespace Database\Seeders;
 
-use App\Models\Engineer;
-use App\Models\EngineerDisciplineQuota;
-use App\Models\OfficeCeiling;
+use Modules\JeaProjects\Models\Engineer;
+use Modules\JeaProjects\Models\EngineerDisciplineQuota;
+use Modules\JeaProjects\Models\OfficeCeiling;
 use App\Models\Organization;
 use App\Models\ServiceDefinition;
 use Illuminate\Database\Seeder;

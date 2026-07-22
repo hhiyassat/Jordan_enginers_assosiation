@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\Project;
+use Modules\JeaProjects\Models\Project;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 

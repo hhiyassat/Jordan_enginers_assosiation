@@ -109,20 +109,10 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'token.inactivity', 'password.p
         Route::get('services',         [ServiceCatalogController::class, 'index']);
         Route::get('services/{code}',  [ServiceCatalogController::class, 'show']);
 
-        // JORD-81: complaint intake — any authenticated user can file
-        // against an office in their own org. Admin-only decide/list
-        // endpoints live in the admin group further below.
-        Route::post('complaints',      [\App\Http\Controllers\Api\ComplaintController::class, 'store']);
-
-        // JORD-84: applicant self-service view of own dues + complaints
-        // filed against them + sanctions on them. Read-only — pay +
-        // decide stay admin-only per manual policy.
-        // Workstream 7: /my/dues is now owned by the jea-dues module
-        // (see backend/modules/JeaDues/routes.php). Only complaints +
-        // sanctions remain here; jea-discipline module will take them
-        // in Workstream 8.
-        Route::get('my/complaints',    [\App\Http\Controllers\Api\MyOfficeController::class, 'complaints']);
-        Route::get('my/sanctions',     [\App\Http\Controllers\Api\MyOfficeController::class, 'sanctions']);
+        // Workstream 8B: complaint intake (POST /complaints) + applicant
+        // self-service (/my/complaints, /my/sanctions) moved to the
+        // jea-discipline module. Removing 'jea-discipline' from
+        // config/modules.enabled drops those endpoints entirely.
 
         // FR-002 to FR-007: Application CRUD
         Route::get('applications',                            [ApplicationController::class, 'index']);
@@ -214,23 +204,11 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'token.inactivity', 'password.p
         // Removing 'jea-dues' from config/modules.enabled makes them
         // disappear entirely.
 
-        // JORD-81: disciplinary complaints + sanctions.
-        // (Intake POST /complaints lives in the applicant group above.)
-        Route::get('admin/complaints',                   [\App\Http\Controllers\Api\ComplaintController::class, 'index']);
-        Route::post('admin/complaints/{id}/decide',      [\App\Http\Controllers\Api\ComplaintController::class, 'decide']);
-
-        // JORD-82: legal fines (Art.14 owner fines for unlicensed
-        // contractor use). Admin-only issuance + payment tracking.
-        Route::get('admin/legal-fines',                  [\App\Http\Controllers\Api\LegalFineController::class, 'index']);
-        Route::post('admin/legal-fines',                 [\App\Http\Controllers\Api\LegalFineController::class, 'store']);
-        Route::post('admin/legal-fines/{id}/pay',        [\App\Http\Controllers\Api\LegalFineController::class, 'pay']);
-
-        // JORD-83: supervision transfer queue (C-07, p.30). Auto-
-        // populated when a suspension_2yr / deregistration sanction
-        // fires; admin assigns receiving office; target accepts/declines.
-        Route::get('admin/supervision-transfers',                        [\App\Http\Controllers\Api\SupervisionTransferController::class, 'index']);
-        Route::post('admin/supervision-transfers/{id}/assign',           [\App\Http\Controllers\Api\SupervisionTransferController::class, 'assign']);
-        Route::post('admin/supervision-transfers/{id}/accept-decline',   [\App\Http\Controllers\Api\SupervisionTransferController::class, 'acceptOrDecline']);
+        // Workstream 8B: JORD-81/82/83 admin discipline surface
+        // (complaints decide, legal fines, supervision transfers) moved
+        // to the jea-discipline module (backend/modules/JeaDiscipline/
+        // routes.php). Removing 'jea-discipline' from
+        // config/modules.enabled drops all three admin blocks entirely.
     });
 
     // ── User management ─────────────────────────────────────────────────

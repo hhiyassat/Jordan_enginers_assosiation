@@ -2,37 +2,32 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Controllers\Api;
+namespace Modules\JeaDiscipline\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Models\Complaint;
-use App\Models\Sanction;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Modules\JeaDiscipline\Models\Complaint;
+use Modules\JeaDiscipline\Models\Sanction;
 
 /**
- * MyOfficeController — JORD-84
+ * MyDisciplineController — JORD-84 (complaints + sanctions slice).
  *
- * Applicant-facing (office-user) self-service endpoints.
- * The admin surface for these subsystems already exists:
- *   • RecurringDuesController → admin views/pays other offices' dues
- *   • ComplaintController     → admin lists/decides complaints
- * This controller lets the office see their OWN data:
- *   • GET /my/dues       — obligations owed by this office
+ * Applicant-facing (office-user) self-service:
  *   • GET /my/complaints — complaints filed AGAINST this office
  *   • GET /my/sanctions  — sanctions ON this office (active + historical)
  *
- * Read-only. Pay + decide stay admin-only per manual policy (the
- * office can see what's owed / pending but can't self-authorize
- * either payment record or sanction reversal).
+ * Workstream 8B: extracted from App\Http\Controllers\Api\MyOfficeController
+ * (which itself was already stripped of dues() → Modules\JeaDues in
+ * Workstream 7). The original MyOfficeController class is now gone —
+ * every applicant self-service endpoint lives in its owning module.
+ *
+ * Read-only. Decide stays admin-only per manual policy (the office
+ * can see what's been filed / imposed but can't self-authorize a
+ * sanction reversal).
  */
-class MyOfficeController extends Controller
+class MyDisciplineController extends Controller
 {
-    // Workstream 7: dues() moved to Modules\JeaDues\Http\Controllers\
-    // MyDuesController. This controller now owns only the complaints
-    // + sanctions slices (candidates for the jea-discipline module
-    // in Workstream 8).
-
     /** GET /my/complaints */
     public function complaints(Request $request): JsonResponse
     {

@@ -2,15 +2,15 @@
 
 namespace Tests\Feature;
 
-use App\Engine\Disciplines;
-use App\Engine\QuotaLedger;
+use Modules\JeaProjects\Engine\Disciplines;
+use Modules\JeaProjects\Engine\QuotaLedger;
 use App\Models\Application;
-use App\Models\Engineer;
-use App\Models\OfficeCeiling;
-use App\Models\OfficeCoalition;
-use App\Models\OfficeCoalitionMember;
+use Modules\JeaProjects\Models\Engineer;
+use Modules\JeaProjects\Models\OfficeCeiling;
+use Modules\JeaProjects\Models\OfficeCoalition;
+use Modules\JeaProjects\Models\OfficeCoalitionMember;
 use App\Models\Organization;
-use App\Models\QuotaConsumption;
+use Modules\JeaProjects\Models\QuotaConsumption;
 use App\Models\ServiceDefinition;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;

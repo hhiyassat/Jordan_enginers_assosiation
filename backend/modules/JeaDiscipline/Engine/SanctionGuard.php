@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace App\Engine;
+namespace Modules\JeaDiscipline\Engine;
 
 use App\Models\Application;
-use App\Models\Sanction;
+use Modules\JeaDiscipline\Models\Sanction;
 
 /**
  * SanctionGuard — JORD-81

@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace App\Services;
+namespace Modules\JeaDiscipline\Services;
 
 use App\Models\Application;
-use App\Models\Sanction;
-use App\Models\SupervisionTransfer;
+use Modules\JeaDiscipline\Models\Sanction;
+use Modules\JeaDiscipline\Models\SupervisionTransfer;
 use App\Models\User;
 
 /**

@@ -2,11 +2,11 @@
 
 namespace Database\Seeders;
 
-use App\Engine\Disciplines;
-use App\Models\Engineer;
-use App\Models\EngineerDisciplineQuota;
+use Modules\JeaProjects\Engine\Disciplines;
+use Modules\JeaProjects\Models\Engineer;
+use Modules\JeaProjects\Models\EngineerDisciplineQuota;
 use App\Models\Organization;
-use App\Models\OfficeCeiling;
+use Modules\JeaProjects\Models\OfficeCeiling;
 use Illuminate\Database\Seeder;
 
 /**

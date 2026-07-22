@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Controllers\Api;
+namespace Modules\JeaDiscipline\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Models\SupervisionTransfer;
+use Modules\JeaDiscipline\Models\SupervisionTransfer;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;

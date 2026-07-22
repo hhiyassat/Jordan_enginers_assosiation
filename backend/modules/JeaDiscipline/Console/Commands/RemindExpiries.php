@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Console\Commands;
+namespace Modules\JeaDiscipline\Console\Commands;
 
 use App\Models\Application;
 use App\Services\Notifications\NotificationService;

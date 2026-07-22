@@ -2,11 +2,11 @@
 
 namespace Tests\Feature;
 
-use App\Engine\Disciplines;
-use App\Models\Engineer;
-use App\Models\EngineerDisciplineQuota;
+use Modules\JeaProjects\Engine\Disciplines;
+use Modules\JeaProjects\Models\Engineer;
+use Modules\JeaProjects\Models\EngineerDisciplineQuota;
 use App\Models\Organization;
-use App\Models\OfficeCeiling;
+use Modules\JeaProjects\Models\OfficeCeiling;
 use App\Models\User;
 use Database\Seeders\QuotasAndCeilingsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;

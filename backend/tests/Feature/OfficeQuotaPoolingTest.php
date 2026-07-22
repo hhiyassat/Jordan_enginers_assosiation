@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
-use App\Models\Engineer;
+use Modules\JeaProjects\Models\Engineer;
 use App\Models\Organization;
-use App\Models\Project;
+use Modules\JeaProjects\Models\Project;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;

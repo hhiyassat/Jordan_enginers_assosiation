@@ -280,7 +280,7 @@ class ApplicationController extends Controller
         // cannot submit ANY application until the sanction lapses.
         // Fires last so field / doc / capacity issues surface first
         // (fixable in-place), and the sanction message is a hard stop.
-        $sanctionErrors = app(\App\Engine\SanctionGuard::class)->validate($app);
+        $sanctionErrors = app(\Modules\JeaDiscipline\Engine\SanctionGuard::class)->validate($app);
         if ($sanctionErrors) {
             return response()->json([
                 'message' => 'لا يمكن تقديم الطلب بسبب عقوبة تأديبية نافذة على المكتب.',

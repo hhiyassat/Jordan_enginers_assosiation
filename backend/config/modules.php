@@ -24,7 +24,8 @@ declare(strict_types=1);
 
 return [
     'enabled' => [
-        'jea-dues'     => \Modules\JeaDues\Providers\JeaDuesServiceProvider::class,
-        'jea-projects' => \Modules\JeaProjects\Providers\JeaProjectsServiceProvider::class,
+        'jea-dues'       => \Modules\JeaDues\Providers\JeaDuesServiceProvider::class,
+        'jea-projects'   => \Modules\JeaProjects\Providers\JeaProjectsServiceProvider::class,
+        'jea-discipline' => \Modules\JeaDiscipline\Providers\JeaDisciplineServiceProvider::class,
     ],
 ];

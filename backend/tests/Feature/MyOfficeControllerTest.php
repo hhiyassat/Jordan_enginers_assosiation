@@ -2,10 +2,10 @@
 
 namespace Tests\Feature;
 
-use App\Models\Complaint;
+use Modules\JeaDiscipline\Models\Complaint;
 use App\Models\Organization;
 use Modules\JeaDues\Models\RecurringObligation;
-use App\Models\Sanction;
+use Modules\JeaDiscipline\Models\Sanction;
 use App\Models\User;
 use Modules\JeaDues\Services\RecurringDuesService;
 use Illuminate\Foundation\Testing\RefreshDatabase;

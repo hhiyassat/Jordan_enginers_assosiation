@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Controllers\Api;
+namespace Modules\JeaDiscipline\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Models\Complaint;
-use App\Models\Sanction;
+use Modules\JeaDiscipline\Models\Complaint;
+use Modules\JeaDiscipline\Models\Sanction;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -148,7 +148,7 @@ class ComplaintController extends Controller
         // work waiting when they view the transfers page.
         $transfersOpened = 0;
         if ($sanction) {
-            $svc = app(\App\Services\SupervisionTransferService::class);
+            $svc = app(\Modules\JeaDiscipline\Services\SupervisionTransferService::class);
             if ($svc->sanctionRequiresTransfer($sanction)) {
                 $target = \App\Models\User::find($complaint->target_office_user_id);
                 if ($target) {

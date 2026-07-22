@@ -2,16 +2,16 @@
 
 namespace Tests\Feature;
 
-use App\Engine\CapacityGuard;
-use App\Engine\Disciplines;
-use App\Engine\QuotaLedger;
+use Modules\JeaProjects\Engine\CapacityGuard;
+use Modules\JeaProjects\Engine\Disciplines;
+use Modules\JeaProjects\Engine\QuotaLedger;
 use App\Models\Application;
 use App\Models\ApplicationReview;
-use App\Models\Engineer;
-use App\Models\EngineerDisciplineQuota;
-use App\Models\OfficeCeiling;
+use Modules\JeaProjects\Models\Engineer;
+use Modules\JeaProjects\Models\EngineerDisciplineQuota;
+use Modules\JeaProjects\Models\OfficeCeiling;
 use App\Models\Organization;
-use App\Models\QuotaConsumption;
+use Modules\JeaProjects\Models\QuotaConsumption;
 use App\Models\ServiceDefinition;
 use App\Models\User;
 use Database\Seeders\CatalogWorkflowsSeeder;

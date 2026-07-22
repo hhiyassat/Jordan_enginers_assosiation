@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Engine;
 
-use App\Engine\Disciplines;
+use Modules\JeaProjects\Engine\Disciplines;
 use PHPUnit\Framework\TestCase;
 
 /**

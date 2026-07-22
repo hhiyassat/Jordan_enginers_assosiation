@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\OfficeCeiling;
+use Modules\JeaProjects\Models\OfficeCeiling;
 use App\Models\Organization;
 use App\Models\ServiceDefinition;
 use Illuminate\Database\Seeder;
