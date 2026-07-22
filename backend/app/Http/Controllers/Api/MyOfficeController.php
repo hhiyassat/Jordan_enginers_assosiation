@@ -6,9 +6,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Complaint;
-use App\Models\RecurringObligation;
 use App\Models\Sanction;
-use App\Services\RecurringDuesService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -30,28 +28,10 @@ use Illuminate\Http\Request;
  */
 class MyOfficeController extends Controller
 {
-    /** GET /my/dues */
-    public function dues(Request $request): JsonResponse
-    {
-        $me = $request->user();
-
-        $obligations = RecurringObligation::where('office_user_id', $me->id)
-            ->orderByDesc('period_year')
-            ->orderByDesc('kind')
-            ->get();
-
-        // Rate table lets the frontend show "your tier pays X" without
-        // a second lookup. Same shape as the admin endpoint.
-        return response()->json([
-            'me' => [
-                'id'                    => $me->id,
-                'name'                  => $me->name,
-                'office_classification' => $me->office_classification,
-            ],
-            'obligations' => $obligations,
-            'rate_table'  => RecurringDuesService::RATES,
-        ]);
-    }
+    // Workstream 7: dues() moved to Modules\JeaDues\Http\Controllers\
+    // MyDuesController. This controller now owns only the complaints
+    // + sanctions slices (candidates for the jea-discipline module
+    // in Workstream 8).
 
     /** GET /my/complaints */
     public function complaints(Request $request): JsonResponse

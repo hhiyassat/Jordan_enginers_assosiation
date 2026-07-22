@@ -4,10 +4,10 @@ namespace Tests\Feature;
 
 use App\Models\Complaint;
 use App\Models\Organization;
-use App\Models\RecurringObligation;
+use Modules\JeaDues\Models\RecurringObligation;
 use App\Models\Sanction;
 use App\Models\User;
-use App\Services\RecurringDuesService;
+use Modules\JeaDues\Services\RecurringDuesService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;

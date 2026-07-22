@@ -117,7 +117,10 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'token.inactivity', 'password.p
         // JORD-84: applicant self-service view of own dues + complaints
         // filed against them + sanctions on them. Read-only — pay +
         // decide stay admin-only per manual policy.
-        Route::get('my/dues',          [\App\Http\Controllers\Api\MyOfficeController::class, 'dues']);
+        // Workstream 7: /my/dues is now owned by the jea-dues module
+        // (see backend/modules/JeaDues/routes.php). Only complaints +
+        // sanctions remain here; jea-discipline module will take them
+        // in Workstream 8.
         Route::get('my/complaints',    [\App\Http\Controllers\Api\MyOfficeController::class, 'complaints']);
         Route::get('my/sanctions',     [\App\Http\Controllers\Api\MyOfficeController::class, 'sanctions']);
 
@@ -217,11 +220,11 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'token.inactivity', 'password.p
         Route::patch('admin/offices/{officeId}/engineers/{engineerId}', [\App\Http\Controllers\Api\OfficeSettingsController::class, 'updateEngineer']);
 
         // JORD-79: recurring obligations (F-04 registration + F-05
-        // annual dues + 15%/30% late surcharge). Admin marks paid;
-        // cron creates annual dues Feb 1 every year.
-        Route::get('admin/offices/{id}/dues',            [\App\Http\Controllers\Api\RecurringDuesController::class, 'index']);
-        Route::post('admin/offices/{id}/dues/register',  [\App\Http\Controllers\Api\RecurringDuesController::class, 'seedRegistration']);
-        Route::post('admin/dues/{obligationId}/pay',     [\App\Http\Controllers\Api\RecurringDuesController::class, 'pay']);
+        // annual dues + 15%/30% late surcharge).
+        // Workstream 7: all three admin dues routes moved to the
+        // jea-dues module (backend/modules/JeaDues/routes.php).
+        // Removing 'jea-dues' from config/modules.enabled makes them
+        // disappear entirely.
 
         // JORD-81: disciplinary complaints + sanctions.
         // (Intake POST /complaints lives in the applicant group above.)

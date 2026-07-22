@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace App\Services;
+namespace Modules\JeaDues\Services;
 
-use App\Models\RecurringObligation;
 use App\Models\User;
 use Illuminate\Support\Carbon;
+use Modules\JeaDues\Models\RecurringObligation;
 
 /**
  * RecurringDuesService — JORD-79
@@ -15,6 +15,10 @@ use Illuminate\Support\Carbon;
  *   • F-04 registration (one-time per office)
  *   • F-05 annual dues + late surcharge (15% end-of-Feb→end-of-June,
  *          30% after end-of-June)
+ *
+ * Workstream 7: moved from App\Services\RecurringDuesService into
+ * the jea-dues module. Business logic is verbatim — only the
+ * namespace and the RecurringObligation import changed.
  *
  * Called from three places:
  *   • Console scheduler (`schedule:run`) fires openAnnualDuesFor()

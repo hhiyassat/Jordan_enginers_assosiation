@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Controllers\Api;
+namespace Modules\JeaDues\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Models\RecurringObligation;
 use App\Models\User;
-use App\Services\RecurringDuesService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Modules\JeaDues\Models\RecurringObligation;
+use Modules\JeaDues\Services\RecurringDuesService;
 
 /**
  * RecurringDuesController — JORD-79
@@ -20,6 +20,10 @@ use Illuminate\Http\Request;
  * integration in this ticket; the reference is stored as an opaque
  * string (e.g. bank transfer id) that a real payment gateway
  * would fill later.
+ *
+ * Workstream 7: moved from App\Http\Controllers\Api\RecurringDuesController.
+ * Method bodies verbatim — only the namespace + the moved-model
+ * imports changed.
  *
  * Routes:
  *   GET  /admin/offices/{id}/dues           → list all obligations for an office

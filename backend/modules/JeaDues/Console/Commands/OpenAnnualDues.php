@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace App\Console\Commands;
+namespace Modules\JeaDues\Console\Commands;
 
-use App\Services\RecurringDuesService;
 use Illuminate\Console\Command;
+use Modules\JeaDues\Services\RecurringDuesService;
 
 /**
  * JORD-79: creates F-05 annual dues obligations for every active
@@ -13,6 +13,10 @@ use Illuminate\Console\Command;
  * (office_user_id, kind, period_year) means running twice on the
  * same year is a no-op. Scheduled Feb 1 each year in
  * routes/console.php; can also be invoked manually.
+ *
+ * Workstream 7: moved from App\Console\Commands\OpenAnnualDues.
+ * Registered by JeaDuesServiceProvider so `php artisan dues:open-annual`
+ * remains available.
  *
  * Usage:
  *   php artisan dues:open-annual          # opens for current year

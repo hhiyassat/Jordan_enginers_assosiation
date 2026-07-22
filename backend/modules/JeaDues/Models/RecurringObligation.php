@@ -2,16 +2,23 @@
 
 declare(strict_types=1);
 
-namespace App\Models;
+namespace Modules\JeaDues\Models;
 
+use App\Models\Organization;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * JORD-79: one row per (office × kind × period_year).
- * See migrations/2026_07_21_000012_create_recurring_obligations_table.php
- * and App\Services\RecurringDuesService for the write path.
+ *
+ * Workstream 7: moved from App\Models\RecurringObligation into the
+ * jea-dues module. Class body is verbatim; only the namespace and
+ * the (now cross-boundary) User/Organization imports changed.
+ *
+ * See Modules\JeaDues\Database\Migrations\... for the schema and
+ * Modules\JeaDues\Services\RecurringDuesService for the write path.
  */
 class RecurringObligation extends Model
 {

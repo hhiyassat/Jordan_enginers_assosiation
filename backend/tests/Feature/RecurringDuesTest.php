@@ -3,9 +3,9 @@
 namespace Tests\Feature;
 
 use App\Models\Organization;
-use App\Models\RecurringObligation;
+use Modules\JeaDues\Models\RecurringObligation;
 use App\Models\User;
-use App\Services\RecurringDuesService;
+use Modules\JeaDues\Services\RecurringDuesService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Laravel\Sanctum\Sanctum;
