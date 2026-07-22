@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\GsbController;
 use App\Http\Controllers\Api\IntegrationController;
 use App\Http\Controllers\Api\ProjectController;
 use App\Http\Controllers\Api\ServiceCatalogController;
+use App\Http\Controllers\Api\ServiceFeesController;
 use App\Http\Controllers\Api\UserManagementController;
 use Illuminate\Support\Facades\Route;
 
@@ -177,8 +178,9 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'token.inactivity', 'password.p
         Route::patch('services/{id}/status',               [ServiceCatalogController::class, 'updateStatus']);
         // JORD-85: focused fee editor. Compact fee payload only —
         // avoids sending the whole schema for a rate change.
-        Route::get('admin/service-fees',                   [ServiceCatalogController::class, 'adminFeesIndex']);
-        Route::patch('admin/services/{id}/fee',            [ServiceCatalogController::class, 'updateFee']);
+        // Workstream 5: fee editor extracted from ServiceCatalogController.
+        Route::get('admin/service-fees',                   [ServiceFeesController::class, 'index']);
+        Route::patch('admin/services/{id}/fee',            [ServiceFeesController::class, 'update']);
         // Lock/unlock — every mutation above refuses when is_locked=true,
         // so unlocking is an explicit action separate from ordinary edits.
         Route::post('admin/services/{id}/lock',            [ServiceCatalogController::class, 'lock']);
