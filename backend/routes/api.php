@@ -2,6 +2,10 @@
 
 use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\ApplicationController;
+use App\Http\Controllers\Api\CertificatesController;
+use App\Http\Controllers\Api\PaymentsController;
+use App\Http\Controllers\Api\ReviewDashboardController;
+use App\Http\Controllers\Api\ReviewQueueController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CaptchaController;
 use App\Http\Controllers\Api\EngineerController;
@@ -66,12 +70,12 @@ Route::prefix('v1')->group(function () {
     Route::get('auth/me',                          [AuthController::class, 'me']);
 
     // FR-013: Public certificate verification
-    Route::get('certificates/verify/{certNumber}', [ApplicationController::class, 'verifyCertificate']);
+    Route::get('certificates/verify/{certNumber}', [CertificatesController::class, 'verify']);
 
     // PDF download — public but token-gated. Applicants get a signed
     // URL from the application-detail endpoint; third parties get the
     // token from the QR image on the printed certificate.
-    Route::get('certificates/{certNumber}/pdf', [ApplicationController::class, 'downloadCertificatePdf']);
+    Route::get('certificates/{certNumber}/pdf', [CertificatesController::class, 'downloadPdf']);
 
 });
 
@@ -145,18 +149,20 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'token.inactivity', 'password.p
         // JORD-88 (PM): reviewer dashboard summary. Same role gate as
         // the queue — staff / auditor / admin. Response is a compact
         // stats blob + two lists (recent decisions + my in-progress).
-        Route::get('review/dashboard',            [ApplicationController::class, 'reviewDashboard']);
-        Route::get('review/queue',                [ApplicationController::class, 'reviewQueue']);
-        Route::post('applications/{id}/claim',    [ApplicationController::class, 'claim']);
-        Route::post('applications/{id}/decide',   [ApplicationController::class, 'decide']);
+        // Workstream 5B: reviewer surface extracted from ApplicationController.
+        Route::get('review/dashboard',            [ReviewDashboardController::class, 'show']);
+        Route::get('review/queue',                [ReviewQueueController::class, 'index']);
+        Route::post('applications/{id}/claim',    [ReviewQueueController::class, 'claim']);
+        Route::post('applications/{id}/decide',   [ReviewQueueController::class, 'decide']);
     });
 
     // ── Staff / Admin routes ──────────────────────────────────────────
 
     Route::middleware('role:staff,admin')->group(function () {
         // FR-011 to FR-012: Payment + certificate issuance
-        Route::post('applications/{id}/confirm-payment',    [ApplicationController::class, 'confirmPayment']);
-        Route::post('applications/{id}/issue-certificate',  [ApplicationController::class, 'issueCertificate']);
+        // Workstream 5B: payment + cert issuance extracted from ApplicationController.
+        Route::post('applications/{id}/confirm-payment',    [PaymentsController::class, 'confirm']);
+        Route::post('applications/{id}/issue-certificate',  [CertificatesController::class, 'issue']);
     });
 
     // ── Admin-only routes ─────────────────────────────────────────────
