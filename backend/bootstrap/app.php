@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\CheckRole;
+use App\Http\Middleware\CorrelationId;
 use App\Http\Middleware\EnforcePasswordPolicy;
 use App\Http\Middleware\LogApiAccess;
 use App\Http\Middleware\SecurityHeaders;
@@ -39,6 +40,10 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Global middleware — applied to every request
         $middleware->append(SecurityHeaders::class);
+        // Workstream 11: correlation ID — echoes inbound X-Request-Id
+        // or mints a UUIDv4. Runs BEFORE LogApiAccess so the access
+        // log can key on the same ID the client sees.
+        $middleware->append(CorrelationId::class);
         $middleware->append(LogApiAccess::class);
         // JORD-30: read the Sanctum token from the httpOnly session
         // cookie and promote it to the Authorization header before the
