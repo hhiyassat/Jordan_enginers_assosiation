@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Controllers\Api;
+namespace Integrations\Gsb\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Services\Gsb\GsbClient;
+use Integrations\Gsb\Services\GsbClient;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -159,7 +159,7 @@ class GsbController extends Controller
     {
         $this->requireAdmin($request);
 
-        $logs = \App\Models\GsbCallLog::query()
+        $logs = \Integrations\Gsb\Models\GsbCallLog::query()
             ->when($request->filled('from'),     fn ($q) => $q->where('logged_at', '>=', $request->from))
             ->when($request->filled('to'),       fn ($q) => $q->where('logged_at', '<=', $request->to))
             ->when($request->filled('source_ip'),fn ($q) => $q->where('source_ip', $request->source_ip))

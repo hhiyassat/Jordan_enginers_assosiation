@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Console\Commands;
+namespace Integrations\Gsb\Console\Commands;
 
-use App\Models\GsbCallLog;
+use Integrations\Gsb\Models\GsbCallLog;
 use Illuminate\Console\Command;
 
 /**

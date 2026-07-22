@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services\Gsb;
+namespace Integrations\Gsb\Services;
 
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;

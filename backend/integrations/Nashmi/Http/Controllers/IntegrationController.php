@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Controllers\Api;
+namespace Integrations\Nashmi\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Models\IntegrationCycle;
-use App\Services\NashmiIntegrationService;
+use Integrations\Nashmi\Models\IntegrationCycle;
+use Integrations\Nashmi\Services\NashmiIntegrationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;

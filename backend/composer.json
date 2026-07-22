@@ -29,7 +29,8 @@
             "Database\\Factories\\": "database/factories/",
             "Database\\Seeders\\": "database/seeders/",
             "Modules\\": "modules/",
-            "Plugins\\": "plugins/"
+            "Plugins\\": "plugins/",
+            "Integrations\\": "integrations/"
         }
     },
     "autoload-dev": {

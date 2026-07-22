@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
-use App\Services\Gsb\GsbAuthManager;
-use App\Services\Gsb\GsbClient;
+use Integrations\Gsb\Services\GsbAuthManager;
+use Integrations\Gsb\Services\GsbClient;
 use App\Services\Payment\MockPaymentGateway;
 use App\Services\Payment\PaymentGateway;
 use Illuminate\Cache\RateLimiting\Limit;

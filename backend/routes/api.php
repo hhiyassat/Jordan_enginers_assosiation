@@ -11,8 +11,9 @@ use App\Http\Controllers\Api\AuthController;
 // Plugins\AiSchema and Plugins\Captcha. GET /captcha now lives in the
 // captcha plugin's routes.php; the 'captcha' middleware alias is
 // registered by the captcha plugin's service provider.
-use App\Http\Controllers\Api\GsbController;
-use App\Http\Controllers\Api\IntegrationController;
+// Workstream 14: GsbController + IntegrationController moved to
+// Integrations\Gsb + Integrations\Nashmi. Their routes now live in
+// the adapter routes.php files loaded by their service providers.
 use App\Http\Controllers\Api\UserManagementController;
 use Illuminate\Support\Facades\Route;
 
@@ -29,24 +30,9 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-// ── Nashmi Integration routes (NO Sanctum — validated by X-Integration-Key) ─
-// IMPORTANT: registered BEFORE the v1 group so Sanctum never intercepts them.
-
-Route::prefix('integration')
-    ->middleware(['integration.key', 'throttle:integration'])
-    ->group(function () {
-        // Inbound from Nashmi
-        Route::post('receive-requirements',             [IntegrationController::class, 'receiveRequirements']);
-        Route::post('receive-feedback',                 [IntegrationController::class, 'receiveFeedback']);
-
-        // Outbound trigger (admin calls this after code is done)
-        Route::post('cycles/{id}/notify-done',          [IntegrationController::class, 'notifyCodeDone']);
-
-        // Cycle management (read-only from Nashmi side)
-        Route::get('cycles',                            [IntegrationController::class, 'cycles']);
-        Route::get('cycles/{id}',                       [IntegrationController::class, 'cycle']);
-        Route::get('cycles/{id}/pdf',                   [IntegrationController::class, 'downloadPdf']);
-    });
+// Workstream 14: Nashmi integration routes (NO Sanctum — X-Integration-Key)
+// moved to Integrations\Nashmi\routes.php. Removing 'nashmi' from
+// config/integrations.enabled drops all 6 /api/integration/* endpoints.
 
 // ── Public routes (no auth) ─────────────────────────────────────────
 
@@ -155,31 +141,9 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'token.inactivity', 'password.p
         Route::delete('admin/users/{id}',    [UserManagementController::class, 'destroy']);
     });
 
-    // ── GSB (Government Service Bus) routes — MODEE Annex 4.15 ──────────
-    //
-    // gsb.ip_whitelist : §4.5 rule 11 — only authorized IPs may reach GSB routes
-    // auth:sanctum     : §4.4.1 — authenticated session required
-    // throttle         : §4.7  — rate limiting (100 req/min per IP)
-    //
-    // Note: gsb.ip_whitelist is applied INSIDE the outer auth:sanctum group so that
-    // the Sanctum middleware still runs first; unauthenticated requests never reach
-    // the IP check and get the standard 401 response instead of the GSB 403.
-
-    Route::prefix('v1/gsb')
-        ->middleware('gsb.ip_whitelist')
-        ->group(function () {
-
-            // §4.5.7 — Step 1: request OTP for citizen-data access
-            Route::post('otp/request', [GsbController::class, 'requestOtp']);
-
-            // §4.5.7 — Step 2: verify OTP; returns short-lived otp_token
-            Route::post('otp/verify',  [GsbController::class, 'verifyOtp']);
-
-            // §4.5.7 — Citizen data lookup (requires otp_token from step 2)
-            Route::get('citizen',      [GsbController::class, 'citizenLookup']);
-
-            // §4.9 — GSB call audit log viewer (admin-only enforcement inside controller)
-            Route::get('audit-logs',   [GsbController::class, 'auditLogs']);
-        });
+    // Workstream 14: GSB routes moved to Integrations\Gsb\routes.php
+    // (auth:sanctum + gsb.ip_whitelist middleware applied inside the
+    // adapter's own group). Removing 'gsb' from config/integrations
+    // .enabled drops the 4 /api/v1/gsb/* endpoints + the alias.
 
 });

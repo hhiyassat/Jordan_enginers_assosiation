@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Services\Gsb;
+namespace Integrations\Gsb\Services;
 
-use App\Models\GsbCallLog;
+use Integrations\Gsb\Models\GsbCallLog;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;

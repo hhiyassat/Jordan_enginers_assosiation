@@ -5,10 +5,12 @@ use App\Http\Middleware\EnforcePasswordPolicy;
 use App\Http\Middleware\LogApiAccess;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\TokenInactivityCheck;
-use App\Http\Middleware\ValidateIntegrationKey;
 // Workstream 13: VerifyCaptcha moved to Plugins\Captcha. The 'captcha'
 // middleware alias is registered by CaptchaServiceProvider so disabling
 // the plugin (config/plugins.enabled) drops the alias with it.
+// Workstream 14: ValidateIntegrationKey + GsbIpWhitelist moved to
+// Integrations\Nashmi + Integrations\Gsb. Their 'integration.key' +
+// 'gsb.ip_whitelist' aliases are registered by the adapter providers.
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -50,9 +52,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'role'             => CheckRole::class,
             'token.inactivity' => TokenInactivityCheck::class,
             'password.policy'  => EnforcePasswordPolicy::class,
-            'integration.key'  => ValidateIntegrationKey::class,
-            // GSB: MODEE Annex 4.15 §4.5 rule 11 — IP whitelist for GSB routes
-            'gsb.ip_whitelist' => \App\Http\Middleware\GsbIpWhitelist::class,
+            // Workstream 14: 'integration.key' + 'gsb.ip_whitelist' are
+            // registered by Integrations\Nashmi + Integrations\Gsb
+            // service providers so the aliases disappear when either
+            // adapter is removed from config/integrations.enabled.
             // Workstream 13: 'captcha' alias is registered by
             // Plugins\Captcha\Providers\CaptchaServiceProvider — routes
             // that use ->middleware('captcha') break if the plugin is

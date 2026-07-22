@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Services;
+namespace Integrations\Nashmi\Services;
 
-use App\Models\IntegrationCycle;
+use Integrations\Nashmi\Models\IntegrationCycle;
 use Modules\JeaServices\Models\ServiceDefinition;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
