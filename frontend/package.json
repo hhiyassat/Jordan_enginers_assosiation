@@ -9,7 +9,9 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "arch:check": "depcruise --config .dependency-cruiser.cjs src",
+    "arch:graph": "depcruise --include-only ^src --output-type dot --config .dependency-cruiser.cjs src | dot -T svg > arch-graph.svg"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.101.2",
@@ -31,6 +33,7 @@
     "@types/react-dom": "^18.2.0",
     "@vitejs/plugin-react": "^4.2.0",
     "autoprefixer": "^10.4.17",
+    "dependency-cruiser": "^18.1.0",
     "jsdom": "^29.1.1",
     "postcss": "^8.4.35",
     "tailwindcss": "^3.4.1",

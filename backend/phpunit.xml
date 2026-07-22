@@ -18,6 +18,13 @@
         <testsuite name="Feature">
             <directory>tests/Feature</directory>
         </testsuite>
+        <!-- Workstream 3: grep based layer + boundary enforcement.
+             Not a Feature test because it does not boot the framework.
+             Kept in its own suite so ops can run this via
+             php artisan test testsuite=Architecture in CI. -->
+        <testsuite name="Architecture">
+            <directory>tests/Architecture</directory>
+        </testsuite>
     </testsuites>
     <source>
         <include>
