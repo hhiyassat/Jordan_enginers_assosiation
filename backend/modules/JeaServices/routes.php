@@ -90,6 +90,7 @@ Route::prefix('api/v1')->middleware(['auth:sanctum', 'token.inactivity', 'passwo
         Route::get ('review/dashboard',            [ReviewDashboardController::class, 'show']);
         Route::get ('review/queue',                [ReviewQueueController::class, 'index']);
         Route::post('applications/{id}/claim',     [ReviewQueueController::class, 'claim']);
+        Route::post('applications/{id}/release',   [ReviewQueueController::class, 'release']); // PR#1
         Route::post('applications/{id}/decide',    [ReviewQueueController::class, 'decide']);
     });
 

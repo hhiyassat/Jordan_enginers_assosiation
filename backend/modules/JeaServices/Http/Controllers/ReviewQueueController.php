@@ -51,8 +51,21 @@ class ReviewQueueController extends Controller
             ->where('assigned_reviewer_id', $user->id)
             ->orderBy('sla_deadline');
 
-        // Merge both sets, my in-progress first
-        $applications = $myInProgress->get()->merge($submitted->get());
+        // PR#1 bugfix: approved applications previously vanished from every list
+        // once approved — staff had no way to reach them to confirm payment or
+        // issue a certificate. Surface them here for staff/admin only (auditors
+        // have no action to take on approved apps).
+        $approved = collect();
+        if ($user->isStaff() || $user->isAdmin()) {
+            $approved = Application::forOrganization($org)
+                ->with(['serviceDefinition:id,code,name_ar,name_en,schema', 'applicant:id,name,email'])
+                ->where('status', Application::STATUS_APPROVED)
+                ->orderBy('updated_at')
+                ->get();
+        }
+
+        // Merge sets: my in-progress first, then unassigned submitted, then approved
+        $applications = $myInProgress->get()->merge($submitted->get())->merge($approved);
 
         // Filter to what THIS reviewer can actually act on. Admin sees
         // everything (they're the tiebreaker); every other reviewer sees
@@ -91,6 +104,20 @@ class ReviewQueueController extends Controller
         $app    = Application::forOrganization($request->user()->organization_id)->findOrFail($id);
         $engine = new WorkflowEngine($app->serviceDefinition);
         $app    = $engine->claim($app, $request->user());
+
+        return response()->json(['application' => $app]);
+    }
+
+    /**
+     * PR#1: release a claimed application back to the queue.
+     * Only the assigned reviewer or an admin may release — enforced
+     * inside WorkflowEngine::release().
+     */
+    public function release(Request $request, int $id): JsonResponse
+    {
+        $app    = Application::forOrganization($request->user()->organization_id)->findOrFail($id);
+        $engine = new WorkflowEngine($app->serviceDefinition);
+        $app    = $engine->release($app, $request->user());
 
         return response()->json(['application' => $app]);
     }

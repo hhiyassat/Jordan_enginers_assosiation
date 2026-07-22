@@ -66,7 +66,9 @@ export const applicationsApi = {
     return request<{ document: ApplicationDocument }>('POST', `/applications/${id}/documents`, fd, true);
   },
   reviewQueue: () => request<{ applications: Application[] }>('GET', '/review/queue'),
-  claim:  (id: number) => request<{ application: Application }>('POST', `/applications/${id}/claim`),
+  claim:   (id: number) => request<{ application: Application }>('POST', `/applications/${id}/claim`),
+  // PR#1: release a claimed application back to the queue.
+  release: (id: number) => request<{ application: Application }>('POST', `/applications/${id}/release`),
   decide: (id: number, decision: string, notes?: string, annotations?: unknown) =>
     request<{ review: unknown; application: Application }>('POST', `/applications/${id}/decide`, { decision, notes, annotations }),
   confirmPayment: (id: number, payment_reference: string) =>

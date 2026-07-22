@@ -58,6 +58,7 @@ export function ReviewPanel() {
   const [selectedActionId, setSelectedActionId] = useState<string>('');
   const [loading, setLoading]     = useState(true);
   const [claiming, setClaiming]   = useState(false);
+  const [releasing, setReleasing] = useState(false);
   const [deciding, setDeciding]   = useState(false);
   const [notes, setNotes]         = useState('');
   const [notesError, setNotesError] = useState('');
@@ -109,6 +110,26 @@ export function ReviewPanel() {
       setPageError(errorMessage(err));
     } finally {
       setClaiming(false);
+    }
+  };
+
+  // PR#1: release the current claim back to the queue.
+  const handleRelease = async () => {
+    if (!app) return;
+    const confirmMsg = isArabic
+      ? 'هل تريد التراجع عن استلام هذا الطلب؟ سيصبح متاحاً لمراجعين آخرين.'
+      : 'Return this application to the queue? Other reviewers will be able to claim it.';
+    if (!window.confirm(confirmMsg)) return;
+    setReleasing(true);
+    setPageError('');
+    try {
+      const r = await reviewApi.release(app.id);
+      setApp(r.application);
+      reload();
+    } catch (err: unknown) {
+      setPageError(errorMessage(err));
+    } finally {
+      setReleasing(false);
     }
   };
 
@@ -213,10 +234,20 @@ export function ReviewPanel() {
             </button>
           )}
 
+          {/* PR#1: reviewer can release the claim back to the queue. */}
           {isClaimed && app.status === 'under_review' && (
-            <span className="text-xs px-3 py-1.5 rounded-full bg-orange-100 text-orange-700 font-medium">
-              🔒 {t('reviewPanel.yourReview')}
-            </span>
+            <button
+              onClick={handleRelease}
+              disabled={releasing}
+              title={isArabic
+                ? 'التراجع عن الاستلام وإعادة الطلب لقائمة الانتظار'
+                : 'Return this application to the queue'}
+              className="text-xs px-3 py-1.5 rounded-full bg-orange-100 text-orange-700 font-medium hover:bg-orange-200 disabled:opacity-50 transition-colors"
+            >
+              {releasing
+                ? (isArabic ? 'جارٍ...' : 'Releasing...')
+                : `🔓 ${t('reviewPanel.yourReview')} ${isArabic ? '— تحرير' : '— release'}`}
+            </button>
           )}
         </div>
       </div>

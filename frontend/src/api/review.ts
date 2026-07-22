@@ -44,6 +44,8 @@ export const reviewApi = {
   queue:            () => applicationsApi.reviewQueue(),
   get:              (id: number) => applicationsApi.get(id),
   claim:            (id: number) => applicationsApi.claim(id),
+  // PR#1: unclaim / return to queue.
+  release:          (id: number) => applicationsApi.release(id),
   decide:           (id: number, decision: string, notes?: string, annotations?: unknown) =>
                       applicationsApi.decide(id, decision, notes, annotations),
   confirmPayment:   (id: number, ref: string) => applicationsApi.confirmPayment(id, ref),
