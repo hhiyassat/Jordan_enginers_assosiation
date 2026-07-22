@@ -3,9 +3,9 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { NotificationBell } from './NotificationBell';
-import { makeQueryWrapper } from '../test/queryWrapper';
-import type { Paginated } from '../api/admin';
-import type { NotificationRow } from '../api/notifications';
+import { makeQueryWrapper } from '../../test/queryWrapper';
+import type { Paginated } from '../../api/admin';
+import type { NotificationRow } from '../../api/notifications';
 
 /**
  * JORD-9: pin the bell dropdown behaviour.
@@ -16,7 +16,7 @@ const mockUnreadCount = vi.fn();
 const mockMarkRead    = vi.fn();
 const mockMarkAllRead = vi.fn();
 
-vi.mock('../api/notifications', () => ({
+vi.mock('../../api/notifications', () => ({
   notificationsApi: {
     list:        (...a: unknown[]) => mockList(...a),
     unreadCount: () => mockUnreadCount(),

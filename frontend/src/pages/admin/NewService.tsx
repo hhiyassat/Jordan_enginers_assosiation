@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { adminApi } from '../../api/client';
 import { DynamicForm } from '../../engine/DynamicForm';
-import { errorMessage } from '../../utils/errorMessage';
+import { errorMessage } from '../../platform/utils/errorMessage';
 import { DocumentPreviewCard } from '../../engine/DocumentPreviewCard';
 import type { ServiceSchema } from '../../types';
 import { normalizeSaveError, type ApiError } from './saveErrorHelpers';

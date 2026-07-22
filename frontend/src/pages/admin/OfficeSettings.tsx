@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Award, ShieldCheck, Star, Info, Save, ArrowLeft, ArrowRight } from 'lucide-react';
 import { adminApi } from '../../api/client';
-import { errorMessage } from '../../utils/errorMessage';
+import { errorMessage } from '../../platform/utils/errorMessage';
 
 /**
  * OfficeSettings — JORD-77

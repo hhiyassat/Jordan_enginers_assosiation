@@ -2,8 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AlertTriangle, ChevronDown, CheckCircle2, Download, XCircle, Gavel, Info } from 'lucide-react';
 import { adminApi } from '../../api/client';
-import { downloadCsv } from '../../utils/csv';
-import { errorMessage } from '../../utils/errorMessage';
+import { downloadCsv } from '../../platform/utils/csv';
+import { errorMessage } from '../../platform/utils/errorMessage';
 
 /**
  * ComplaintsAdmin — JORD-81 UI

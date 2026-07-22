@@ -2,8 +2,8 @@ import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Menu } from 'lucide-react';
 import { JEALogo } from '../components/JEALogo';
-import { LanguageSwitcher } from '../components/LanguageSwitcher';
-import { NotificationBell } from '../components/NotificationBell';
+import { LanguageSwitcher } from '../platform/components/LanguageSwitcher';
+import { NotificationBell } from '../platform/components/NotificationBell';
 import type { User } from '../types';
 import { pageTitleKeyFor } from './pageTitle';
 

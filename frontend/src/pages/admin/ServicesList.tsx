@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Lock, Unlock } from 'lucide-react';
 import { adminApi } from '../../api/client';
 import type { ServiceDefinition } from '../../types';
-import { errorMessage } from '../../utils/errorMessage';
+import { errorMessage } from '../../platform/utils/errorMessage';
 
 const STATUS_COLOR: Record<string, string> = {
   active:   'bg-green-100 text-green-700',

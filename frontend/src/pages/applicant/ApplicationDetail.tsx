@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { applicationsApi } from '../../api/client';
 import type { Application, ApplicationReview } from '../../types';
-import { errorMessage } from '../../utils/errorMessage';
+import { errorMessage } from '../../platform/utils/errorMessage';
 
 /**
  * ApplicationDetail — JORD-59 / JORD-62

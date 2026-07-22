@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { reviewApi } from '../../api/client';
 import type { Application } from '../../types';
-import { errorMessage } from '../../utils/errorMessage';
+import { errorMessage } from '../../platform/utils/errorMessage';
 
 export function ReviewQueue() {
   const { t, i18n } = useTranslation();

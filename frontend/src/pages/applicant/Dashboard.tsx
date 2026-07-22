@@ -8,9 +8,9 @@ import {
 import { applicationsApi, projectsApi, type OfficeQuota } from '../../api/client';
 import type { Application, Project } from '../../types';
 import { useAuth } from '../../auth/AuthContext';
-import { PageHero } from '../../components/ui/PageHero';
+import { PageHero } from '../../platform/ui/PageHero';
 import { QuotaCard } from '../../components/ui/QuotaCard';
-import { errorMessage } from '../../utils/errorMessage';
+import { errorMessage } from '../../platform/utils/errorMessage';
 
 /**
  * Dashboard — landing page for the engineering-office (applicant) role.

@@ -1,6 +1,6 @@
 import { describe, expect, it, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import i18n from '../i18n';
+import i18n from '../../i18n';
 import { LanguageSwitcher } from './LanguageSwitcher';
 
 /**

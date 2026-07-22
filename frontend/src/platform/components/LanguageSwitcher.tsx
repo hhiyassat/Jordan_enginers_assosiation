@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { Languages } from 'lucide-react';
-import { SUPPORTED_LANGUAGES, type SupportedLanguage } from '../i18n';
+import { SUPPORTED_LANGUAGES, type SupportedLanguage } from '../../i18n';
 
 /**
  * Small header control that flips between ar/en. Two-language toggle

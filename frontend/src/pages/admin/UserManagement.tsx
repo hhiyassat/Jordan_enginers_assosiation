@@ -3,8 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { Trash2, Edit3, UserPlus, X } from 'lucide-react';
 import { userManagementApi } from '../../api/client';
 import type { User } from '../../types';
-import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
-import { errorMessage } from '../../utils/errorMessage';
+import { ConfirmDialog } from '../../platform/ui/ConfirmDialog';
+import { errorMessage } from '../../platform/utils/errorMessage';
 import { useAuth } from '../../auth/AuthContext';
 
 /**

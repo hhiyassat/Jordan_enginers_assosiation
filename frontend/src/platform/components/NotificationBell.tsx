@@ -7,8 +7,8 @@ import {
   useUnreadNotificationCount,
   useMarkAllNotificationsRead,
   useMarkNotificationRead,
-} from '../api/hooks';
-import type { NotificationRow } from '../api/notifications';
+} from '../../api/hooks';
+import type { NotificationRow } from '../../api/notifications';
 
 /**
  * Header bell + dropdown (JORD-9).

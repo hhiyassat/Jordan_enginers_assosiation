@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import { myOfficeApi } from '../../api/client';
 import type { MyComplaint, MySanction } from '../../api/myOffice';
-import { errorMessage } from '../../utils/errorMessage';
+import { errorMessage } from '../../platform/utils/errorMessage';
 
 /**
  * MyOffice — JORD-84

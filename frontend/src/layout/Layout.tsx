@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../auth/AuthContext';
-import { SkipToContent } from '../components/ui/SkipToContent';
+import { SkipToContent } from '../platform/ui/SkipToContent';
 import { Header } from './Header';
 import { SidebarContent } from './SidebarContent';
 import { navItemsForRole } from './navItems';

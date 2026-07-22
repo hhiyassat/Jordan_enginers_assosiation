@@ -4,10 +4,10 @@ import { useTranslation } from 'react-i18next';
 import { Building2, User as UserIcon, Eye, EyeOff, AlertTriangle, LogIn } from 'lucide-react';
 import { authApi } from '../api/client';
 import { JEALogo } from '../components/JEALogo';
-import { Button } from '../components/ui/Button';
-import { TextField } from '../components/ui/FormField';
+import { Button } from '../platform/ui/Button';
+import { TextField } from '../platform/ui/FormField';
 import { Captcha } from '../components/ui/Captcha';
-import { LanguageSwitcher } from '../components/LanguageSwitcher';
+import { LanguageSwitcher } from '../platform/components/LanguageSwitcher';
 import { useAuth } from './AuthContext';
 
 /**

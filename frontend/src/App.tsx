@@ -1,7 +1,7 @@
 import { BrowserRouter } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './auth/AuthProvider';
-import { ErrorBoundary } from './components/ErrorBoundary';
+import { ErrorBoundary } from './platform/components/ErrorBoundary';
 import { RouteSuspense } from './layout/RouteSuspense';
 import { AppRoutes } from './routes';
 import { queryClient } from './api/queryClient';

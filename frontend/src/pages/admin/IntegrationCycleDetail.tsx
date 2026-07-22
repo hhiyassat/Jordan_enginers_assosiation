@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { integrationApi, type IntegrationCycle } from '../../api/client';
-import { errorMessage } from '../../utils/errorMessage';
+import { errorMessage } from '../../platform/utils/errorMessage';
 
 const STATUS_COLOR: Record<string, string> = {
   requirements_received: 'bg-blue-100 text-blue-700',

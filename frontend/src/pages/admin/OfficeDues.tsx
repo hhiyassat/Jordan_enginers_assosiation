@@ -3,10 +3,10 @@ import { Link, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, ArrowRight, CheckCircle2, Circle, DollarSign, Download, FileText, Plus, AlertCircle } from 'lucide-react';
 import { adminApi } from '../../api/client';
-import { useSortableRows } from '../../utils/useSortableRows';
-import { downloadCsv } from '../../utils/csv';
-import { SortHeader } from '../../utils/SortHeader';
-import { errorMessage } from '../../utils/errorMessage';
+import { useSortableRows } from '../../platform/utils/useSortableRows';
+import { downloadCsv } from '../../platform/utils/csv';
+import { SortHeader } from '../../platform/utils/SortHeader';
+import { errorMessage } from '../../platform/utils/errorMessage';
 
 /**
  * OfficeDues — JORD-79 UI

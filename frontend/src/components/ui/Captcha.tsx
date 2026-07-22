@@ -3,7 +3,7 @@ import DOMPurify from 'dompurify';
 import { RefreshCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { request } from '../../api/http';
-import { errorMessage } from '../../utils/errorMessage';
+import { errorMessage } from '../../platform/utils/errorMessage';
 
 /**
  * Captcha — text captcha wrapper for public forms

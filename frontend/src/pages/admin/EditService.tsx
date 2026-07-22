@@ -6,7 +6,7 @@ import { adminApi } from '../../api/client';
 import { DynamicForm } from '../../engine/DynamicForm';
 import { DocumentPreviewCard } from '../../engine/DocumentPreviewCard';
 import type { ServiceDefinition, ServiceSchema } from '../../types';
-import { errorMessage } from '../../utils/errorMessage';
+import { errorMessage } from '../../platform/utils/errorMessage';
 
 type Tab = 'schema' | 'preview' | 'ai';
 
