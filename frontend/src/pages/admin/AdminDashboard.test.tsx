@@ -6,9 +6,11 @@ import type { User } from '../../types';
 import { makeQueryWrapper } from '../../test/queryWrapper';
 
 const mockDashboard = vi.fn();
-// useAdminDashboardStats() imports adminApi from ./admin post JORD-22.
-vi.mock('../../api/admin', () => ({
-  adminApi: { dashboard: () => mockDashboard() },
+// Workstream 6: api/admin.ts split. useAdminDashboardStats() now
+// consumes platformAdminApi from api/platform/admin, so we mock the
+// platform-side source directly.
+vi.mock('../../api/platform/admin', () => ({
+  platformAdminApi: { dashboard: () => mockDashboard() },
 }));
 
 let mockUser: User | null = null;

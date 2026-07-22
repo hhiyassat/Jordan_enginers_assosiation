@@ -17,12 +17,16 @@ import type { Application } from '../../types';
  */
 
 const mockPaginated = vi.fn();
-vi.mock('../../api/admin', async () => {
-  const actual = await vi.importActual<typeof import('../../api/admin')>('../../api/admin');
+// Workstream 6: api/admin.ts split into api/platform/admin.ts +
+// api/jea/admin.ts. usePaginatedAdminApplications hits
+// `platformAdminApi.allApplicationsPaginated` directly, so we mock
+// the platform-side source (not the legacy barrel).
+vi.mock('../../api/platform/admin', async () => {
+  const actual = await vi.importActual<typeof import('../../api/platform/admin')>('../../api/platform/admin');
   return {
     ...actual,
-    adminApi: {
-      ...actual.adminApi,
+    platformAdminApi: {
+      ...actual.platformAdminApi,
       allApplicationsPaginated: (...a: unknown[]) => mockPaginated(...a),
     },
   };
