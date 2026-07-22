@@ -9,6 +9,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
+// Workstream 8A: Project moved out of App\Models — needs an explicit
+// use so the short-ref Project::class in belongsTo() resolves.
+use Modules\JeaProjects\Models\Project;
 
 /**
  * Application
@@ -47,7 +50,7 @@ class Application extends Model
     protected static function booted(): void
     {
         static::deleted(function (Application $app) {
-            app(\App\Engine\QuotaLedger::class)->releaseFor($app);
+            app(\Modules\JeaProjects\Engine\QuotaLedger::class)->releaseFor($app);
         });
     }
 

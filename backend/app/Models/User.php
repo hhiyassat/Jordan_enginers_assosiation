@@ -8,8 +8,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
-use App\Models\OfficeCoalition;
-use App\Models\OfficeCoalitionMember;
+use Modules\JeaProjects\Models\OfficeCoalition;
+use Modules\JeaProjects\Models\OfficeCoalitionMember;
 
 /**
  * User

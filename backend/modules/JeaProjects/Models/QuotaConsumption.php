@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Models;
+namespace Modules\JeaProjects\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /**
  * JORD-68: one row per (approved application × engineer × discipline).
  * See migrations/2026_07_21_000003_create_quota_consumptions_table.php
- * and App\Engine\QuotaLedger for the write path.
+ * and Modules\JeaProjects\Engine\QuotaLedger for the write path.
  */
 class QuotaConsumption extends Model
 {

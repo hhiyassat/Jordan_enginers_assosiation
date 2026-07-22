@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace App\Engine;
+namespace Modules\JeaProjects\Engine;
 
 use App\Models\Application;
-use App\Models\Engineer;
-use App\Models\EngineerDisciplineQuota;
-use App\Models\OfficeCeiling;
-use App\Models\OfficeCoalition;
-use App\Models\QuotaConsumption;
+use Modules\JeaProjects\Models\Engineer;
+use Modules\JeaProjects\Models\EngineerDisciplineQuota;
+use Modules\JeaProjects\Models\OfficeCeiling;
+use Modules\JeaProjects\Models\OfficeCoalition;
+use Modules\JeaProjects\Models\QuotaConsumption;
 use App\Models\User;
 use Illuminate\Support\Facades\Log;
 

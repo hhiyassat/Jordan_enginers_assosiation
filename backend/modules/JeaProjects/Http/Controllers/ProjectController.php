@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Controllers\Api;
+namespace Modules\JeaProjects\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Models\Engineer;
-use App\Models\Project;
+use Modules\JeaProjects\Models\Engineer;
+use Modules\JeaProjects\Models\Project;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Engine;
 
-use App\Engine\QuotaLedger;
+use Modules\JeaProjects\Engine\QuotaLedger;
 use App\Models\Application;
 use App\Models\ApplicationReview;
 use App\Models\AuditLog;

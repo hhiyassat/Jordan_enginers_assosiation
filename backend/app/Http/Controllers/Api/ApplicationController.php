@@ -121,7 +121,7 @@ class ApplicationController extends Controller
                 // the applicant's office+discipline, not the service.
                 // Appended AFTER the schema surcharges so it renders
                 // last in the itemized preview.
-                $overflow = app(\App\Engine\QuotaLedger::class)->overflowSurchargeFor($app);
+                $overflow = app(\Modules\JeaProjects\Engine\QuotaLedger::class)->overflowSurchargeFor($app);
                 if ($overflow !== null) {
                     $feeBreakdown['surcharges'][] = $overflow;
                     $feeBreakdown['total'] = round(
@@ -169,7 +169,7 @@ class ApplicationController extends Controller
         // application detail without cross-referencing.
         $contractNo = null;
         if ($request->filled('project_id')) {
-            $project = \App\Models\Project::where('id', (int) $request->project_id)
+            $project = \Modules\JeaProjects\Models\Project::where('id', (int) $request->project_id)
                 ->where('organization_id', $request->user()->organization_id)
                 ->where('owner_user_id', $request->user()->id)
                 ->first();
@@ -267,7 +267,7 @@ class ApplicationController extends Controller
         // the office's yearly ceiling must have room for this submission's
         // area_m2. Only fires on services that declare an area_m2 field;
         // returns [] (pass-through) for everything else.
-        $capacityErrors = app(\App\Engine\CapacityGuard::class)->validate($app);
+        $capacityErrors = app(\Modules\JeaProjects\Engine\CapacityGuard::class)->validate($app);
         if ($capacityErrors) {
             return response()->json([
                 'message' => 'الرصيد الهندسي غير كافٍ. يرجى مراجعة الحصة والسقف السنوي.',

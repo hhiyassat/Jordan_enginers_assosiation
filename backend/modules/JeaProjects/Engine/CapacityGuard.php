@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace App\Engine;
+namespace Modules\JeaProjects\Engine;
 
 use App\Models\Application;
-use App\Models\Engineer;
+use Modules\JeaProjects\Models\Engineer;
 
 /**
  * CapacityGuard — JORD-69

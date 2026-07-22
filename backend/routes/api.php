@@ -9,10 +9,10 @@ use App\Http\Controllers\Api\ReviewDashboardController;
 use App\Http\Controllers\Api\ReviewQueueController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CaptchaController;
-use App\Http\Controllers\Api\EngineerController;
+// EngineerController + ProjectController + OfficeSettingsController
+// moved to Modules\JeaProjects (Workstream 8A) — no longer imported here.
 use App\Http\Controllers\Api\GsbController;
 use App\Http\Controllers\Api\IntegrationController;
-use App\Http\Controllers\Api\ProjectController;
 use App\Http\Controllers\Api\ServiceCatalogController;
 use App\Http\Controllers\Api\ServiceFeesController;
 use App\Http\Controllers\Api\UserManagementController;
@@ -133,17 +133,10 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'token.inactivity', 'password.p
         Route::post('applications/{id}/documents',            [ApplicationController::class, 'uploadDocument'])
             ->middleware('throttle:document-upload');
 
-        // Projects — user's engineering projects (containers for applications)
-        Route::get('projects',        [ProjectController::class, 'index']);
-        Route::get('projects/quota',  [ProjectController::class, 'quota']);
-        Route::post('projects',       [ProjectController::class, 'store']);
-        Route::get('projects/{id}',   [ProjectController::class, 'show']);
-
-        // Engineers registered under the office (per-engineer m² quota)
-        Route::get('engineers',              [EngineerController::class, 'index']);
-        Route::post('engineers',             [EngineerController::class, 'store']);
-        Route::get('engineers/{id}',         [EngineerController::class, 'show']);
-        Route::get('engineers/{id}/quota',   [EngineerController::class, 'quota']);
+        // Workstream 8A: projects + engineers routes moved to the
+        // jea-projects module (backend/modules/JeaProjects/routes.php).
+        // Removing 'jea-projects' from config/modules.enabled drops
+        // /projects/* and /engineers/* entirely.
     });
 
     // ── Reviewer routes ───────────────────────────────────────────────
@@ -211,13 +204,8 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'token.inactivity', 'password.p
         Route::post('admin/services/chat-schema',               [AiSchemaController::class, 'chatUpdateSchema'])
             ->middleware('throttle:ai-schema');
 
-        // JORD-77: office-scoped boost flags + specialization-head
-        // (replaces the JORD-76 organization-scoped endpoints).
-        // Admin picks an office first, then edits its flags.
-        Route::get('admin/offices',                                 [\App\Http\Controllers\Api\OfficeSettingsController::class, 'index']);
-        Route::get('admin/offices/{id}',                            [\App\Http\Controllers\Api\OfficeSettingsController::class, 'show']);
-        Route::patch('admin/offices/{id}',                          [\App\Http\Controllers\Api\OfficeSettingsController::class, 'update']);
-        Route::patch('admin/offices/{officeId}/engineers/{engineerId}', [\App\Http\Controllers\Api\OfficeSettingsController::class, 'updateEngineer']);
+        // Workstream 8A: office-scoped boost flags + specialization-head
+        // routes moved to the jea-projects module.
 
         // JORD-79: recurring obligations (F-04 registration + F-05
         // annual dues + 15%/30% late surcharge).

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Models;
+namespace Modules\JeaProjects\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 /**
  * JORD-73: a coalition of engineering offices pooling their quotas.
  * See migrations/2026_07_21_000008 and _000009 for shape, and
- * App\Engine\QuotaLedger::remainingOfficeCeiling for the aggregated
+ * Modules\JeaProjects\Engine\QuotaLedger::remainingOfficeCeiling for the aggregated
  * ceiling math.
  */
 class OfficeCoalition extends Model

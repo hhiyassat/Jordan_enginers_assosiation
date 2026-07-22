@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Engine;
+namespace Modules\JeaProjects\Engine;
 
 /**
  * Disciplines — canonical list of engineering disciplines used by the
