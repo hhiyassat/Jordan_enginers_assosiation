@@ -5,6 +5,9 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Modules\JeaProjects\Models\OfficeCoalition;
+use Modules\JeaServices\Models\Application;
+use Modules\JeaServices\Models\ServiceDefinition;
 
 class Organization extends Model
 {

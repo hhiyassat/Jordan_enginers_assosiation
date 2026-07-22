@@ -182,6 +182,11 @@ class BoundariesTest extends TestCase
             'User has JEA relations (OfficeCoalition, OfficeCoalitionMember) '
             . 'from JORD-77. Needs a User contract that jea-projects can '
             . 'extend without the platform User importing it.',
+        'Models/Organization.php' =>
+            'Organization hasMany JEA aggregations (services, applications, '
+            . 'coalitions). Same pattern as User.php — needs a contract so '
+            . 'the tenant model can enumerate its domain data without '
+            . 'importing modules directly.',
         'Http/Concerns/RespondsWithLockedService.php' =>
             'The 423 locked-service response reads Modules\JeaServices\Models\ServiceDefinition. '
             . 'Trait should move to modules/JeaServices/Http/Concerns/ since '

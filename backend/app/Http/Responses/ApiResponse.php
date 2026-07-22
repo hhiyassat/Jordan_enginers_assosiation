@@ -62,6 +62,8 @@ final class ApiResponse
      * 200 with a Laravel paginator. Splits ->items() into `data` and
      * ->{page,perPage,total,lastPage}() into `meta`. Frontend consumes
      * `data` + `meta` — never touches Laravel's other paginator keys.
+     *
+     * @param  LengthAwarePaginator<int, mixed>  $p
      */
     public static function paginated(LengthAwarePaginator $p): JsonResponse
     {
