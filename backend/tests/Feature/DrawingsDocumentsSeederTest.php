@@ -4,10 +4,10 @@ namespace Tests\Feature;
 
 use App\Models\Organization;
 use Modules\JeaServices\Models\ServiceDefinition;
-use Database\Seeders\CatalogWorkflowsSeeder;
-use Database\Seeders\DrawingsDocumentsSeeder;
-use Database\Seeders\JeaPortalTilesSeeder;
-use Database\Seeders\ServicePlan2026Seeder;
+use Modules\JeaServices\Database\Seeders\CatalogWorkflowsSeeder;
+use Modules\JeaServices\Database\Seeders\DrawingsDocumentsSeeder;
+use Modules\JeaServices\Database\Seeders\JeaPortalTilesSeeder;
+use Modules\JeaServices\Database\Seeders\ServicePlan2026Seeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 

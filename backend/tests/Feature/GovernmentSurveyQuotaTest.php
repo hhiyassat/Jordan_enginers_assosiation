@@ -13,11 +13,11 @@ use App\Models\Organization;
 use Modules\JeaProjects\Models\QuotaConsumption;
 use Modules\JeaServices\Models\ServiceDefinition;
 use App\Models\User;
-use Database\Seeders\CatalogWorkflowsSeeder;
-use Database\Seeders\GovernmentSurveyQuotaSeeder;
-use Database\Seeders\JeaPortalTilesSeeder;
-use Database\Seeders\ServicePlan2026Seeder;
-use Database\Seeders\SurveyWorkflowsSeeder;
+use Modules\JeaServices\Database\Seeders\CatalogWorkflowsSeeder;
+use Modules\JeaProjects\Database\Seeders\GovernmentSurveyQuotaSeeder;
+use Modules\JeaServices\Database\Seeders\JeaPortalTilesSeeder;
+use Modules\JeaServices\Database\Seeders\ServicePlan2026Seeder;
+use Modules\JeaServices\Database\Seeders\SurveyWorkflowsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 

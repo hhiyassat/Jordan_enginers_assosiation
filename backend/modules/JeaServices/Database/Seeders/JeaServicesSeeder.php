@@ -1,6 +1,6 @@
 <?php
 
-namespace Database\Seeders;
+namespace Modules\JeaServices\Database\Seeders;
 
 use App\Models\Organization;
 use Modules\JeaServices\Models\ServiceDefinition;

@@ -4,7 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Organization;
 use Modules\JeaServices\Models\ServiceDefinition;
-use Database\Seeders\ServiceFeeDefaultsSeeder;
+use Modules\JeaServices\Database\Seeders\ServiceFeeDefaultsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 

@@ -1,6 +1,6 @@
 <?php
 
-namespace Database\Seeders;
+namespace Modules\JeaProjects\Database\Seeders;
 
 use Modules\JeaProjects\Models\Project;
 use App\Models\User;

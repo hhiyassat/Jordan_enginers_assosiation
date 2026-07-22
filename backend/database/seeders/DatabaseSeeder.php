@@ -3,7 +3,44 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
+use Modules\JeaProjects\Database\Seeders\DemoEngineersSeeder;
+use Modules\JeaProjects\Database\Seeders\GovernmentSurveyQuotaSeeder;
+use Modules\JeaProjects\Database\Seeders\MaterialsTestingQuotaSeeder;
+use Modules\JeaProjects\Database\Seeders\QuotasAndCeilingsSeeder;
+use Modules\JeaProjects\Database\Seeders\SampleProjectsSeeder;
+use Modules\JeaServices\Database\Seeders\CatalogWorkflowsSeeder;
+use Modules\JeaServices\Database\Seeders\DrawingEngineerPickerSeeder;
+use Modules\JeaServices\Database\Seeders\DrawingFeeMatrixSeeder;
+use Modules\JeaServices\Database\Seeders\DrawingsDocumentsSeeder;
+use Modules\JeaServices\Database\Seeders\DrawingValiditySeeder;
+use Modules\JeaServices\Database\Seeders\ExcavationFeeSeeder;
+use Modules\JeaServices\Database\Seeders\FeeSurchargesSeeder;
+use Modules\JeaServices\Database\Seeders\JeaPortalTilesSeeder;
+use Modules\JeaServices\Database\Seeders\JeaServicesSeeder;
+use Modules\JeaServices\Database\Seeders\MaterialsSampleRetentionSeeder;
+use Modules\JeaServices\Database\Seeders\ServiceFeeDefaultsSeeder;
+use Modules\JeaServices\Database\Seeders\ServicePlan2026Seeder;
+use Modules\JeaServices\Database\Seeders\SiteSurveyFeesSeeder;
+use Modules\JeaServices\Database\Seeders\SolarFeeSeeder;
+use Modules\JeaServices\Database\Seeders\SurveyWorkflowsSeeder;
 
+/**
+ * DatabaseSeeder — platform composition root.
+ *
+ * Workstream 12 moved the per-domain seeders out into their owning
+ * modules (Modules\JeaServices\Database\Seeders\* + Modules\JeaProjects\
+ * Database\Seeders\*). This class stays as the SINGLE ORDERED entry
+ * point Laravel's db:seed hits, because the ordering matters (see
+ * inline comments) and Laravel doesn't natively compose seeder chains
+ * across modules.
+ *
+ * When a jea-* module is disabled at runtime (config/modules.enabled),
+ * its seeder still autoloads via composer but does nothing useful —
+ * the module's tables don't exist, so the seeder writes nothing. Full
+ * separation would require iterating enabled modules and calling each
+ * module's own seeder chain; deferred to a later workstream (part of
+ * the enforcement promotion in W15 or a follow-up).
+ */
 class DatabaseSeeder extends Seeder
 {
     public function run(): void
