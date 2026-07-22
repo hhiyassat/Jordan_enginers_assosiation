@@ -16,35 +16,35 @@ import { Layout } from './layout/Layout';
  * named exports — the tiny shim re-shapes each module as { default }
  * so React.lazy is happy.
  */
-const ServiceList             = React.lazy(() => import('./pages/applicant/ServiceList').then(m => ({ default: m.ServiceList })));
-const CategoryServicesView    = React.lazy(() => import('./pages/applicant/CategoryServicesView').then(m => ({ default: m.CategoryServicesView })));
-const ProjectsList            = React.lazy(() => import('./pages/applicant/ProjectsList').then(m => ({ default: m.ProjectsList })));
-const ProjectDetail           = React.lazy(() => import('./pages/applicant/ProjectDetail').then(m => ({ default: m.ProjectDetail })));
-const Dashboard               = React.lazy(() => import('./pages/applicant/Dashboard').then(m => ({ default: m.Dashboard })));
-const Apply                   = React.lazy(() => import('./pages/applicant/Apply').then(m => ({ default: m.Apply })));
-const MyApplications          = React.lazy(() => import('./pages/applicant/MyApplications').then(m => ({ default: m.MyApplications })));
-const MyOffice                = React.lazy(() => import('./pages/applicant/MyOffice').then(m => ({ default: m.MyOffice })));
-const ApplicationDetail       = React.lazy(() => import('./pages/applicant/ApplicationDetail').then(m => ({ default: m.ApplicationDetail })));
-const ReviewQueue             = React.lazy(() => import('./pages/reviewer/ReviewQueue').then(m => ({ default: m.ReviewQueue })));
-const ReviewPanel             = React.lazy(() => import('./pages/reviewer/ReviewPanel').then(m => ({ default: m.ReviewPanel })));
-const ReviewDashboard         = React.lazy(() => import('./pages/reviewer/ReviewDashboard').then(m => ({ default: m.ReviewDashboard })));
-const AdminDashboard          = React.lazy(() => import('./pages/admin/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
-const AdminApplications       = React.lazy(() => import('./pages/admin/AdminApplications').then(m => ({ default: m.AdminApplications })));
-const IntegrationCycles       = React.lazy(() => import('./pages/admin/IntegrationCycles').then(m => ({ default: m.IntegrationCycles })));
-const IntegrationCycleDetail  = React.lazy(() => import('./pages/admin/IntegrationCycleDetail').then(m => ({ default: m.IntegrationCycleDetail })));
-const NewService              = React.lazy(() => import('./pages/admin/NewService').then(m => ({ default: m.NewService })));
-const ServicesList            = React.lazy(() => import('./pages/admin/ServicesList').then(m => ({ default: m.ServicesList })));
-const EditService             = React.lazy(() => import('./pages/admin/EditService').then(m => ({ default: m.EditService })));
-const UserManagement          = React.lazy(() => import('./pages/admin/UserManagement').then(m => ({ default: m.UserManagement })));
-const OfficesList             = React.lazy(() => import('./pages/admin/OfficesList').then(m => ({ default: m.OfficesList })));
-const OfficeSettings          = React.lazy(() => import('./pages/admin/OfficeSettings').then(m => ({ default: m.OfficeSettings })));
-const OfficeDues              = React.lazy(() => import('./pages/admin/OfficeDues').then(m => ({ default: m.OfficeDues })));
-const ServiceFeesAdmin        = React.lazy(() => import('./pages/admin/ServiceFeesAdmin').then(m => ({ default: m.ServiceFeesAdmin })));
-const ComplaintsAdmin         = React.lazy(() => import('./pages/admin/ComplaintsAdmin').then(m => ({ default: m.ComplaintsAdmin })));
-const LegalFinesAdmin         = React.lazy(() => import('./pages/admin/LegalFinesAdmin').then(m => ({ default: m.LegalFinesAdmin })));
-const SupervisionTransfersAdmin = React.lazy(() => import('./pages/admin/SupervisionTransfersAdmin').then(m => ({ default: m.SupervisionTransfersAdmin })));
-const ChangeCredentials       = React.lazy(() => import('./pages/auth/ChangeCredentials').then(m => ({ default: m.ChangeCredentials })));
-const Profile                 = React.lazy(() => import('./pages/auth/Profile').then(m => ({ default: m.Profile })));
+const ServiceList             = React.lazy(() => import('./modules/JeaServices/pages/ServiceList').then(m => ({ default: m.ServiceList })));
+const CategoryServicesView    = React.lazy(() => import('./modules/JeaServices/pages/CategoryServicesView').then(m => ({ default: m.CategoryServicesView })));
+const ProjectsList            = React.lazy(() => import('./modules/JeaProjects/pages/ProjectsList').then(m => ({ default: m.ProjectsList })));
+const ProjectDetail           = React.lazy(() => import('./modules/JeaProjects/pages/ProjectDetail').then(m => ({ default: m.ProjectDetail })));
+const Dashboard               = React.lazy(() => import('./modules/JeaServices/pages/Dashboard').then(m => ({ default: m.Dashboard })));
+const Apply                   = React.lazy(() => import('./modules/JeaServices/pages/Apply').then(m => ({ default: m.Apply })));
+const MyApplications          = React.lazy(() => import('./modules/JeaServices/pages/MyApplications').then(m => ({ default: m.MyApplications })));
+const MyOffice                = React.lazy(() => import('./modules/JeaProjects/pages/MyOffice').then(m => ({ default: m.MyOffice })));
+const ApplicationDetail       = React.lazy(() => import('./modules/JeaServices/pages/ApplicationDetail').then(m => ({ default: m.ApplicationDetail })));
+const ReviewQueue             = React.lazy(() => import('./modules/JeaServices/pages/reviewer/ReviewQueue').then(m => ({ default: m.ReviewQueue })));
+const ReviewPanel             = React.lazy(() => import('./modules/JeaServices/pages/reviewer/ReviewPanel').then(m => ({ default: m.ReviewPanel })));
+const ReviewDashboard         = React.lazy(() => import('./modules/JeaServices/pages/reviewer/ReviewDashboard').then(m => ({ default: m.ReviewDashboard })));
+const AdminDashboard          = React.lazy(() => import('./modules/JeaServices/pages/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
+const AdminApplications       = React.lazy(() => import('./modules/JeaServices/pages/AdminApplications').then(m => ({ default: m.AdminApplications })));
+const IntegrationCycles       = React.lazy(() => import('./integrations/Nashmi/pages/IntegrationCycles').then(m => ({ default: m.IntegrationCycles })));
+const IntegrationCycleDetail  = React.lazy(() => import('./integrations/Nashmi/pages/IntegrationCycleDetail').then(m => ({ default: m.IntegrationCycleDetail })));
+const NewService              = React.lazy(() => import('./modules/JeaServices/pages/NewService').then(m => ({ default: m.NewService })));
+const ServicesList            = React.lazy(() => import('./modules/JeaServices/pages/ServicesList').then(m => ({ default: m.ServicesList })));
+const EditService             = React.lazy(() => import('./modules/JeaServices/pages/EditService').then(m => ({ default: m.EditService })));
+const UserManagement          = React.lazy(() => import('./platform/pages/admin/UserManagement').then(m => ({ default: m.UserManagement })));
+const OfficesList             = React.lazy(() => import('./modules/JeaProjects/pages/OfficesList').then(m => ({ default: m.OfficesList })));
+const OfficeSettings          = React.lazy(() => import('./modules/JeaProjects/pages/OfficeSettings').then(m => ({ default: m.OfficeSettings })));
+const OfficeDues              = React.lazy(() => import('./modules/JeaDues/pages/OfficeDues').then(m => ({ default: m.OfficeDues })));
+const ServiceFeesAdmin        = React.lazy(() => import('./modules/JeaServices/pages/ServiceFeesAdmin').then(m => ({ default: m.ServiceFeesAdmin })));
+const ComplaintsAdmin         = React.lazy(() => import('./modules/JeaDiscipline/pages/ComplaintsAdmin').then(m => ({ default: m.ComplaintsAdmin })));
+const LegalFinesAdmin         = React.lazy(() => import('./modules/JeaDiscipline/pages/LegalFinesAdmin').then(m => ({ default: m.LegalFinesAdmin })));
+const SupervisionTransfersAdmin = React.lazy(() => import('./modules/JeaDiscipline/pages/SupervisionTransfersAdmin').then(m => ({ default: m.SupervisionTransfersAdmin })));
+const ChangeCredentials       = React.lazy(() => import('./platform/pages/auth/ChangeCredentials').then(m => ({ default: m.ChangeCredentials })));
+const Profile                 = React.lazy(() => import('./platform/pages/auth/Profile').then(m => ({ default: m.Profile })));
 
 export function AppRoutes(): JSX.Element {
   return (
