@@ -1,6 +1,7 @@
 <?php
 
-use App\Http\Controllers\Api\AdminController;
+use App\Http\Controllers\Api\AdminDashboardController;
+use App\Http\Controllers\Api\AiSchemaController;
 use App\Http\Controllers\Api\ApplicationController;
 use App\Http\Controllers\Api\CertificatesController;
 use App\Http\Controllers\Api\PaymentsController;
@@ -169,12 +170,14 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'token.inactivity', 'password.p
 
     Route::middleware('role:admin,superuser')->group(function () {
         // FR-014 to FR-016: Admin dashboard
-        Route::get('admin/dashboard',             [AdminController::class, 'dashboard']);
+        // Workstream 5C: dashboard + applications + audit-logs extracted
+        // from AdminController.
+        Route::get('admin/dashboard',             [AdminDashboardController::class, 'dashboard']);
         // User CRUD moved to the superuser role — see the role:superuser
         // block further down. Admin keeps read-only visibility via dashboard
         // stats but no longer touches the user roster.
-        Route::get('admin/applications',          [AdminController::class, 'allApplications']);
-        Route::get('admin/audit-logs',            [AdminController::class, 'auditLogs']);
+        Route::get('admin/applications',          [AdminDashboardController::class, 'allApplications']);
+        Route::get('admin/audit-logs',            [AdminDashboardController::class, 'auditLogs']);
 
         // FR-017: Service management (all statuses for admin)
         Route::get('admin/services',                       [ServiceCatalogController::class, 'adminIndex']);
@@ -196,11 +199,13 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'token.inactivity', 'password.p
         // 'ai-schema' bucket — 10 calls/hour per user is generous for
         // interactive authoring but stops a runaway loop from burning
         // through the API budget in minutes.
-        Route::post('admin/services/generate-schema',           [AdminController::class, 'generateSchema'])
+        // Workstream 5C: AI schema generator extracted. Tagged PLG —
+        // Workstream 13 lifts this into backend/plugins/ai-schema/.
+        Route::post('admin/services/generate-schema',           [AiSchemaController::class, 'generateSchema'])
             ->middleware('throttle:ai-schema');
-        Route::post('admin/services/generate-schema-from-file', [AdminController::class, 'generateSchemaFromFile'])
+        Route::post('admin/services/generate-schema-from-file', [AiSchemaController::class, 'generateSchemaFromFile'])
             ->middleware('throttle:ai-schema');
-        Route::post('admin/services/chat-schema',               [AdminController::class, 'chatUpdateSchema'])
+        Route::post('admin/services/chat-schema',               [AiSchemaController::class, 'chatUpdateSchema'])
             ->middleware('throttle:ai-schema');
 
         // JORD-77: office-scoped boost flags + specialization-head

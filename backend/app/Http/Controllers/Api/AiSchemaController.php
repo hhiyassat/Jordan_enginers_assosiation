@@ -4,191 +4,35 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Concerns\RequiresAdminTier;
 use App\Http\Controllers\Controller;
-use App\Models\Application;
-use App\Models\AuditLog;
-use App\Models\Certificate;
 use App\Models\ServiceDefinition;
-use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Validation\Rules\Password;
 
 /**
- * AdminController
+ * AiSchemaController — Workstream 5C extraction from AdminController.
  *
- * FR-014: Dashboard stats.
- * FR-015: User management.
- * FR-016: Audit log access.
- * P-5: All queries scoped by organization_id.
+ * Owns the Claude-powered schema-generation surface:
+ *   POST /admin/services/generate-schema           (SRS text → JSON schema)
+ *   POST /admin/services/generate-schema-from-file (SRS file → JSON schema)
+ *   POST /admin/services/chat-schema               (natural-lang edit of schema)
+ *
+ * All three public methods + their seven private helpers moved
+ * verbatim from AdminController. The private `requireAdmin()` guard
+ * became the shared RequiresAdminTier trait.
+ *
+ * Tag: PLG (optional plugin — the AI schema generator is not required
+ * for the platform to function). When Workstream 13 lifts plugins into
+ * backend/plugins/ai-schema/, this file moves there and the plugin
+ * manifest registers the three routes above.
+ *
+ * SEC: the ANTHROPIC_API_KEY stays server-side. Frontend never sees it.
  */
-class AdminController extends Controller
+class AiSchemaController extends Controller
 {
-    private function requireAdmin(Request $request): void
-    {
-        // Both admin and superuser are "admin-tier" for the endpoints on
-        // this controller — the tier-only distinction lives in
-        // UserManagementController.
-        if (! $request->user()->canEditServices()) {
-            abort(403, 'المسؤولون والمستخدم الأعلى فقط يمكنهم الوصول لهذه الوظيفة.');
-        }
-    }
-
-    public function dashboard(Request $request): JsonResponse
-    {
-        $orgId = $request->user()->organization_id;
-
-        // JORD-11: real dashboard — beyond the six stat tiles, the admin
-        // wants to see WHAT is happening on the platform. Add a status
-        // breakdown and the 5 most recent applications so the page can
-        // link deep into the review + admin surfaces without the admin
-        // having to hunt through filters.
-        $byStatus = Application::forOrganization($orgId)
-            ->selectRaw('status, count(*) as count')
-            ->groupBy('status')
-            ->pluck('count', 'status');
-
-        $recent = Application::forOrganization($orgId)
-            ->with(['serviceDefinition:id,code,name_ar,name_en', 'applicant:id,name'])
-            // Tie-break on id desc — bulk-created rows share the same
-            // created_at second and would otherwise fall back to
-            // database-dependent ordering.
-            ->orderByDesc('created_at')->orderByDesc('id')
-            ->limit(5)
-            ->get(['id', 'reference_number', 'status', 'created_at', 'service_definition_id', 'applicant_id']);
-
-        return response()->json([
-            'stats' => [
-                'total_applications'  => Application::forOrganization($orgId)->count(),
-                'pending_review'      => Application::forOrganization($orgId)
-                    ->where('status', Application::STATUS_SUBMITTED)->count(),
-                'under_review'        => Application::forOrganization($orgId)
-                    ->where('status', Application::STATUS_UNDER_REVIEW)->count(),
-                'approved_today'      => Application::forOrganization($orgId)
-                    ->where('status', Application::STATUS_APPROVED)
-                    ->whereDate('updated_at', today())->count(),
-                'certificates_issued' => Certificate::where('organization_id', $orgId)->count(),
-                'active_services'     => ServiceDefinition::where('organization_id', $orgId)
-                    ->where('status', 'active')->count(),
-                'total_users'         => User::where('organization_id', $orgId)->count(),
-            ],
-            'by_status' => $byStatus,
-            'recent'    => $recent,
-        ]);
-    }
-
-    public function listUsers(Request $request): JsonResponse
-    {
-        $this->requireAdmin($request);
-
-        $users = User::where('organization_id', $request->user()->organization_id)
-            ->orderBy('name')
-            ->get(['id', 'name', 'email', 'role', 'is_active', 'created_at']);
-
-        return response()->json(['users' => $users]);
-    }
-
-    public function createUser(Request $request): JsonResponse
-    {
-        $this->requireAdmin($request);
-
-        $data = $request->validate([
-            'name'     => ['required', 'string', 'max:255'],
-            'email'    => ['required', 'email', 'unique:users,email'],
-            'password' => ['required', Password::min(8)->mixedCase()->numbers()],
-            'role'     => ['required', 'in:applicant,staff,auditor,admin'],
-            'phone'    => ['nullable', 'string', 'max:20'],
-        ]);
-
-        $user = User::create([
-            ...$data,
-            'organization_id'    => $request->user()->organization_id,
-            'password'           => Hash::make($data['password']),
-            'must_change_password' => true, // SEC-004: force change on first login
-            'password_changed_at'  => null,
-        ]);
-
-        return response()->json(['user' => $user], 201);
-    }
-
-    public function updateUser(Request $request, int $id): JsonResponse
-    {
-        $this->requireAdmin($request);
-
-        $user = User::where('organization_id', $request->user()->organization_id)->findOrFail($id);
-
-        $data = $request->validate([
-            'name'               => ['sometimes', 'string', 'max:255'],
-            'role'               => ['sometimes', 'in:applicant,staff,auditor,admin'],
-            'is_active'          => ['sometimes', 'boolean'],
-            'must_change_password' => ['sometimes', 'boolean'],
-            'password'           => ['sometimes', Password::min(8)->mixedCase()->numbers()],
-        ]);
-
-        if (isset($data['password'])) {
-            $data['password']            = Hash::make($data['password']);
-            $data['must_change_password'] = true;
-        }
-
-        $user->update($data);
-
-        return response()->json(['user' => $user]);
-    }
-
-    /**
-     * JORD-35: server-side pagination + free-text search.
-     *
-     * Query params:
-     *   • status    — exact match on Application.status
-     *   • q         — free-text; matches reference_number, applicant name/
-     *                 email, service code, service name_ar/name_en.
-     *   • page      — 1-indexed page number (Laravel default)
-     *   • per_page  — 10 / 20 / 50 (clamped)
-     *
-     * Search runs as a single UNION-free WHERE with OR clauses; every
-     * matched column has a b-tree index (see 2026_07_19 migration on
-     * applications.reference_number + applicants.email). q is
-     * lowercased on both sides so the match is case-insensitive on
-     * MySQL and SQLite alike.
-     */
-    public function allApplications(Request $request): JsonResponse
-    {
-        $this->requireAdmin($request);
-
-        $query = Application::forOrganization($request->user()->organization_id)
-            ->with(['serviceDefinition:id,code,name_ar,name_en', 'applicant:id,name,email']);
-
-        if ($request->filled('status')) {
-            $query->where('status', $request->string('status'));
-        }
-
-        if ($request->filled('q')) {
-            $needle = '%' . strtolower(trim((string) $request->string('q'))) . '%';
-            $query->where(function ($q) use ($needle) {
-                $q->whereRaw('LOWER(reference_number) LIKE ?', [$needle])
-                  ->orWhereHas('applicant', function ($a) use ($needle) {
-                      $a->whereRaw('LOWER(name) LIKE ?', [$needle])
-                        ->orWhereRaw('LOWER(email) LIKE ?', [$needle]);
-                  })
-                  ->orWhereHas('serviceDefinition', function ($s) use ($needle) {
-                      $s->whereRaw('LOWER(code) LIKE ?', [$needle])
-                        ->orWhereRaw('LOWER(name_ar) LIKE ?', [$needle])
-                        ->orWhereRaw('LOWER(name_en) LIKE ?', [$needle]);
-                  });
-            });
-        }
-
-        // per_page is clamped so a malicious ?per_page=100000 can't ask
-        // the backend for the whole table.
-        $perPage = (int) $request->integer('per_page', 20);
-        $perPage = max(5, min(50, $perPage));
-
-        return response()->json($query->orderByDesc('created_at')->paginate($perPage));
-    }
-
-    // ── Schema Generator ──────────────────────────────────────────────
+    use RequiresAdminTier;
 
     /**
      * POST /api/v1/admin/services/generate-schema
@@ -217,7 +61,7 @@ class AdminController extends Controller
     public function generateSchemaFromFile(Request $request): JsonResponse
     {
         set_time_limit(180);
-        $this->requireAdmin($request);
+        $this->requireAdminTier($request);
 
         $request->validate([
             'srs_file'     => ['required', 'file', 'max:10240', 'mimes:docx,pdf,doc,txt'],
@@ -331,7 +175,7 @@ class AdminController extends Controller
         // Claude API calls can take 25-40 seconds — raise limit above PHP default (30s)
         set_time_limit(120);
 
-        $this->requireAdmin($request);
+        $this->requireAdminTier($request);
 
         $data = $request->validate([
             'srs_text'     => ['required', 'string', 'min:50', 'max:20000'],
@@ -970,7 +814,7 @@ PROMPT;
     {
         set_time_limit(120);
 
-        $this->requireAdmin($request);
+        $this->requireAdminTier($request);
 
         $data = $request->validate([
             'message'        => ['required', 'string', 'min:3', 'max:2000'],
@@ -1080,17 +924,5 @@ PROMPT;
             'changes'        => $result['changes'] ?? [],
             'tokens_used'    => $response->json('usage.output_tokens'),
         ]);
-    }
-
-    public function auditLogs(Request $request): JsonResponse
-    {
-        $this->requireAdmin($request);
-
-        $logs = AuditLog::with('user:id,name,email')
-            ->where('organization_id', $request->user()->organization_id)
-            ->orderByDesc('created_at')
-            ->paginate(50);
-
-        return response()->json($logs);
     }
 }
