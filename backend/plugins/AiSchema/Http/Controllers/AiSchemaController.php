@@ -218,7 +218,7 @@ class AiSchemaController extends Controller
         // Optionally pull requirements_meta from a Nashmi cycle for richer context
         $cycleContext = '';
         if (! empty($data['cycle_id'])) {
-            $cycle = \App\Models\IntegrationCycle::find($data['cycle_id']);
+            $cycle = \Integrations\Nashmi\Models\IntegrationCycle::find($data['cycle_id']);
             if ($cycle?->requirements_meta) {
                 $cycleContext = "\n\nAdditional context from Nashmi integration cycle #{$cycle->cycle_ref}:\n"
                     . json_encode($cycle->requirements_meta, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
