@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Engine;
 
-use App\Engine\SchemaValidator;
-use App\Models\ServiceDefinition;
+use Modules\JeaServices\Engine\SchemaValidator;
+use Modules\JeaServices\Models\ServiceDefinition;
 use PHPUnit\Framework\TestCase;
 
 /**

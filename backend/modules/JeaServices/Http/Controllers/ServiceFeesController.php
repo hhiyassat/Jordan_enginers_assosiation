@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Controllers\Api;
+namespace Modules\JeaServices\Http\Controllers;
 
 use App\Http\Concerns\RespondsWithLockedService;
 use App\Http\Controllers\Controller;
-use App\Models\ServiceDefinition;
+use Modules\JeaServices\Models\ServiceDefinition;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 

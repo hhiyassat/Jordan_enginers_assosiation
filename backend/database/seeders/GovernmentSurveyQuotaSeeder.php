@@ -4,7 +4,7 @@ namespace Database\Seeders;
 
 use Modules\JeaProjects\Models\OfficeCeiling;
 use App\Models\Organization;
-use App\Models\ServiceDefinition;
+use Modules\JeaServices\Models\ServiceDefinition;
 use Illuminate\Database\Seeder;
 
 /**

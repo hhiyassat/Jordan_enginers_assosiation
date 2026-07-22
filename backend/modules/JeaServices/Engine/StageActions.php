@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace App\Engine;
+namespace Modules\JeaServices\Engine;
 
-use App\Models\Application;
-use App\Models\ServiceDefinition;
+use Modules\JeaServices\Models\Application;
+use Modules\JeaServices\Models\ServiceDefinition;
 
 /**
  * StageActions

@@ -2,8 +2,8 @@
 
 namespace Tests\Unit\Engine;
 
-use App\Engine\WorkflowEngine;
-use App\Models\Application;
+use Modules\JeaServices\Engine\WorkflowEngine;
+use Modules\JeaServices\Models\Application;
 use PHPUnit\Framework\TestCase;
 
 /**

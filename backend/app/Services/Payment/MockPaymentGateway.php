@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Payment;
 
-use App\Models\Application;
+use Modules\JeaServices\Models\Application;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 

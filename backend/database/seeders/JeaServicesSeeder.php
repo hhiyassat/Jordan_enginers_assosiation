@@ -3,7 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Organization;
-use App\Models\ServiceDefinition;
+use Modules\JeaServices\Models\ServiceDefinition;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;

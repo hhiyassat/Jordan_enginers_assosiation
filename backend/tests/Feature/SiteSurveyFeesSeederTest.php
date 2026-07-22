@@ -2,9 +2,9 @@
 
 namespace Tests\Feature;
 
-use App\Engine\FeeCalculator;
+use Modules\JeaServices\Engine\FeeCalculator;
 use App\Models\Organization;
-use App\Models\ServiceDefinition;
+use Modules\JeaServices\Models\ServiceDefinition;
 use Database\Seeders\CatalogWorkflowsSeeder;
 use Database\Seeders\GovernmentSurveyQuotaSeeder;
 use Database\Seeders\JeaPortalTilesSeeder;

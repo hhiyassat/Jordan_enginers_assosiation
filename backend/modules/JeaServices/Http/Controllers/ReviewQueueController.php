@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Controllers\Api;
+namespace Modules\JeaServices\Http\Controllers;
 
-use App\Engine\WorkflowEngine;
+use Modules\JeaServices\Engine\WorkflowEngine;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\DecideApplicationRequest;
-use App\Models\Application;
+use Modules\JeaServices\Http\Requests\DecideApplicationRequest;
+use Modules\JeaServices\Models\Application;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 

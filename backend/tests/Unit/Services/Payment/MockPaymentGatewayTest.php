@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Services\Payment;
 
-use App\Models\Application;
+use Modules\JeaServices\Models\Application;
 use App\Models\Organization;
-use App\Models\ServiceDefinition;
+use Modules\JeaServices\Models\ServiceDefinition;
 use App\Models\User;
 use App\Services\Payment\MockPaymentGateway;
 use App\Services\Payment\PaymentGateway;

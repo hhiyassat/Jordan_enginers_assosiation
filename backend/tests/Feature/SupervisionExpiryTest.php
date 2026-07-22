@@ -2,10 +2,10 @@
 
 namespace Tests\Feature;
 
-use App\Models\Application;
-use App\Models\ApplicationReview;
+use Modules\JeaServices\Models\Application;
+use Modules\JeaServices\Models\ApplicationReview;
 use App\Models\Organization;
-use App\Models\ServiceDefinition;
+use Modules\JeaServices\Models\ServiceDefinition;
 use App\Models\User;
 use Database\Seeders\CatalogWorkflowsSeeder;
 use Database\Seeders\DrawingsDocumentsSeeder;

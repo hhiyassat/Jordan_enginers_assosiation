@@ -1,16 +1,17 @@
 <?php
 
-namespace App\Models;
+namespace Modules\JeaServices\Models;
 
 use App\Models\Concerns\BelongsToOrganization;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
-// Workstream 8A: Project moved out of App\Models — needs an explicit
-// use so the short-ref Project::class in belongsTo() resolves.
+// Workstream 8A: Project lives in a sibling module — needs an
+// explicit use so the short-ref Project::class in belongsTo() resolves.
 use Modules\JeaProjects\Models\Project;
 
 /**

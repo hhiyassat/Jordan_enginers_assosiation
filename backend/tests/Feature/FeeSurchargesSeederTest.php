@@ -2,10 +2,10 @@
 
 namespace Tests\Feature;
 
-use App\Engine\FeeCalculator;
-use App\Models\Application;
+use Modules\JeaServices\Engine\FeeCalculator;
+use Modules\JeaServices\Models\Application;
 use App\Models\Organization;
-use App\Models\ServiceDefinition;
+use Modules\JeaServices\Models\ServiceDefinition;
 use App\Models\User;
 use Database\Seeders\CatalogWorkflowsSeeder;
 use Database\Seeders\DrawingFeeMatrixSeeder;

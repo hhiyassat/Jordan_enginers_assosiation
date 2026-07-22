@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Engine;
+namespace Modules\JeaServices\Engine;
 
-use App\Models\ServiceDefinition;
+use Modules\JeaServices\Models\ServiceDefinition;
 
 /**
  * SchemaValidator — translates JSON schema constraints to Laravel validation

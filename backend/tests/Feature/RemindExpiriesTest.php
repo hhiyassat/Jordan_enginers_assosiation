@@ -3,11 +3,11 @@
 namespace Tests\Feature;
 
 use Modules\JeaProjects\Engine\Disciplines;
-use App\Models\Application;
-use App\Models\ApplicationReview;
+use Modules\JeaServices\Models\Application;
+use Modules\JeaServices\Models\ApplicationReview;
 use App\Models\Notification;
 use App\Models\Organization;
-use App\Models\ServiceDefinition;
+use Modules\JeaServices\Models\ServiceDefinition;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;

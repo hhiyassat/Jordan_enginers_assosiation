@@ -2,14 +2,15 @@
 
 declare(strict_types=1);
 
-namespace App\Engine;
+namespace Modules\JeaServices\Engine;
 
+use App\Engine\Exceptions;
 use Modules\JeaProjects\Engine\QuotaLedger;
-use App\Models\Application;
-use App\Models\ApplicationReview;
+use Modules\JeaServices\Models\Application;
+use Modules\JeaServices\Models\ApplicationReview;
 use App\Models\AuditLog;
-use App\Models\Certificate;
-use App\Models\ServiceDefinition;
+use Modules\JeaServices\Models\Certificate;
+use Modules\JeaServices\Models\ServiceDefinition;
 use App\Models\User;
 use App\Services\Notifications\NotificationService;
 use App\Services\Payment\PaymentReceipt;
@@ -639,12 +640,12 @@ class WorkflowEngine
         // if two writers race, one gets a unique-key violation and the
         // outer transaction retries via Laravel's built-in retry logic
         // for serialization errors.
-        \App\Models\CertificateCounter::firstOrCreate(
+        \Modules\JeaServices\Models\CertificateCounter::firstOrCreate(
             ['organization_id' => $orgId, 'year' => $year],
             ['next_serial' => 1],
         );
 
-        $row = \App\Models\CertificateCounter::where('organization_id', $orgId)
+        $row = \Modules\JeaServices\Models\CertificateCounter::where('organization_id', $orgId)
             ->where('year', $year)
             ->lockForUpdate()
             ->first();

@@ -2,20 +2,20 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Controllers\Api;
+namespace Modules\JeaServices\Http\Controllers;
 
-use App\Engine\FeeCalculator;
-use App\Engine\SchemaValidator;
-use App\Engine\WorkflowEngine;
+use Modules\JeaServices\Engine\FeeCalculator;
+use Modules\JeaServices\Engine\SchemaValidator;
+use Modules\JeaServices\Engine\WorkflowEngine;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\ConfirmPaymentRequest;
-use App\Http\Requests\DecideApplicationRequest;
-use App\Http\Requests\StoreApplicationRequest;
-use App\Models\Application;
-use App\Models\ApplicationDocument;
-use App\Models\ApplicationReview;
-use App\Models\Certificate;
-use App\Models\ServiceDefinition;
+use Modules\JeaServices\Http\Requests\ConfirmPaymentRequest;
+use Modules\JeaServices\Http\Requests\DecideApplicationRequest;
+use Modules\JeaServices\Http\Requests\StoreApplicationRequest;
+use Modules\JeaServices\Models\Application;
+use Modules\JeaServices\Models\ApplicationDocument;
+use Modules\JeaServices\Models\ApplicationReview;
+use Modules\JeaServices\Models\Certificate;
+use Modules\JeaServices\Models\ServiceDefinition;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -87,8 +87,8 @@ class ApplicationController extends Controller
         // application's current stage. The frontend renders one button per
         // available action; unknown ids from a drifted schema are skipped.
         $service = $app->serviceDefinition;
-        $available = $service instanceof \App\Models\ServiceDefinition
-            ? \App\Engine\StageActions::forApplication($app, $service, $request->user()?->role)
+        $available = $service instanceof \Modules\JeaServices\Models\ServiceDefinition
+            ? \Modules\JeaServices\Engine\StageActions::forApplication($app, $service, $request->user()?->role)
             : [];
 
         // Attach a signed PDF download URL when the certificate exists.
@@ -110,9 +110,9 @@ class ApplicationController extends Controller
         // 500 the whole show response — the applicant needs to see
         // documents / status even if the fee is misauthored).
         $feeBreakdown = null;
-        if ($service instanceof \App\Models\ServiceDefinition) {
+        if ($service instanceof \Modules\JeaServices\Models\ServiceDefinition) {
             try {
-                $feeBreakdown = (new \App\Engine\FeeCalculator($service))
+                $feeBreakdown = (new \Modules\JeaServices\Engine\FeeCalculator($service))
                     ->calculateBreakdown(is_array($app->data) ? $app->data : []);
 
                 // JORD-72: overflow surcharge for per-project-cap breach.

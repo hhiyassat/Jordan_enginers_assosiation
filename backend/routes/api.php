@@ -2,19 +2,15 @@
 
 use App\Http\Controllers\Api\AdminDashboardController;
 use App\Http\Controllers\Api\AiSchemaController;
-use App\Http\Controllers\Api\ApplicationController;
-use App\Http\Controllers\Api\CertificatesController;
-use App\Http\Controllers\Api\PaymentsController;
-use App\Http\Controllers\Api\ReviewDashboardController;
-use App\Http\Controllers\Api\ReviewQueueController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CaptchaController;
-// EngineerController + ProjectController + OfficeSettingsController
-// moved to Modules\JeaProjects (Workstream 8A) — no longer imported here.
+// Workstream 8A: EngineerController + ProjectController + OfficeSettingsController
+// moved to Modules\JeaProjects.
+// Workstream 8C: ApplicationController + ReviewDashboardController +
+// ReviewQueueController + PaymentsController + CertificatesController +
+// ServiceCatalogController + ServiceFeesController moved to Modules\JeaServices.
 use App\Http\Controllers\Api\GsbController;
 use App\Http\Controllers\Api\IntegrationController;
-use App\Http\Controllers\Api\ServiceCatalogController;
-use App\Http\Controllers\Api\ServiceFeesController;
 use App\Http\Controllers\Api\UserManagementController;
 use Illuminate\Support\Facades\Route;
 
@@ -70,13 +66,9 @@ Route::prefix('v1')->group(function () {
     // route intentionally sits outside auth:sanctum.
     Route::get('auth/me',                          [AuthController::class, 'me']);
 
-    // FR-013: Public certificate verification
-    Route::get('certificates/verify/{certNumber}', [CertificatesController::class, 'verify']);
-
-    // PDF download — public but token-gated. Applicants get a signed
-    // URL from the application-detail endpoint; third parties get the
-    // token from the QR image on the printed certificate.
-    Route::get('certificates/{certNumber}/pdf', [CertificatesController::class, 'downloadPdf']);
+    // Workstream 8C: public certificate verification + PDF download
+    // moved to the jea-services module (backend/modules/JeaServices/
+    // routes.php — top-level public group).
 
 });
 
@@ -102,55 +94,12 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'token.inactivity', 'password.p
         ->whereNumber('id');
     Route::post('notifications/read-all',           [\App\Http\Controllers\Api\NotificationController::class, 'markAllRead']);
 
-    // ── Applicant routes ──────────────────────────────────────────────
-
-    Route::middleware('role:applicant,staff,auditor,admin')->group(function () {
-        // FR-001: Service catalog
-        Route::get('services',         [ServiceCatalogController::class, 'index']);
-        Route::get('services/{code}',  [ServiceCatalogController::class, 'show']);
-
-        // Workstream 8B: complaint intake (POST /complaints) + applicant
-        // self-service (/my/complaints, /my/sanctions) moved to the
-        // jea-discipline module. Removing 'jea-discipline' from
-        // config/modules.enabled drops those endpoints entirely.
-
-        // FR-002 to FR-007: Application CRUD
-        Route::get('applications',                            [ApplicationController::class, 'index']);
-        Route::post('applications',                           [ApplicationController::class, 'store']);
-        Route::get('applications/{id}',                       [ApplicationController::class, 'show']);
-        Route::put('applications/{id}',                       [ApplicationController::class, 'update']);
-        Route::post('applications/{id}/submit',               [ApplicationController::class, 'submit']);
-        Route::post('applications/{id}/documents',            [ApplicationController::class, 'uploadDocument'])
-            ->middleware('throttle:document-upload');
-
-        // Workstream 8A: projects + engineers routes moved to the
-        // jea-projects module (backend/modules/JeaProjects/routes.php).
-        // Removing 'jea-projects' from config/modules.enabled drops
-        // /projects/* and /engineers/* entirely.
-    });
-
-    // ── Reviewer routes ───────────────────────────────────────────────
-
-    Route::middleware('role:staff,auditor,admin')->group(function () {
-        // FR-008 to FR-010: Review workflow
-        // JORD-88 (PM): reviewer dashboard summary. Same role gate as
-        // the queue — staff / auditor / admin. Response is a compact
-        // stats blob + two lists (recent decisions + my in-progress).
-        // Workstream 5B: reviewer surface extracted from ApplicationController.
-        Route::get('review/dashboard',            [ReviewDashboardController::class, 'show']);
-        Route::get('review/queue',                [ReviewQueueController::class, 'index']);
-        Route::post('applications/{id}/claim',    [ReviewQueueController::class, 'claim']);
-        Route::post('applications/{id}/decide',   [ReviewQueueController::class, 'decide']);
-    });
-
-    // ── Staff / Admin routes ──────────────────────────────────────────
-
-    Route::middleware('role:staff,admin')->group(function () {
-        // FR-011 to FR-012: Payment + certificate issuance
-        // Workstream 5B: payment + cert issuance extracted from ApplicationController.
-        Route::post('applications/{id}/confirm-payment',    [PaymentsController::class, 'confirm']);
-        Route::post('applications/{id}/issue-certificate',  [CertificatesController::class, 'issue']);
-    });
+    // Workstream 8C: applicant service catalog + application CRUD +
+    // reviewer surface (dashboard, queue, claim, decide) + staff/admin
+    // payment-confirm + certificate-issue moved to the jea-services
+    // module (backend/modules/JeaServices/routes.php). Removing
+    // 'jea-services' from config/modules.enabled drops the entire
+    // application flow.
 
     // ── Admin-only routes ─────────────────────────────────────────────
 
@@ -165,21 +114,8 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'token.inactivity', 'password.p
         Route::get('admin/applications',          [AdminDashboardController::class, 'allApplications']);
         Route::get('admin/audit-logs',            [AdminDashboardController::class, 'auditLogs']);
 
-        // FR-017: Service management (all statuses for admin)
-        Route::get('admin/services',                       [ServiceCatalogController::class, 'adminIndex']);
-        Route::get('admin/services/{id}',                  [ServiceCatalogController::class, 'adminShow']);
-        Route::post('services',                            [ServiceCatalogController::class, 'store']);
-        Route::put('services/{id}',                        [ServiceCatalogController::class, 'update']);
-        Route::patch('services/{id}/status',               [ServiceCatalogController::class, 'updateStatus']);
-        // JORD-85: focused fee editor. Compact fee payload only —
-        // avoids sending the whole schema for a rate change.
-        // Workstream 5: fee editor extracted from ServiceCatalogController.
-        Route::get('admin/service-fees',                   [ServiceFeesController::class, 'index']);
-        Route::patch('admin/services/{id}/fee',            [ServiceFeesController::class, 'update']);
-        // Lock/unlock — every mutation above refuses when is_locked=true,
-        // so unlocking is an explicit action separate from ordinary edits.
-        Route::post('admin/services/{id}/lock',            [ServiceCatalogController::class, 'lock']);
-        Route::post('admin/services/{id}/unlock',          [ServiceCatalogController::class, 'unlock']);
+        // Workstream 8C: admin service catalog + fee editor + lock/unlock
+        // routes moved to the jea-services module.
 
         // FR-018 + FR-019: every Claude-backed AI endpoint shares the
         // 'ai-schema' bucket — 10 calls/hour per user is generous for

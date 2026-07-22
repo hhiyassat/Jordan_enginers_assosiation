@@ -1,8 +1,9 @@
 <?php
 
-namespace App\Models;
+namespace Modules\JeaServices\Models;
 
 use App\Models\Concerns\BelongsToOrganization;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;

@@ -3,11 +3,11 @@
 namespace Tests\Feature;
 
 use Modules\JeaDiscipline\Engine\SanctionGuard;
-use App\Models\Application;
+use Modules\JeaServices\Models\Application;
 use Modules\JeaDiscipline\Models\Complaint;
 use App\Models\Organization;
 use Modules\JeaDiscipline\Models\Sanction;
-use App\Models\ServiceDefinition;
+use Modules\JeaServices\Models\ServiceDefinition;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;

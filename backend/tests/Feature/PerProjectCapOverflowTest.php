@@ -4,12 +4,12 @@ namespace Tests\Feature;
 
 use Modules\JeaProjects\Engine\Disciplines;
 use Modules\JeaProjects\Engine\QuotaLedger;
-use App\Models\Application;
+use Modules\JeaServices\Models\Application;
 use Modules\JeaProjects\Models\Engineer;
 use Modules\JeaProjects\Models\EngineerDisciplineQuota;
 use Modules\JeaProjects\Models\OfficeCeiling;
 use App\Models\Organization;
-use App\Models\ServiceDefinition;
+use Modules\JeaServices\Models\ServiceDefinition;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;

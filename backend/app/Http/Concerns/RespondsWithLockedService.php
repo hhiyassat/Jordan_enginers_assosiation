@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Concerns;
 
-use App\Models\ServiceDefinition;
+use Modules\JeaServices\Models\ServiceDefinition;
 use Illuminate\Http\JsonResponse;
 
 /**

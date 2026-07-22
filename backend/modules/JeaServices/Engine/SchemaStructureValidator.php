@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Engine;
+namespace Modules\JeaServices\Engine;
 
-use App\Engine\StageActions;
+use Modules\JeaServices\Engine\StageActions;
 
 /**
  * SchemaStructureValidator — validates that a saved JSON schema conforms to the

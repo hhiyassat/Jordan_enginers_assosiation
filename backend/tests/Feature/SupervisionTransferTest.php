@@ -2,11 +2,11 @@
 
 namespace Tests\Feature;
 
-use App\Models\Application;
+use Modules\JeaServices\Models\Application;
 use Modules\JeaDiscipline\Models\Complaint;
 use App\Models\Organization;
 use Modules\JeaDiscipline\Models\Sanction;
-use App\Models\ServiceDefinition;
+use Modules\JeaServices\Models\ServiceDefinition;
 use Modules\JeaDiscipline\Models\SupervisionTransfer;
 use App\Models\User;
 use Modules\JeaDiscipline\Services\SupervisionTransferService;

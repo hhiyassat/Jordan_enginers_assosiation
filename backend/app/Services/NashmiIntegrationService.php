@@ -3,7 +3,7 @@
 namespace App\Services;
 
 use App\Models\IntegrationCycle;
-use App\Models\ServiceDefinition;
+use Modules\JeaServices\Models\ServiceDefinition;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 

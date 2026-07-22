@@ -3,7 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Organization;
-use App\Models\ServiceDefinition;
+use Modules\JeaServices\Models\ServiceDefinition;
 use Illuminate\Database\Seeder;
 
 /**

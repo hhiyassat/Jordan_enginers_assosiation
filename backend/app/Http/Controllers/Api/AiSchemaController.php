@@ -6,7 +6,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Concerns\RequiresAdminTier;
 use App\Http\Controllers\Controller;
-use App\Models\ServiceDefinition;
+use Modules\JeaServices\Models\ServiceDefinition;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;

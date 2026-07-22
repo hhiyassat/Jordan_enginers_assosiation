@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Models;
+namespace Modules\JeaServices\Models;
 
 use App\Models\Concerns\BelongsToOrganization;
 use Illuminate\Database\Eloquent\Model;

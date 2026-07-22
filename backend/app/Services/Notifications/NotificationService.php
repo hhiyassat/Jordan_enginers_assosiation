@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Notifications;
 
-use App\Models\Application;
+use Modules\JeaServices\Models\Application;
 use App\Models\Notification;
 use App\Models\User;
 

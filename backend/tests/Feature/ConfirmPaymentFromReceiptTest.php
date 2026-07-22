@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Engine\Exceptions\InvalidStateException;
-use App\Engine\WorkflowEngine;
-use App\Models\Application;
+use Modules\JeaServices\Engine\WorkflowEngine;
+use Modules\JeaServices\Models\Application;
 use App\Models\AuditLog;
 use App\Models\Organization;
-use App\Models\ServiceDefinition;
+use Modules\JeaServices\Models\ServiceDefinition;
 use App\Models\User;
 use App\Services\Payment\PaymentReceipt;
 use Illuminate\Foundation\Testing\RefreshDatabase;

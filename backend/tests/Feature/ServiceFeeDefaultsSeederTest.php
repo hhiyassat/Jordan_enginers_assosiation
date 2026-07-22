@@ -3,7 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Organization;
-use App\Models\ServiceDefinition;
+use Modules\JeaServices\Models\ServiceDefinition;
 use Database\Seeders\ServiceFeeDefaultsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;

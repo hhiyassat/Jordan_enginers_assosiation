@@ -6,10 +6,10 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Concerns\RequiresAdminTier;
 use App\Http\Controllers\Controller;
-use App\Models\Application;
+use Modules\JeaServices\Models\Application;
 use App\Models\AuditLog;
-use App\Models\Certificate;
-use App\Models\ServiceDefinition;
+use Modules\JeaServices\Models\Certificate;
+use Modules\JeaServices\Models\ServiceDefinition;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;

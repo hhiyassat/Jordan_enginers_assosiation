@@ -2,8 +2,8 @@
 
 namespace Tests\Unit\Engine;
 
-use App\Engine\SchemaStructureValidator;
-use App\Engine\StageActions;
+use Modules\JeaServices\Engine\SchemaStructureValidator;
+use Modules\JeaServices\Engine\StageActions;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 

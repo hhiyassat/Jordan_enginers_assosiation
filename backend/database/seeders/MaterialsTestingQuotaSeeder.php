@@ -6,7 +6,7 @@ use Modules\JeaProjects\Models\Engineer;
 use Modules\JeaProjects\Models\EngineerDisciplineQuota;
 use Modules\JeaProjects\Models\OfficeCeiling;
 use App\Models\Organization;
-use App\Models\ServiceDefinition;
+use Modules\JeaServices\Models\ServiceDefinition;
 use Illuminate\Database\Seeder;
 
 /**
