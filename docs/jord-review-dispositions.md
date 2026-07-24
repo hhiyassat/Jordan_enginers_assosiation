@@ -5,10 +5,15 @@ This document records why the remaining five tasks were **not**
 translated into commits and what the review team should do with them
 if the objection stands.
 
-Snapshot at the time of writing:
+Snapshot at the time of writing (pre-refactor):
 - Frontend: 260/260 Vitest specs + 12/12 Playwright specs, `tsc` clean, `npm run build` succeeds.
 - Backend: 291/291 PHPUnit, PHPStan 0.
 - Total JORD tasks retired via code: 43/49.
+
+**Current snapshot (post-refactor, 2026-07-23):**
+- Frontend: 410/410 Vitest specs, dep-cruise 0 violations, `npm run build` succeeds.
+- Backend: 566/566 PHPUnit + 2068 assertions, PHPStan 0.
+- Total JORD tasks retired via code: 47/49 (JORD-4 added; JORD-15 fully resolved except one file).
 
 Open tasks left un-actioned:
 
@@ -56,15 +61,23 @@ metric is regressing (LCP / TTI / CLS on a real deployment).
 
 ## JORD-15 — split multi-purpose files
 
-**Partially done, remainder deferred.** JORD-25 already decomposed the
-699-line `App.tsx` into `auth/`, `layout/`, `routes.tsx`. What's left:
+**Mostly resolved (post-refactor 2026-07-23).** Was "partially done"
+pre-refactor; now:
 
-- `backend/app/Http/Controllers/Api/AdminController.php` (~1000 lines) — mixes user CRUD + application listing + audit-log + AI schema generation. Could split into `AdminUserController` / `AdminApplicationsController` / `AdminServicesController` / `AdminAIController`. Zero behaviour change; ~2 hours of careful mechanical work + reroute updates.
-- `frontend/src/pages/admin/NewService.tsx` (~885 lines) — AI-generator UI. Could split the input tab, schema tab, validation tab, audit tab into siblings. Same treatment: mechanical, no behaviour change.
+- ✅ `AdminController.php` → **deleted** (Workstream 5C, commit `9b75888`).
+  Split into: `AdminDashboardController` (platform, `app/`),
+  `AiSchemaController` (plugin, `plugins/AiSchema/`),
+  `UserManagementController` (platform, extracted earlier).
+- ⏳ `frontend/src/pages/admin/NewService.tsx` (~885 lines) — still not
+  split. Moved intact to `frontend/src/modules/JeaServices/pages/NewService.tsx`
+  in Workstream 10. AI-generator UI could split into input/schema/
+  validation/audit tabs. Deferred until next active-development touch.
 
-Not blocking any known work. Defer until the next active-development
-touch on one of these files makes the split cheap. Won't run the
-mechanical churn now for its own sake.
+Original pre-refactor text below for history:
+
+> Not blocking any known work. Defer until the next active-development
+> touch on one of these files makes the split cheap. Won't run the
+> mechanical churn now for its own sake.
 
 ## JORD-37 — video attachment on the tracker
 
@@ -82,13 +95,42 @@ Marking this as blocked-on-info.
 
 ## Summary for the review
 
+Updated table (post-refactor 2026-07-23):
+
 | Task | Status | Reason |
 | :--- | :--- | :--- |
 | JORD-1 | Won't fix | Monorepo is right for this size. |
 | JORD-3 | Won't fix | Vite is the community-standard React build. |
+| JORD-4 | ✅ Done | File structure refactor — 16 workstreams, PR #3 merged. See `docs/architecture/`. |
 | JORD-8 | Already addressed | JORD-32/33/49/28/40 covered every lever. |
-| JORD-15 | Partial | JORD-25 done; AdminController + NewService remain, deferred to next touch. |
+| JORD-15 | Mostly done | AdminController split (W5C); only `NewService.tsx` remains. |
 | JORD-37 | Blocked | Need the video (or a description). |
 
-Every other JORD task has a commit landed on `jea/main` referencing its
+Every other JORD task has a commit landed on `main` referencing its
 ID in the message. `git log --grep=JORD-<n>` returns the exact PR.
+
+## Post-refactor additions (2026-07-22 → 07-23)
+
+Between the original review and this update, ~40 additional JORD
+tickets landed via PR #2 (`feat/jord-84-85-86-office-fees-polish`,
+auto-closed by PR #3 landing). Notable:
+
+| batch | tickets |
+|-------|---------|
+| Applicant self-service | JORD-84 (my/dues, my/complaints, my/sanctions) |
+| Admin fee editor | JORD-85 |
+| Frontend polish | JORD-86 (sortable columns, CSV export, empty states) |
+| Reviewer dashboard | JORD-88 |
+| Applicant flow blockers | JORD-58, 59, 62 |
+| Translation gaps | JORD-57, 60, 87, 89, 90, 93, 94, 95, 96 |
+| Code-quality bulk | JORD-69–81 |
+| Auth stability + CSP | JORD-52, 82, 83 |
+| UI bug hunt | JORD-55, 56, 61, 64, 65, 66, 67, 68 |
+| Login polish | JORD-51 |
+
+**JORD-4** deserves special mention: was "Critical, In Progress" at
+review time; now fully done via the 16-workstream architecture
+refactor. See `docs/architecture/01-refactoring-plan.md` for the
+executed plan, `docs/architecture/04-modules.md` for the resulting
+module system, and `docs/session_handoff_2026-07-22.md` Part 2 for
+the day-of-execution narrative.

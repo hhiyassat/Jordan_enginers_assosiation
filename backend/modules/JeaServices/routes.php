@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Illuminate\Support\Facades\Route;
 use Modules\JeaServices\Http\Controllers\ApplicationController;
 use Modules\JeaServices\Http\Controllers\CertificatesController;
+use Modules\JeaServices\Http\Controllers\ManualReferenceController;
 use Modules\JeaServices\Http\Controllers\PaymentsController;
 use Modules\JeaServices\Http\Controllers\ReviewDashboardController;
 use Modules\JeaServices\Http\Controllers\ReviewQueueController;
@@ -74,6 +75,12 @@ Route::prefix('api/v1')->middleware(['auth:sanctum', 'token.inactivity', 'passwo
         Route::get('services',         [ServiceCatalogController::class, 'index']);
         Route::get('services/{code}',  [ServiceCatalogController::class, 'show']);
 
+        // Manual references — read for any authenticated user (used by
+        // the (?) popover next to form fields to show the JEA-manual
+        // basis for the rule). Editing lives under the admin group.
+        Route::get('manual-references',       [ManualReferenceController::class, 'index']);
+        Route::get('manual-references/{id}',  [ManualReferenceController::class, 'show']);
+
         // FR-002 to FR-007: application CRUD
         Route::get ('applications',                            [ApplicationController::class, 'index']);
         Route::post('applications',                            [ApplicationController::class, 'store']);
@@ -116,5 +123,10 @@ Route::prefix('api/v1')->middleware(['auth:sanctum', 'token.inactivity', 'passwo
         // Lock/unlock — explicit action, separate from ordinary edits.
         Route::post ('admin/services/{id}/lock',             [ServiceCatalogController::class, 'lock']);
         Route::post ('admin/services/{id}/unlock',           [ServiceCatalogController::class, 'unlock']);
+
+        // Manual reference editing — writes raise needs_reimplementation
+        // and the acknowledge endpoint clears the flag once dev updates.
+        Route::patch('admin/manual-references/{id}',         [ManualReferenceController::class, 'update']);
+        Route::post ('admin/manual-references/{id}/ack',     [ManualReferenceController::class, 'acknowledge']);
     });
 });

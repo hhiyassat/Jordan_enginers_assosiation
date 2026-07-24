@@ -17,6 +17,7 @@ use Modules\JeaServices\Database\Seeders\ExcavationFeeSeeder;
 use Modules\JeaServices\Database\Seeders\FeeSurchargesSeeder;
 use Modules\JeaServices\Database\Seeders\JeaPortalTilesSeeder;
 use Modules\JeaServices\Database\Seeders\JeaServicesSeeder;
+use Modules\JeaServices\Database\Seeders\ManualReferencesSeeder;
 use Modules\JeaServices\Database\Seeders\MaterialsSampleRetentionSeeder;
 use Modules\JeaServices\Database\Seeders\ServiceFeeDefaultsSeeder;
 use Modules\JeaServices\Database\Seeders\ServicePlan2026Seeder;
@@ -114,6 +115,11 @@ class DatabaseSeeder extends Seeder
             // real workflows attached by CatalogWorkflowsSeeder.
             SampleProjectsSeeder::class,
             DemoEngineersSeeder::class,
+            // 2026-07-24: populate manual_references from the JEA 2025 manual
+            // summary. Runs last so all services / rules referenced already
+            // exist. Idempotent — re-runs preserve any admin edits still
+            // flagged needs_reimplementation.
+            ManualReferencesSeeder::class,
         ]);
     }
 }

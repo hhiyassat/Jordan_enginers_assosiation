@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import i18n from '../i18n';
+import { ManualReferenceIcon } from '../platform/ui/ManualReferenceIcon';
 import type { SchemaField, SchemaSection, ServiceSchema } from '../types';
 
 interface Props {
@@ -230,6 +231,14 @@ function FieldWrapper({ field, value, serverError, onChange, disabled, locale }:
       <label className="block text-sm font-medium text-gray-700 mb-1.5">
         {label}
         {field.required && <span className="text-red-500 ms-0.5">*</span>}
+        {/* الأساس النظامي من كتاب التعليمات الفنية 2025 — الأيقونة تظهر
+            فقط إذا الحقل يحمل manual_reference_id في schema. */}
+        {(field as unknown as { manual_reference_id?: number }).manual_reference_id && (
+          <ManualReferenceIcon
+            referenceId={(field as unknown as { manual_reference_id: number }).manual_reference_id}
+            canEdit={false}
+          />
+        )}
       </label>
 
       <FieldInput

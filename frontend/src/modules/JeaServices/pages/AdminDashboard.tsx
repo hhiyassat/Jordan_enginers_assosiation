@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAdminDashboardStats } from '../../../api/hooks';
 import { useAuth } from '../../../auth/AuthContext';
+import { PendingManualEditsTile } from '../../../platform/ui/PendingManualEditsTile';
 import type { DashboardStats } from '../../../types';
 
 // Concrete row shape from /admin/dashboard. Fields the backend returns
@@ -59,6 +60,12 @@ export function AdminDashboard() {
       {error && (
         <div className="mb-6 bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 text-sm">{error.message}</div>
       )}
+
+      {/* Pending manual-reference edits notifier — auto-hides when 0. */}
+      <div className="mb-6">
+        <PendingManualEditsTile />
+      </div>
+
 
       {loading ? (
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
