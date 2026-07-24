@@ -145,6 +145,28 @@ export function Apply() {
       .catch(() => setProject(null));
   }, [projectId]);
 
+  // 2026-07-24: auto-fill form fields from the project when both are
+  // loaded. The applicant can override any field. Only fills EMPTY
+  // fields — never overwrites what the applicant already typed or a
+  // value loaded from an existing draft (editApplicationId path).
+  //
+  // Mapping:
+  //   project.area_m2 → area_m2   (direct)
+  //   project.city    → governorate (JEA governorates are 12; project.city
+  //                     stores the same lowercase key like 'amman', so we
+  //                     just copy — if the city text doesn't match a
+  //                     governorate option the field stays blank and the
+  //                     applicant picks manually)
+  useEffect(() => {
+    if (!project || !service) return;
+    setFormData(prev => {
+      const next = { ...prev };
+      if (!next.area_m2 && project.area_m2) next.area_m2 = project.area_m2;
+      if (!next.governorate && project.city) next.governorate = project.city;
+      return next;
+    });
+  }, [project, service]);
+
   const handleFieldChange = (field: string, value: unknown) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     // Clear error for this field as user corrects it. Also clear any

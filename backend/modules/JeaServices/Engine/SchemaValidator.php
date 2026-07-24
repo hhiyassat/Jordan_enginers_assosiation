@@ -121,8 +121,17 @@ class SchemaValidator
                 }
             }
 
+            // Bug fix 2026-07-24: skip static option validation when the
+            // field's options are dynamic (options_endpoint set) — otherwise
+            // engineer_id / other endpoint-driven fields fail with "value
+            // not allowed" because static `options` is `[]`. Backend-side
+            // authorization for endpoint values happens where the endpoint
+            // is served (e.g. EngineerController).
+            $usesEndpoint = ! empty($field['options_endpoint']);
+            $hasStaticOptions = isset($field['options']) && ! empty($field['options']);
+
             // Options validation for single-value types
-            if (in_array($field['type'], ['select', 'radio']) && isset($field['options'])) {
+            if (in_array($field['type'], ['select', 'radio']) && $hasStaticOptions && ! $usesEndpoint) {
                 $validValues = array_column($field['options'], 'value');
                 if (! in_array($value, $validValues)) {
                     $errors[$fieldId] = $field['label_ar'] . ': قيمة غير مسموح بها.';
@@ -130,7 +139,7 @@ class SchemaValidator
             }
 
             // Options validation for multi-value types (multiselect / checkbox_group)
-            if (in_array($field['type'], ['multiselect', 'checkbox_group']) && isset($field['options'])) {
+            if (in_array($field['type'], ['multiselect', 'checkbox_group']) && $hasStaticOptions && ! $usesEndpoint) {
                 $validValues  = array_column($field['options'], 'value');
                 $selectedVals = is_array($value) ? $value : [$value];
                 $invalid      = array_diff($selectedVals, $validValues);

@@ -34,7 +34,11 @@ export function DynamicForm({ schema, values, errors = {}, onChange, disabled = 
   const label = (field: { label_ar: string; label_en: string }) =>
     effectiveLocale === 'ar' ? field.label_ar : (field.label_en || field.label_ar);
 
-  const sections: SchemaSection[] = schema.sections || [
+  // Bug fix (2026-07-24): a schema with `sections: []` (empty array) is
+  // truthy in JS, so `schema.sections || [__default]` returned []. That
+  // hid every field on services whose seed set sections to []. Guard
+  // explicitly on length.
+  const sections: SchemaSection[] = (schema.sections && schema.sections.length > 0) ? schema.sections : [
     { id: '__default',
       label_ar: t('dynamicForm.defaultSection', { lng: 'ar', defaultValue: 'البيانات' }),
       label_en: t('dynamicForm.defaultSection', { lng: 'en', defaultValue: 'Details' }) },
