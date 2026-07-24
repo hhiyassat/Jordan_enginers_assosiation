@@ -17,6 +17,7 @@ use Modules\JeaServices\Database\Seeders\ExcavationFeeSeeder;
 use Modules\JeaServices\Database\Seeders\FeeSurchargesSeeder;
 use Modules\JeaServices\Database\Seeders\JeaPortalTilesSeeder;
 use Modules\JeaServices\Database\Seeders\JeaServicesSeeder;
+use Modules\JeaServices\Database\Seeders\ManualReferenceLinksSeeder;
 use Modules\JeaServices\Database\Seeders\ManualReferencesSeeder;
 use Modules\JeaServices\Database\Seeders\MaterialsSampleRetentionSeeder;
 use Modules\JeaServices\Database\Seeders\ServiceFeeDefaultsSeeder;
@@ -120,6 +121,11 @@ class DatabaseSeeder extends Seeder
             // exist. Idempotent — re-runs preserve any admin edits still
             // flagged needs_reimplementation.
             ManualReferencesSeeder::class,
+            // 2026-07-24: attach manual_reference_id onto specific schema.fields
+            // so the applicant Apply form shows the (?) icon. Must run AFTER
+            // ManualReferencesSeeder AND after every seeder that adds fields
+            // to schemas (DrawingFeeMatrix, Solar, SiteSurveyFees, DrawingEngineerPicker).
+            ManualReferenceLinksSeeder::class,
         ]);
     }
 }
