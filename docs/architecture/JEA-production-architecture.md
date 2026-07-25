@@ -1,8 +1,10 @@
+<img src="../assets/eqratech-logo.png" alt="Eqratech" width="120" style="float: right;" />
+
 # JEA Production System Architecture
 
 **Document:** System Architecture Design for JEA Digital Services Platform  
 **Environment:** Production  
-**Prepared:** 2026-07-25  
+**Prepared by:** Eqratech · 2026-07-25  
 **Scale:** 90,000 members · 80,000 buildings/year · ~15 documents per building
 
 ---
