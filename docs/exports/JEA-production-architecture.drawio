@@ -1,0 +1,218 @@
+<mxfile host="app.diagrams.net" agent="claude-code" version="24.7.17">
+  <diagram name="JEA Production" id="jea-production-arch">
+    <mxGraphModel dx="1800" dy="1200" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Title -->
+        <mxCell id="title" value="JEA Production System Architecture&#xa;90k members · 80k buildings/year · ~1.2M documents/year" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=20;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="450" y="20" width="700" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- ─── Public Users ─── -->
+        <mxCell id="publicGroup" value="Public Internet Users" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;dashed=1;verticalAlign=top;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="80" y="100" width="1400" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="applicants" value="Applicants&#xa;(المكاتب الهندسية)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="130" y="135" width="180" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="reviewers" value="Reviewers / Auditors" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="450" y="135" width="180" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="admins" value="JEA Admins" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="770" y="135" width="180" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="public3p" value="Public — Certificate Verification" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="1090" y="135" width="240" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- ─── Edge Layer ─── -->
+        <mxCell id="edgeGroup" value="Edge Layer" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;verticalAlign=top;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="80" y="220" width="1400" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="cdn" value="CDN&#xa;(Cloudflare / CloudFront)&#xa;• Public assets&#xa;• Cert PDFs cache" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff8dc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="140" y="255" width="220" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="waf" value="Cloud WAF + DDoS Protection&#xa;(OWASP rules, rate limit, geoblock)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="450" y="255" width="320" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="dns" value="DNS + SSL&#xa;(Route53 / Cloudflare)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff8dc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="860" y="255" width="220" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="alb" value="Application Load Balancer&#xa;(TLS termination, Port 443, health checks)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="1160" y="255" width="280" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- ─── App Tier ─── -->
+        <mxCell id="appGroup" value="Application Tier — Auto-Scaling (min 3, max 10)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;verticalAlign=top;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="80" y="370" width="1400" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="app1" value="Laravel App #1&#xa;PHP 8.4 · 4vCPU/8GB&#xa;nginx + PHP-FPM" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="130" y="410" width="200" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="app2" value="Laravel App #2&#xa;PHP 8.4 · 4vCPU/8GB&#xa;nginx + PHP-FPM" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="380" y="410" width="200" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="app3" value="Laravel App #3&#xa;PHP 8.4 · 4vCPU/8GB&#xa;nginx + PHP-FPM" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="630" y="410" width="200" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="appn" value="... auto-scale up to 10 nodes&#xa;triggered on CPU > 70%" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="880" y="410" width="280" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="frontend" value="Frontend (Vite build)&#xa;→ S3 + CDN&#xa;(static SPA files)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="1210" y="410" width="220" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- ─── Support Services ─── -->
+        <mxCell id="supportGroup" value="Support Services" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;verticalAlign=top;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="80" y="540" width="700" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="redis" value="Redis Cluster&#xa;(Sessions · Cache · Rate Limits)&#xa;2 nodes + Sentinel&#xa;2vCPU/4GB each" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="130" y="580" width="280" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="queue" value="Queue Workers (Horizon)&#xa;• Notifications&#xa;• Cron jobs · Cert generation&#xa;2-4 workers, 2vCPU/4GB each" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="450" y="580" width="300" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- ─── Object Storage ─── -->
+        <mxCell id="storageGroup" value="Object Storage" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;verticalAlign=top;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="810" y="540" width="670" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="s3" value="S3-Compatible Storage&#xa;(MinIO / Backblaze B2 / AWS S3)&#xa;• Application documents (~1.2M/year)&#xa;• Certificate PDFs · Database backups&#xa;• Signed URLs for downloads (via CDN)&#xa;Start 1TB · grow ~30%/year" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="860" y="575" width="570" height="90" as="geometry" />
+        </mxCell>
+
+        <!-- ─── Data Tier ─── -->
+        <mxCell id="dataGroup" value="Data Tier — Private VLAN (isolated)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d4e1f5;strokeColor=#6c8ebf;verticalAlign=top;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="80" y="710" width="1400" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="dbPrimary" value="MySQL Primary&#xa;8vCPU · 32GB · 500GB SSD&#xa;(Writes only)&#xa;IOPS 3000+" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="130" y="755" width="240" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="dbReplica1" value="MySQL Replica #1&#xa;4vCPU · 16GB · 500GB SSD&#xa;(Reads — Reviewer dashboards)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1f0fa;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="420" y="755" width="240" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="dbReplica2" value="MySQL Replica #2&#xa;4vCPU · 16GB · 500GB SSD&#xa;(Reads — Reports, admin queries)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1f0fa;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="710" y="755" width="240" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="backup" value="Automated Backup&#xa;• Daily full backup (S3, encrypted)&#xa;• Point-in-Time Recovery&#xa;  (binlog shipping)&#xa;• 30-day retention&#xa;• Cross-region copy (DR)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="1000" y="755" width="270" height="100" as="geometry" />
+        </mxCell>
+
+        <!-- ─── External Integrations ─── -->
+        <mxCell id="extGroup" value="External Integrations" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;verticalAlign=top;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="80" y="900" width="1400" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="gsb" value="GSB (MODEE)&#xa;Citizen Data Lookup&#xa;OTP + IP whitelist" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="130" y="940" width="200" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="nashmi" value="Nashmi Webhook&#xa;Bidirectional&#xa;X-Integration-Key" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="360" y="940" width="200" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="payment" value="Payment Gateway&#xa;eFAWATEERcom / Arab Bank&#xa;API key + HMAC" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="590" y="940" width="220" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="sms" value="SMS Provider&#xa;(Zain / Umniah / Orange)&#xa;OTP + notifications" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="840" y="940" width="220" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="email" value="Email SMTP&#xa;(AWS SES / Mailgun)&#xa;Arabic + English" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="1090" y="940" width="220" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- ─── Observability ─── -->
+        <mxCell id="obsGroup" value="Observability Stack (all layers stream here)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;verticalAlign=top;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="80" y="1050" width="1400" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="obs" value="Logs (ELK / CloudWatch)  ·  Metrics (Prometheus + Grafana)  ·  Alerts (PagerDuty / Slack)  ·  APM (Datadog optional)  ·  Uptime (Statuspage)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="130" y="1058" width="1300" height="25" as="geometry" />
+        </mxCell>
+
+        <!-- ─── CONNECTIONS ─── -->
+        <!-- Users → Edge -->
+        <mxCell id="e1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;" edge="1" parent="1" source="applicants" target="waf">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;" edge="1" parent="1" source="reviewers" target="waf">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;" edge="1" parent="1" source="admins" target="waf">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;" edge="1" parent="1" source="public3p" target="cdn">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <!-- Edge → ALB -->
+        <mxCell id="e5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeWidth=2;" edge="1" parent="1" source="waf" target="alb">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e5b" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;dashed=1;" edge="1" parent="1" source="cdn" target="waf">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <!-- ALB → apps -->
+        <mxCell id="e6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeWidth=2;" edge="1" parent="1" source="alb" target="app1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeWidth=2;" edge="1" parent="1" source="alb" target="app2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeWidth=2;" edge="1" parent="1" source="alb" target="app3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <!-- Apps → Redis + Queue -->
+        <mxCell id="e10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;" edge="1" parent="1" source="app1" target="redis">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e11" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;" edge="1" parent="1" source="app2" target="queue">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <!-- Apps → S3 -->
+        <mxCell id="e12" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeWidth=2;" edge="1" parent="1" source="app3" target="s3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <!-- S3 → CDN -->
+        <mxCell id="e13" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;dashed=1;" edge="1" parent="1" source="s3" target="cdn">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <!-- Apps → DB Primary -->
+        <mxCell id="e14" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeColor=#b85450;strokeWidth=2;" edge="1" parent="1" source="app1" target="dbPrimary">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e15" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeColor=#82b366;" edge="1" parent="1" source="app2" target="dbReplica1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e16" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeColor=#82b366;" edge="1" parent="1" source="app3" target="dbReplica2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <!-- Primary → Replicas (replication) -->
+        <mxCell id="e17" value="binlog" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;dashed=1;strokeColor=#6c8ebf;" edge="1" parent="1" source="dbPrimary" target="dbReplica1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e18" value="binlog" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;dashed=1;strokeColor=#6c8ebf;" edge="1" parent="1" source="dbPrimary" target="dbReplica2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <!-- Primary → Backup -->
+        <mxCell id="e19" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;" edge="1" parent="1" source="dbPrimary" target="backup">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <!-- Apps → External integrations -->
+        <mxCell id="e20" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;" edge="1" parent="1" source="app1" target="gsb">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e21" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;" edge="1" parent="1" source="app2" target="payment">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e22" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;" edge="1" parent="1" source="queue" target="sms">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e23" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;" edge="1" parent="1" source="queue" target="email">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <!-- Nashmi → WAF (inbound) -->
+        <mxCell id="e24" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;dashed=1;" edge="1" parent="1" source="nashmi" target="waf">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
