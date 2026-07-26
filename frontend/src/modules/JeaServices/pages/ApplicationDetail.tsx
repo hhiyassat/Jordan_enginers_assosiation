@@ -7,6 +7,7 @@ import {
 import { applicationsApi } from '../../../api/client';
 import type { Application, ApplicationReview } from '../../../types';
 import { errorMessage } from '../../../platform/utils/errorMessage';
+import { ReportsPanel } from '../../../platform/ui/ReportsPanel';
 
 /**
  * ApplicationDetail — JORD-59 / JORD-62
@@ -303,6 +304,16 @@ export function ApplicationDetail() {
           </ul>
         )}
       </section>
+
+      {/* Technical reports panel — reuses the same component as Apply.tsx.
+          Filters schema.documents to category === 'REPORT' and renders each
+          with its manual references. No-op when the service carries no
+          REPORT-category documents (every DRW-P-* case), so mounting here
+          is safe for the full application catalog. */}
+      <ReportsPanel
+        documents={service?.schema?.documents ?? []}
+        application={application}
+      />
 
       {/* Certificate — issued cases only */}
       {certificateUrl && (

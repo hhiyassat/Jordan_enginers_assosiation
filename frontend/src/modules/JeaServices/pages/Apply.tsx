@@ -7,6 +7,7 @@ import { DynamicForm, validateAll } from '../../../engine/DynamicForm';
 import { DocumentUploader } from '../../../engine/DocumentUploader';
 import type { Application, Project, ServiceDefinition, SchemaDocument, SchemaWorkflowStage } from '../../../types';
 import { WorkflowStepper } from '../../../components/ui/WorkflowStepper';
+import { ReportsPanel } from '../../../platform/ui/ReportsPanel';
 import { ServiceInfoCard } from '../../../components/ui/ServiceInfoCard';
 import { ComplianceNotesBanner } from '../../../components/ui/ComplianceNotesBanner';
 import { ProjectContextHeader } from '../../JeaProjects/pages/ProjectContextHeader';
@@ -543,6 +544,15 @@ export function Apply() {
             application={application}
             formData={formData}
             onUploaded={handleDocumentUploaded}
+          />
+          {/* SRV-001 pilot: show REPORT-category documents in a dedicated
+              panel alongside the ordinary attachments section. Contract
+              stays in DocumentUploader; the report gets its own panel
+              with the manual references that govern it. No-op for
+              services that carry no REPORT-category documents. */}
+          <ReportsPanel
+            documents={schema.documents}
+            application={application}
           />
           <div className="flex justify-between pt-4">
             <button type="button" onClick={() => setStep('form')}

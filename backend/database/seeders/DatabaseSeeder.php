@@ -24,6 +24,7 @@ use Modules\JeaServices\Database\Seeders\ServiceFeeDefaultsSeeder;
 use Modules\JeaServices\Database\Seeders\ServicePlan2026Seeder;
 use Modules\JeaServices\Database\Seeders\SiteSurveyFeesSeeder;
 use Modules\JeaServices\Database\Seeders\SolarFeeSeeder;
+use Modules\JeaServices\Database\Seeders\Srv001PilotSeeder;
 use Modules\JeaServices\Database\Seeders\SurveyWorkflowsSeeder;
 
 /**
@@ -106,6 +107,13 @@ class DatabaseSeeder extends Seeder
             // JORD-78: site-survey base fees (150 fils/lm + 1% syndicate)
             // per JEA p.96. Wires SRV-001..006 with real per-lm pricing.
             SiteSurveyFeesSeeder::class,
+            // JEA-SRV-001 pilot: fields, documents (contract + report),
+            // and workflow routing (project_sector=حكومي → SRV-006).
+            // Runs after SiteSurveyFeesSeeder so length_lm survives
+            // and after SurveyWorkflowsSeeder so the workflow stages
+            // are already in place. Manual-reference IDs are attached
+            // downstream by ManualReferenceLinksSeeder.
+            Srv001PilotSeeder::class,
             // JORD-85: admin-editable fee defaults for every service
             // whose fee block is still the placeholder `fixed 0` — sets
             // 50000 JOD until the F-07 amounts are wired per-service

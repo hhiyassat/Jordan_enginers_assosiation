@@ -6,6 +6,7 @@ namespace Modules\JeaServices\Http\Controllers;
 
 use Modules\JeaServices\Engine\FeeCalculator;
 use Modules\JeaServices\Engine\SchemaValidator;
+use Modules\JeaServices\Engine\ServiceSubmissionGuardRegistry;
 use Modules\JeaServices\Engine\WorkflowEngine;
 use App\Http\Controllers\Controller;
 use Modules\JeaServices\Http\Requests\ConfirmPaymentRequest;
@@ -260,6 +261,20 @@ class ApplicationController extends Controller
             return response()->json([
                 'message' => 'يوجد مستندات مطلوبة غير مرفوعة.',
                 'errors'  => $docErrors,
+            ], 422);
+        }
+
+        // Per-service submission guard. Resolves via the registry so the
+        // controller stays free of service-code branching — a new service
+        // with special submit-time rules registers a guard on the
+        // ServiceSubmissionGuardRegistry (see JeaServicesServiceProvider)
+        // and this call picks it up automatically. Services without a
+        // registered guard yield [] (pass-through).
+        $guardErrors = app(ServiceSubmissionGuardRegistry::class)->validate($app);
+        if ($guardErrors) {
+            return response()->json([
+                'message' => 'لا يمكن تقديم الطلب. راجع الحقول المحددة.',
+                'errors'  => $guardErrors,
             ], 422);
         }
 

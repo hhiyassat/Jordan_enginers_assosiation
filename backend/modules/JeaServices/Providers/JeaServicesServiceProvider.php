@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Modules\JeaServices\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Modules\JeaServices\Engine\ServiceSubmissionGuardRegistry;
+use Modules\JeaServices\Engine\Srv001Guard;
 
 /**
  * JeaServicesServiceProvider — Workstream 8C.
@@ -52,7 +54,17 @@ class JeaServicesServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        //
+        // ApplicationController resolves this registry to run any
+        // service-specific submission guard. The controller itself never
+        // mentions service codes — new services with special submit-time
+        // rules extend this map by implementing ServiceSubmissionGuard
+        // and adding an entry below. Services without a guard are a
+        // no-op pass-through.
+        $this->app->singleton(ServiceSubmissionGuardRegistry::class, function () {
+            return new ServiceSubmissionGuardRegistry([
+                Srv001Guard::SERVICE_CODE => new Srv001Guard(),
+            ]);
+        });
     }
 
     public function boot(): void

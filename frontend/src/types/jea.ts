@@ -69,6 +69,23 @@ export interface SchemaDocument {
   description_ar?: string;
   description_en?: string;
   conditional?: { field: string; value: string };
+  /**
+   * REPORT vs CONTRACT (etc). ReportsPanel filters on category === 'REPORT';
+   * the ordinary documents section renders everything so contracts stay
+   * where uploads happen and reports also get a dedicated post-upload panel.
+   */
+  category?: 'REPORT' | 'CONTRACT' | string;
+  /** Optional narrower report classification (SITE_INVESTIGATION_REPORT, …). */
+  report_type?: string;
+  /** Attached by ManualReferenceLinksSeeder — one document may carry N refs. */
+  manual_reference_ids?: number[];
+  /** Structured signature-requirements block for REPORT documents. */
+  signature_requirements?: {
+    signing_role?: string;
+    signing_engineer_name_required?: boolean;
+    signing_engineer_registration_required?: boolean;
+    source?: string;
+  };
 }
 
 export interface SchemaWorkflowStage {

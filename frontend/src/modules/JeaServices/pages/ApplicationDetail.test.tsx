@@ -190,4 +190,70 @@ describe('ApplicationDetail (JORD-59 / JORD-62)', () => {
     await waitFor(() => expect(screen.getByTestId('application-reference')).toBeInTheDocument());
     expect(screen.queryByTestId('payment-required-banner')).toBeNull();
   });
+
+  // §3 of the pre-commit closure: ReportsPanel must remain visible on
+  // the submitted / read-only detail view, not only on the Apply wizard.
+  // Otherwise the report + its governance references disappear the moment
+  // the applicant submits.
+  it('renders ReportsPanel with REPORT-category documents on the submitted detail view', async () => {
+    mockGet.mockResolvedValue({
+      application: baseApp({
+        status: 'submitted',
+        service_definition: {
+          id: 1,
+          code: 'SRV-001',
+          name_ar: 'تقارير استطلاع الموقع',
+          name_en: 'Site Survey',
+          currency: 'JOD',
+          schema: {
+            service_code: 'SRV-001',
+            documents: [
+              {
+                id: 'survey_contract', label_ar: 'عقد استطلاع الموقع', label_en: 'Contract',
+                required: true, accept: ['pdf'], max_size_mb: 10, category: 'CONTRACT',
+              },
+              {
+                id: 'site_investigation_report', label_ar: 'تقرير استطلاع الموقع', label_en: 'Report',
+                required: true, accept: ['pdf'], max_size_mb: 25, category: 'REPORT',
+                report_type: 'SITE_INVESTIGATION_REPORT',
+                manual_reference_ids: [11, 22, 33],
+              },
+            ],
+          },
+        },
+        documents: [
+          { id: 1, document_id: 'survey_contract',            original_filename: 'contract.pdf', mime_type: 'application/pdf', size_bytes: 12345, status: 'accepted' },
+          { id: 2, document_id: 'site_investigation_report',  original_filename: 'report.pdf',   mime_type: 'application/pdf', size_bytes: 67890, status: 'accepted' },
+        ],
+      }),
+    });
+    renderAt(42);
+
+    // Panel appears — proves ReportsPanel is mounted on the detail view.
+    await waitFor(() => expect(screen.getByTestId('reports-panel')).toBeInTheDocument());
+    // Report is present in the panel.
+    expect(screen.getByTestId('report-site_investigation_report')).toBeInTheDocument();
+    // Contract stays out of the panel (it renders in the Attachments section only).
+    expect(screen.queryByTestId('report-survey_contract')).toBeNull();
+  });
+
+  it('does not render ReportsPanel for services without REPORT-category documents', async () => {
+    mockGet.mockResolvedValue({
+      application: baseApp({
+        service_definition: {
+          id: 1, code: 'DRW-P-002', name_ar: 'خ', name_en: 'x', currency: 'JOD',
+          schema: {
+            service_code: 'DRW-P-002',
+            documents: [
+              { id: 'design_services_agreement', label_ar: 'اتفاقية', label_en: 'a',
+                required: true, accept: ['pdf'], max_size_mb: 10 /* no category */ },
+            ],
+          },
+        },
+      }),
+    });
+    renderAt(42);
+    await waitFor(() => expect(screen.getByTestId('application-reference')).toBeInTheDocument());
+    expect(screen.queryByTestId('reports-panel')).toBeNull();
+  });
 });

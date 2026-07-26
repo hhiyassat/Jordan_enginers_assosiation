@@ -4,6 +4,7 @@ namespace Modules\JeaServices\Database\Seeders;
 
 use App\Models\Organization;
 use Modules\JeaServices\Models\ServiceDefinition;
+use Modules\JeaServices\Support\JordanGovernorates;
 use Illuminate\Database\Seeder;
 
 /**
@@ -135,20 +136,7 @@ class DrawingFeeMatrixSeeder extends Seeder
             'label_en' => 'Governorate',
             'type'     => 'select',
             'required' => true,
-            'options'  => [
-                ['value' => 'amman',   'label_ar' => 'عمان',    'label_en' => 'Amman'],
-                ['value' => 'irbid',   'label_ar' => 'إربد',    'label_en' => 'Irbid'],
-                ['value' => 'zarqa',   'label_ar' => 'الزرقاء', 'label_en' => 'Zarqa'],
-                ['value' => 'mafraq',  'label_ar' => 'المفرق',  'label_en' => 'Mafraq'],
-                ['value' => 'balqa',   'label_ar' => 'البلقاء', 'label_en' => 'Balqa'],
-                ['value' => 'karak',   'label_ar' => 'الكرك',   'label_en' => 'Karak'],
-                ['value' => 'maan',    'label_ar' => 'معان',    'label_en' => "Ma'an"],
-                ['value' => 'tafilah', 'label_ar' => 'الطفيلة', 'label_en' => 'Tafilah'],
-                ['value' => 'aqaba',   'label_ar' => 'العقبة',  'label_en' => 'Aqaba'],
-                ['value' => 'madaba',  'label_ar' => 'مأدبا',   'label_en' => 'Madaba'],
-                ['value' => 'jerash',  'label_ar' => 'جرش',     'label_en' => 'Jerash'],
-                ['value' => 'ajloun',  'label_ar' => 'عجلون',   'label_en' => 'Ajloun'],
-            ],
+            'options'  => JordanGovernorates::options(),
         ];
     }
 
