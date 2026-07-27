@@ -1,0 +1,76 @@
+service_code,family_code,family_name_ar,subcategory_ar,name_ar,name_en,in_workbook,in_service_plan_seeder,in_live_db,catalog_status,exists_note
+CERT-001,JEA-CERT,الشهادات,,شهادة المطابقة,Compliance Certificate,YES,YES,YES,CANONICAL_SERVICE,
+CERT-002,JEA-CERT,الشهادات,,سلامة المنشأ,Structural Safety,YES,YES,YES,CANONICAL_SERVICE,
+CERT-003,JEA-CERT,الشهادات,,شهادة تصنيف مكتب,Office Classification Certificate,YES,YES,YES,CANONICAL_SERVICE,
+CERT-004,JEA-CERT,الشهادات,,شهادة ملكية مكتب,Office Ownership Certificate,YES,YES,YES,CANONICAL_SERVICE,
+CERT-005,JEA-CERT,الشهادات,,شهادة اختصاصات مكتب,Office Specialties Certificate,YES,YES,YES,CANONICAL_SERVICE,
+CERT-006,JEA-CERT,الشهادات,,باقي الشهادات الرسمية,Other Official Certificates,NO,YES,YES,CANONICAL_SERVICE_SEEDER_ONLY,Present in seeder + DB but absent from the audited workbook (57 workbook rows only cover CERT-001..005)
+DEC-001,JEA-DEC,قرارات هيئة المكاتب الهندسية,,تقديم طلبات المكاتب للهيئة,Office Requests to the Board,YES,YES,YES,CANONICAL_SERVICE,
+DEC-002,JEA-DEC,قرارات هيئة المكاتب الهندسية,,تقديم شكاوى المواطنين للهيئة,Citizen Complaints to the Board,YES,YES,YES,CANONICAL_SERVICE,
+DEC-003,JEA-DEC,قرارات هيئة المكاتب الهندسية,,تقديم طلبات الدوائر الحكومية,Government Department Requests,YES,YES,YES,CANONICAL_SERVICE,
+DEC-004,JEA-DEC,قرارات هيئة المكاتب الهندسية,,تقديم شكاوى المهندسين,Engineer Complaints,YES,YES,YES,CANONICAL_SERVICE,
+DRW-P-001,JEA-PROJ,خدمات تصديق المخططات الهندسية,,مخططات الأبنية المقترحة,Proposed Building Drawings,YES,YES,YES,CANONICAL_SERVICE,
+DRW-P-002,JEA-PROJ,خدمات تصديق المخططات الهندسية,,مخططات الأبنية القائمة,Existing Building Drawings,YES,YES,YES,CANONICAL_SERVICE,
+DRW-P-003,JEA-PROJ,خدمات تصديق المخططات الهندسية,,مخططات الأبنية المقترحة فوق الأبنية القائمة,Additions Over Existing Buildings,YES,YES,YES,CANONICAL_SERVICE,
+DRW-P-004,JEA-PROJ,خدمات تصديق المخططات الهندسية,,مخططات الهدم,Demolition Drawings,YES,YES,YES,CANONICAL_SERVICE,
+DRW-P-005,JEA-PROJ,خدمات تصديق المخططات الهندسية,,مخططات المشاريع الكبرى,Large Projects Drawings,YES,YES,YES,CANONICAL_SERVICE,
+DRW-P-006,JEA-PROJ,خدمات تصديق المخططات الهندسية,,مخططات مشاريع الطاقة,Energy Projects Drawings,YES,YES,YES,CANONICAL_SERVICE,
+DRW-P-007,JEA-PROJ,خدمات تصديق المخططات الهندسية,,مخططات رخص المهن,Professional License Drawings,YES,YES,YES,CANONICAL_SERVICE,
+DRW-P-008,JEA-PROJ,خدمات تصديق المخططات الهندسية,,المخططات التعديلية,Modification Drawings,YES,YES,YES,CANONICAL_SERVICE,
+DRW-P-009,JEA-PROJ,خدمات تصديق المخططات الهندسية,,مخططات إعادة التأهيل / الصيانة,Rehabilitation / Maintenance Drawings,YES,YES,YES,CANONICAL_SERVICE,
+DRW-P-010,JEA-PROJ,خدمات تصديق المخططات الهندسية,,مخططات تعديلية / مجلس البناء الوطني,National Building Council Modifications,YES,YES,YES,CANONICAL_SERVICE,
+DRW-P-011,JEA-PROJ,خدمات تصديق المخططات الهندسية,,إعادة التصديق,Re-approval,YES,YES,YES,CANONICAL_SERVICE,
+DRW-P-012,JEA-PROJ,خدمات تصديق المخططات الهندسية,,مخططات الدفاع المدني,Civil Defence Drawings,YES,YES,YES,CANONICAL_SERVICE,
+ENG-001,JEA-ENG,المهندسون العاملون في المكاتب الهندسية,,تعيين / تحويل / إقالة مهندس (كادر المكتب),Engineer Assignment/Transfer/Dismissal (Office Roster),YES,YES,YES,CANONICAL_SERVICE,
+ENG-002,JEA-ENG,المهندسون العاملون في المكاتب الهندسية,,تعيين / تحويل / إقالة مهندس (كادر المشروع),Engineer Assignment/Transfer/Dismissal (Project Roster),YES,YES,YES,CANONICAL_SERVICE,
+FIN-001,JEA-FIN,الخدمات المالية,,صرف رواتب المهندسين المقيمين / آلية دعم الإشراف,Resident Engineer Payroll / Supervision Support,YES,YES,YES,CANONICAL_SERVICE,
+FIN-002,JEA-FIN,الخدمات المالية,,صرف دعم الإشراف للمكاتب / آلية دعم الإشراف,Office Supervision Support Disbursement,YES,YES,YES,CANONICAL_SERVICE,
+FIN-003,JEA-FIN,الخدمات المالية,,إعادة تأمينات المهندس المقيم,Resident Engineer Deposit Refund,YES,YES,YES,CANONICAL_SERVICE,
+FIN-004,JEA-FIN,الخدمات المالية,,إعادة تأمينات عقود استطلاع الموقع المؤجلة,Deferred Site-Survey Contract Deposit Refund,YES,YES,YES,CANONICAL_SERVICE,
+FIN-005,JEA-FIN,الخدمات المالية,,إعادة تأمينات تدعيم الحفريات,Excavation-Shoring Deposit Refund,YES,YES,YES,CANONICAL_SERVICE,
+FIN-006,JEA-FIN,الخدمات المالية,,إعادة تأمينات المخططات الهندسية المؤجلة,Deferred Drawings Deposit Refund,YES,YES,YES,CANONICAL_SERVICE,
+MSC-001,JEA-MISC,خدمات أخرى,,استعلام وطباعة كشف كوته المكتب,Office Quota Statement Enquiry / Print,YES,YES,YES,CANONICAL_SERVICE,
+MSC-002,JEA-MISC,خدمات أخرى,,الاستعلام عن مشاريع المكتب,Office Projects Enquiry,YES,YES,YES,CANONICAL_SERVICE,
+MSC-003,JEA-MISC,خدمات أخرى,,الاستعلام عن كادر المكتب,Office Roster Enquiry,YES,YES,YES,CANONICAL_SERVICE,
+MSC-004,JEA-MISC,خدمات أخرى,,تحديث بيانات المكاتب الهندسية,Update Office Data,YES,YES,YES,CANONICAL_SERVICE,
+MSC-005,JEA-MISC,خدمات أخرى,,طلبات الإعفاء الهندسي للمهندسين,Engineering-Exemption Requests,YES,YES,YES,CANONICAL_SERVICE,
+MSC-006,JEA-MISC,خدمات أخرى,,كشف ضريبة الدخل والمبيعات,Income + Sales Tax Statement,YES,YES,YES,CANONICAL_SERVICE,
+MSC-007,JEA-MISC,خدمات أخرى,,نقل عقد الإشراف,Supervision Contract Transfer,YES,YES,YES,CANONICAL_SERVICE,
+MSC-008,JEA-MISC,خدمات أخرى,,تمديد عقد الإشراف,Supervision Contract Extension,YES,YES,YES,CANONICAL_SERVICE,
+MSC-009,JEA-MISC,خدمات أخرى,,تأجيل / إلغاء مشروع,Project Postponement / Cancellation,YES,YES,YES,CANONICAL_SERVICE,
+MSC-010,JEA-MISC,خدمات أخرى,,مخالصات المكاتب والمهندسين,Office + Engineer Clearances,YES,YES,YES,CANONICAL_SERVICE,
+MSC-011,JEA-MISC,خدمات أخرى,,مقابلة رؤساء الاختصاص,Specialty Head Meetings,YES,YES,YES,CANONICAL_SERVICE,
+MSC-012,JEA-MISC,خدمات أخرى,,الكشوفات الهندسية,Engineering Statements,YES,YES,YES,CANONICAL_SERVICE,
+MSC-014,JEA-MISC,خدمات أخرى,,منصة التوظيف,Employment Platform,NO,YES,YES,CANONICAL_SERVICE_SEEDER_ONLY,Present in seeder + DB but absent from the audited workbook. Note: MSC-013 is deliberately absent per governance constitutional fact.
+SRV-001,JEA-SURV,استطلاع الموقع,استطلاع الموقع,تقارير استطلاع الموقع للأبنية المقترحة,Site Survey — Proposed Buildings,YES,YES,YES,CANONICAL_SERVICE,
+SRV-002,JEA-SURV,استطلاع الموقع,استطلاع الموقع,تقارير استطلاع الموقع للأبنية القائمة,Site Survey — Existing Buildings,YES,YES,YES,CANONICAL_SERVICE,
+SRV-003,JEA-SURV,استطلاع الموقع,استطلاع الموقع,تقارير استطلاع الموقع المؤجلة,Deferred Site Survey,YES,YES,YES,CANONICAL_SERVICE,
+SRV-004,JEA-SURV,استطلاع الموقع,استطلاع الموقع,تقارير استطلاع الموقع للمشاريع الكبرى,Site Survey — Large Projects,YES,YES,YES,CANONICAL_SERVICE,
+SRV-005,JEA-SURV,استطلاع الموقع,استطلاع الموقع,تقارير استطلاع الموقع لمشاريع الطاقة,Site Survey — Energy Projects,YES,YES,YES,CANONICAL_SERVICE,
+SRV-006,JEA-SURV,استطلاع الموقع,استطلاع الموقع,تقارير استطلاع الموقع للمشاريع الحكومية,Site Survey — Government Projects,YES,YES,YES,CANONICAL_SERVICE,
+SRV-007,JEA-SURV,استطلاع الموقع,الحفريات,تقارير تدعيم الحفريات — تصميم وإشراف,Excavation Support — Design & Supervision,YES,YES,YES,CANONICAL_SERVICE,
+SRV-008,JEA-SURV,استطلاع الموقع,فحص المواد للأبنية,تقارير فحص المواد للأبنية المقترحة,Material Testing — Proposed Buildings,YES,YES,YES,CANONICAL_SERVICE,
+SRV-009,JEA-SURV,استطلاع الموقع,فحص المواد للأبنية,تقارير فحص مواد للأبنية القائمة / الدراسة الإنشائية,Material Testing — Existing / Structural Study,YES,YES,YES,CANONICAL_SERVICE,
+SRV-010,JEA-SURV,استطلاع الموقع,استطلاع الموقع,إعادة تصديق تقارير استطلاع الموقع مع إضافات,Survey Re-approval — With Additions,YES,YES,YES,CANONICAL_SERVICE,
+SRV-011,JEA-SURV,استطلاع الموقع,استطلاع الموقع,إعادة تصديق تقارير استطلاع الموقع بدون إضافات,Survey Re-approval — Without Additions,YES,YES,YES,CANONICAL_SERVICE,
+SRV-012,JEA-SURV,استطلاع الموقع,الحفريات,تقارير الحفريات — تصميم وإشراف,Excavation Reports — Design & Supervision,YES,YES,YES,CANONICAL_SERVICE,
+SRV-013,JEA-SURV,استطلاع الموقع,استطلاع الموقع,بدل فاقد,Replacement Copy,YES,YES,YES,CANONICAL_SERVICE,
+SRV-014,JEA-SURV,استطلاع الموقع,استطلاع الموقع,شهادة الكشف الحسي والكتب الرسمية,Visual Inspection Certificate & Official Letters,YES,YES,YES,CANONICAL_SERVICE,
+JEA-CERT,JEA-CERT,الشهادات,,الشهادات,Certificates (parent category),NO,NO,YES,PARENT_CATEGORY_NOT_SERVICE,Present in live DB from legacy JeaServicesSeeder; not a real electronic service — a catalog grouping only. Should be excluded from any per-service mapping.
+JEA-DEC,JEA-DEC,قرارات هيئة المكاتب الهندسية,,قرارات هيئة المكاتب الهندسية,Board Decisions (parent category),NO,NO,YES,PARENT_CATEGORY_NOT_SERVICE,Legacy parent; not a service.
+JEA-ENG,JEA-ENG,المهندسون العاملون في المكاتب الهندسية,,المهندسين العاملين في المكاتب الهندسية,Engineers (parent category),NO,NO,YES,PARENT_CATEGORY_NOT_SERVICE,Legacy parent; not a service.
+JEA-FIN,JEA-FIN,الخدمات المالية,,الخدمات المالية,Financial Services (parent category),NO,NO,YES,PARENT_CATEGORY_NOT_SERVICE,Legacy parent; not a service.
+JEA-MISC,JEA-MISC,خدمات أخرى,,خدمات أخرى,Other Services (parent category),NO,NO,YES,PARENT_CATEGORY_NOT_SERVICE,Legacy parent; not a service.
+JEA-PROJ,JEA-PROJ,خدمات تصديق المخططات الهندسية,,خدمات تصديق المخططات الهندسية,Engineering Drawings (parent category),NO,NO,YES,PARENT_CATEGORY_NOT_SERVICE,Legacy parent; not a service.
+JEA-SURV,JEA-SURV,استطلاع الموقع,,استطلاع الموقع,Site Survey (parent category),NO,YES,YES,PARENT_CATEGORY_NOT_SERVICE,Present in ServicePlan2026Seeder as a parent registration; not a bookable service. Only JEA-SURV catalog entry in the seeder (all real SRV-* services register under it).
+JEA-BP-001,,,,,طلب الموافقة على مخططات البناء,Building-Plan Approval Request,NO,NO,YES,LEGACY_DEMO_NOT_CANONICAL,From legacy JeaServicesSeeder (no longer wired into DatabaseSeeder). Row present in DB from a prior seed run; should be pruned.
+JEA-CERT-001,,,,,طلب شهادة خبرة هندسية,Engineering Experience Certificate Request,NO,NO,YES,LEGACY_DEMO_NOT_CANONICAL,Legacy demo; not part of the audited catalog.
+JEA-COMP-001,,,,,تسجيل شركة هندسية استشارية,Consulting Company Registration,NO,NO,YES,LEGACY_DEMO_NOT_CANONICAL,Legacy demo.
+JEA-LTR-001,,,,,طلب خطاب رسمي من النقابة,Official Letter Request,NO,NO,YES,LEGACY_DEMO_NOT_CANONICAL,Legacy demo.
+JEA-MEM-001,,,,,طلب انتساب مهندس جديد,New Engineer Membership Request,NO,NO,YES,LEGACY_DEMO_NOT_CANONICAL,Legacy demo.
+JEA-MEM-002,,,,,تجديد الاشتراك السنوي,Annual Membership Renewal,NO,NO,YES,LEGACY_DEMO_NOT_CANONICAL,Legacy demo.
+JEA-OFF-001,,,,,تسجيل مكتب هندسي,Engineering Office Registration,NO,NO,YES,LEGACY_DEMO_NOT_CANONICAL,Legacy demo.
+JEA-OFF-002,,,,,تجديد ترخيص مكتب هندسي,Office License Renewal,NO,NO,YES,LEGACY_DEMO_NOT_CANONICAL,Legacy demo.
+JEA-SOC-001,,,,,الانتساب لصندوق التكافل الاجتماعي,Social Solidarity Fund Membership,NO,NO,YES,LEGACY_DEMO_NOT_CANONICAL,Legacy demo.
+JEA-SURV-001,,,,,الكشف الميداني على الموقع,Field Site Inspection,NO,NO,YES,LEGACY_DEMO_NOT_CANONICAL,Legacy demo — name overlaps with the survey family but this is NOT SRV-001 and is not in the current seeder.
+MSC-013,,,,,(deliberately absent),(deliberately absent),NO,NO,NO,DELIBERATELY_ABSENT,Governance constitutional fact: MSC-013 must never be created. Row included here to make the absence explicit and searchable.
