@@ -74,12 +74,15 @@ class Srv001DatabaseSeederRegressionTest extends TestCase
         $this->assertContains('length_lm', $fieldIds,
             'length_lm must survive alongside the pilot fields');
 
-        // Document-count invariant: exactly 2 required documents.
-        $this->assertCount(2, $documents,
-            'SRV-001.schema.documents must have exactly 2 entries after full DatabaseSeeder — 0 is the observed defect');
+        // Document-count invariant: 4 entries (2 base required + 2 conditional
+        // for STK-CC-002 owner-match clearance path). Zero is the observed defect.
+        $this->assertCount(4, $documents,
+            'SRV-001.schema.documents must have 4 entries: 2 base (survey_contract, site_investigation_report) + 2 conditional (previous_office_clearance, previous_office_discharge) after full DatabaseSeeder');
         $docIds = array_column($documents, 'id');
         $this->assertContains('survey_contract', $docIds);
         $this->assertContains('site_investigation_report', $docIds);
+        $this->assertContains('previous_office_clearance', $docIds);
+        $this->assertContains('previous_office_discharge', $docIds);
 
         $contract = collect($documents)->firstWhere('id', 'survey_contract');
         $report   = collect($documents)->firstWhere('id', 'site_investigation_report');

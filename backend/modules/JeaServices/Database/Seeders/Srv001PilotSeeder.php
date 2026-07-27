@@ -332,6 +332,35 @@ class Srv001PilotSeeder extends Seeder
                     'source'                                 => 'كتاب التعليمات الفنية 2025 ص.37',
                 ],
             ],
+            // ── STK-2026-07-27-CC-002 conditional documents ────────────
+            //
+            // Declared with required=false so a first-time submission
+            // (no cadastral conflict) does not require them. The
+            // OwnerMatchClearanceGuard enforces required-when-owner-
+            // matches at submit time; the frontend shows the slots as
+            // optional-uploadable so applicants can attach them
+            // preemptively when they know they're on the same-owner
+            // clearance path.
+            [
+                'id'          => 'previous_office_clearance',
+                'label_ar'    => 'مخالصة من المكتب الهندسي السابق',
+                'label_en'    => 'Clearance from Previous Engineering Office',
+                'category'    => 'CONTRACT',
+                'required'    => false,
+                'accept'      => ['pdf'],
+                'max_size_mb' => 10,
+                'conditional_required_when' => 'owner_match_with_prior_office_application',
+            ],
+            [
+                'id'          => 'previous_office_discharge',
+                'label_ar'    => 'براءة ذمة رسمية من المكتب الهندسي السابق',
+                'label_en'    => 'Official Discharge from Previous Engineering Office',
+                'category'    => 'CONTRACT',
+                'required'    => false,
+                'accept'      => ['pdf'],
+                'max_size_mb' => 10,
+                'conditional_required_when' => 'owner_match_with_prior_office_application',
+            ],
         ];
     }
 

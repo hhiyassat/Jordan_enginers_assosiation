@@ -110,6 +110,26 @@ class Srv001PilotSeederTest extends TestCase
         );
     }
 
+    public function test_cc002_conditional_clearance_documents_present_and_optional(): void
+    {
+        // STK-2026-07-27-CC-002 declares two documents on the SRV-001 schema
+        // with required=false so first-time submissions (no owner-match conflict)
+        // are not gated on them. OwnerMatchClearanceGuard enforces them
+        // conditionally at submit time.
+        $docs = data_get($this->service('SRV-001')->schema, 'documents', []);
+        $clearance = collect($docs)->firstWhere('id', 'previous_office_clearance');
+        $discharge = collect($docs)->firstWhere('id', 'previous_office_discharge');
+
+        $this->assertNotNull($clearance, 'previous_office_clearance must be present in SRV-001 schema');
+        $this->assertNotNull($discharge, 'previous_office_discharge must be present in SRV-001 schema');
+        $this->assertFalse($clearance['required'], 'clearance must be required=false so SchemaValidator does not gate it — guard enforces conditionally');
+        $this->assertFalse($discharge['required'], 'discharge must be required=false — guard enforces conditionally');
+        $this->assertSame('CONTRACT', $clearance['category']);
+        $this->assertSame('CONTRACT', $discharge['category']);
+        $this->assertSame('owner_match_with_prior_office_application', $clearance['conditional_required_when']);
+        $this->assertSame('owner_match_with_prior_office_application', $discharge['conditional_required_when']);
+    }
+
     public function test_srv001_document_accept_agrees_with_pdf_or_dwg_rule(): void
     {
         // File-type contract: the extensions the seeder declares in

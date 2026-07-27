@@ -7,6 +7,7 @@ namespace Modules\JeaServices\Providers;
 use Illuminate\Support\ServiceProvider;
 use Modules\JeaServices\Engine\CadastralConflictGuard;
 use Modules\JeaServices\Engine\CrossCuttingSubmissionPipeline;
+use Modules\JeaServices\Engine\OwnerMatchClearanceGuard;
 use Modules\JeaServices\Engine\ServiceSubmissionGuardRegistry;
 use Modules\JeaServices\Engine\Srv001Guard;
 
@@ -64,13 +65,14 @@ class JeaServicesServiceProvider extends ServiceProvider
         //
         // Order matters — earlier guards short-circuit later ones. Current
         // order corresponds to STK-2026-07-27-CC-001 through -004:
-        //   1. CadastralConflictGuard      (CC-001, this session)
-        //   TODO CC-002 OwnerMatchClearanceGuard (extends CC-001; conditional docs)
+        //   1. CadastralConflictGuard      (CC-001) rejects different-owner conflicts
+        //   2. OwnerMatchClearanceGuard    (CC-002) requires clearance+discharge on same-owner conflicts
         //   TODO CC-003 QuotaRoutingGuard        (may fold in existing CapacityGuard)
         //   TODO CC-004 typed-notes taxonomy     (WorkflowEngine + ApplicationReview)
         $this->app->singleton(CrossCuttingSubmissionPipeline::class, function () {
             return new CrossCuttingSubmissionPipeline([
                 new CadastralConflictGuard(),
+                new OwnerMatchClearanceGuard(),
             ]);
         });
 
