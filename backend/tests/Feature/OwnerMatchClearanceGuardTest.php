@@ -187,6 +187,16 @@ class OwnerMatchClearanceGuardTest extends TestCase
             'floor_area'                     => 900,
             'length_lm'                      => 20,
             'actual_exploration_point_count' => 5,
+            // Meeting 2026-07-26 §IX required fields.
+            'contract_party_type'                     => 'متعاقد',
+            'tax_number'                              => '1234567890',
+            'contract_signed_at'                      => '2026-07-27',
+            'national_number'                         => '9701012345',
+            'building_count'                          => 1,
+            'has_partial_basement'                    => 'no',
+            'head_of_specialization_engineer_name'    => 'م. حسين',
+            'special_use_type'                        => 'none',
+            'exemption_flag'                          => 'no',
         ]);
         $this->uploadPdf($draft->id, 'survey_contract');
         $this->uploadPdf($draft->id, 'site_investigation_report');
@@ -213,6 +223,16 @@ class OwnerMatchClearanceGuardTest extends TestCase
             'floor_area'                     => 900,
             'length_lm'                      => 20,
             'actual_exploration_point_count' => 5,
+            // Meeting 2026-07-26 §IX required fields.
+            'contract_party_type'                     => 'متعاقد',
+            'tax_number'                              => '1234567890',
+            'contract_signed_at'                      => '2026-07-27',
+            'national_number'                         => '9701012345',
+            'building_count'                          => 1,
+            'has_partial_basement'                    => 'no',
+            'head_of_specialization_engineer_name'    => 'م. حسين',
+            'special_use_type'                        => 'none',
+            'exemption_flag'                          => 'no',
         ]);
         $this->uploadPdf($draft->id, 'survey_contract');
         $this->uploadPdf($draft->id, 'site_investigation_report');

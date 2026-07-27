@@ -92,6 +92,47 @@ class Srv001PilotSeederTest extends TestCase
         $this->assertSame('SRV-006', $govRule['target']);
     }
 
+    public function test_meeting_2026_07_26_fields_are_present_in_schema(): void
+    {
+        // Pins the field set added post-JEA-meeting so a future edit can't
+        // silently drop them. Test lives in the seeder-invariants file
+        // rather than a bespoke one to co-locate schema pins.
+        $ids = collect(data_get($this->service('SRV-001')->schema, 'fields', []))
+            ->pluck('id')->all();
+
+        foreach ([
+            'contract_party_type',
+            'tax_number',
+            'contract_signed_at',
+            'national_number',
+            'dls_key',
+            'building_count',
+            'has_partial_basement',
+            'basement_area_m2',
+            'roof_area_m2',
+            'head_of_specialization_engineer_name',
+            'head_of_specialization_engineer_number',
+            'special_use_type',
+            'special_use_entity_name',
+            'exemption_flag',
+            'exemption_type',
+            'meeting_wells_count',
+            'meeting_net_depth_total_m',
+        ] as $expected) {
+            $this->assertContains($expected, $ids, "SRV-001 field '{$expected}' from 2026-07-26 meeting missing");
+        }
+    }
+
+    public function test_meeting_computed_fields_are_read_only(): void
+    {
+        $fields = collect(data_get($this->service('SRV-001')->schema, 'fields', []));
+        foreach (['meeting_wells_count', 'meeting_net_depth_total_m'] as $id) {
+            $f = $fields->firstWhere('id', $id);
+            $this->assertNotNull($f, "field {$id} missing");
+            $this->assertTrue($f['read_only'] ?? false, "field {$id} must be read_only — populated server-side by Srv001Guard");
+        }
+    }
+
     public function test_both_required_documents_exist_in_correct_categories(): void
     {
         $docs = data_get($this->service('SRV-001')->schema, 'documents', []);
