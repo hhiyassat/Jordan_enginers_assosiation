@@ -45,11 +45,17 @@ const LegalFinesAdmin         = React.lazy(() => import('./modules/JeaDiscipline
 const SupervisionTransfersAdmin = React.lazy(() => import('./modules/JeaDiscipline/pages/SupervisionTransfersAdmin').then(m => ({ default: m.SupervisionTransfersAdmin })));
 const ChangeCredentials       = React.lazy(() => import('./platform/pages/auth/ChangeCredentials').then(m => ({ default: m.ChangeCredentials })));
 const Profile                 = React.lazy(() => import('./platform/pages/auth/Profile').then(m => ({ default: m.Profile })));
+const RegisterOfficePage      = React.lazy(() => import('./pages/public/RegisterOfficePage').then(m => ({ default: m.RegisterOfficePage })));
+const AdminOfficeRegistrations = React.lazy(() => import('./pages/admin/AdminOfficeRegistrations').then(m => ({ default: m.AdminOfficeRegistrations })));
 
 export function AppRoutes(): JSX.Element {
   return (
     <Routes>
       <Route path="/login" element={<RequireGuest><LoginPage /></RequireGuest>} />
+
+      {/* Public office signup — no auth. Rate-limited server-side.
+          See docs/architecture/office-registration-flow.md. */}
+      <Route path="/register-office" element={<RegisterOfficePage />} />
 
       {/* First-login credential change — reachable by an authenticated user
           carrying the must_change_password flag. Rendered without Layout so
@@ -115,6 +121,9 @@ export function AppRoutes(): JSX.Element {
 
       {/* User management — admin + superuser */}
       <Route path="/admin/users" element={<RequireUserManager><Layout><UserManagement /></Layout></RequireUserManager>} />
+
+      {/* Office-registration review (public signups from /register-office) */}
+      <Route path="/admin/office-registrations" element={<RequireAdmin><Layout><AdminOfficeRegistrations /></Layout></RequireAdmin>} />
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

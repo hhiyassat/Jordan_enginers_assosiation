@@ -162,10 +162,21 @@ class ServiceCatalogController extends Controller
     // consume the trait so the 423 envelope stays consistent.
 
     // ── Public catalog (active only) ──────────────────────────────────
+    //
+    // JEA-CATALOG: The service catalog is JEA-owned and shared across every
+    // office tenant. `service_definitions.code` is globally UNIQUE, which is
+    // the schema-level statement that codes describe a single JEA catalog —
+    // not one catalog per tenant. So the read paths bypass the per-org global
+    // scope via ::withoutOrgScope(). Admin write paths above keep the scope,
+    // so only the org that seeded the catalog (demo/JEA) can edit it.
+    //
+    // Without this, every newly-approved office would see an empty catalog
+    // and be unable to submit any service — since the office-registration
+    // approval flow does not (and should not) clone service definitions.
 
     public function index(Request $request): JsonResponse
     {
-        $services = ServiceDefinition::where('organization_id', $request->user()->organization_id)
+        $services = ServiceDefinition::withoutOrgScope()
             ->where('status', 'active')
             ->get([
                 'id', 'code', 'parent_code',
@@ -194,7 +205,8 @@ class ServiceCatalogController extends Controller
 
     public function show(Request $request, string $code): JsonResponse
     {
-        $service = ServiceDefinition::where('organization_id', $request->user()->organization_id)
+        // JEA-CATALOG: shared catalog — see index() comment above.
+        $service = ServiceDefinition::withoutOrgScope()
             ->where('code', $code)
             ->where('status', 'active')
             ->firstOrFail();

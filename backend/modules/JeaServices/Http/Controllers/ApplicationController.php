@@ -153,8 +153,12 @@ class ApplicationController extends Controller
             return response()->json(['message' => 'المسؤولون والموظفون لا يمكنهم تقديم طلبات.'], 403);
         }
 
-        // P-5: Organization-scoped service lookup
-        $service = ServiceDefinition::where('organization_id', $request->user()->organization_id)
+        // JEA-CATALOG: services are JEA-owned and shared across every tenant.
+        // The submitted Application row is still tenant-scoped (auto-assigned
+        // by BelongsToOrganization trait on create), so the application
+        // belongs to the applicant's office — only the service *definition*
+        // is looked up from the shared catalog. See ServiceCatalogController::index.
+        $service = ServiceDefinition::withoutOrgScope()
             ->where('code', $request->service_code)
             ->where('status', 'active')
             ->firstOrFail();

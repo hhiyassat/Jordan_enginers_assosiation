@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, Home, FileText, ShieldCheck, Settings, ClipboardList,
   PlusCircle, Zap, User as UserIcon, Building2, Gavel, Scale, ArrowRightLeft,
-  DollarSign,
+  DollarSign, UserPlus,
   type LucideIcon,
 } from 'lucide-react';
 import type { User } from '../types';
@@ -52,6 +52,8 @@ export function navItemsForRole(role: User['role'] | undefined): NavItem[] {
   // Admin-only (superuser scope is user-management, not quota / discipline).
   if (role === 'admin') {
     items.push({ to: '/admin/offices',                labelKey: 'nav.officesSettings',      Icon: Building2 });
+    // Public office signups awaiting JEA review + approval.
+    items.push({ to: '/admin/office-registrations',   labelKey: 'nav.officeRegistrations',  Icon: UserPlus });
     items.push({ to: '/admin/complaints',             labelKey: 'nav.complaints',           Icon: Gavel });
     items.push({ to: '/admin/legal-fines',            labelKey: 'nav.legalFines',           Icon: Scale });
     items.push({ to: '/admin/supervision-transfers',  labelKey: 'nav.supervisionTransfers', Icon: ArrowRightLeft });

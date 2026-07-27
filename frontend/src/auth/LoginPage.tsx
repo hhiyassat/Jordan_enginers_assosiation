@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 import { Building2, User as UserIcon, Eye, EyeOff, AlertTriangle, LogIn } from 'lucide-react';
 import { authApi } from '../api/client';
 import { JEALogo } from '../components/JEALogo';
@@ -195,6 +196,18 @@ export function LoginPage(): JSX.Element {
                 <p dir="ltr">admin@demo.esp · staff@demo.esp · auditor@demo.esp · ahmed@demo.esp</p>
               </div>
             )}
+
+            {/* Public office signup link. Server rate-limits the endpoint. */}
+            <p className="text-center text-xs text-jea-muted pt-2 border-t border-jea-border">
+              {i18n.language.startsWith('ar') ? 'مكتب جديد؟ ' : 'New office? '}
+              <Link
+                to="/register-office"
+                data-testid="login-register-office-link"
+                className="font-semibold text-jea-primary hover:underline"
+              >
+                {i18n.language.startsWith('ar') ? 'تسجيل مكتب هندسي' : 'Register your engineering office'}
+              </Link>
+            </p>
           </form>
         </div>
 

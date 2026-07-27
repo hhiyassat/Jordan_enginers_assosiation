@@ -7,6 +7,8 @@ namespace Modules\JeaServices\Providers;
 use Illuminate\Support\ServiceProvider;
 use Modules\JeaServices\Engine\CadastralConflictGuard;
 use Modules\JeaServices\Engine\CrossCuttingSubmissionPipeline;
+use Modules\JeaServices\Engine\FakeJeaMembershipVerifier;
+use Modules\JeaServices\Engine\JeaMembershipVerifier;
 use Modules\JeaServices\Engine\OwnerMatchClearanceGuard;
 use Modules\JeaServices\Engine\ServiceSubmissionGuardRegistry;
 use Modules\JeaServices\Engine\Srv001Guard;
@@ -87,6 +89,15 @@ class JeaServicesServiceProvider extends ServiceProvider
                 Srv001Guard::SERVICE_CODE => new Srv001Guard(),
             ]);
         });
+
+        // JEA membership verifier — external syndicate API abstraction.
+        // FakeJeaMembershipVerifier is the default for demo + tests
+        // (accepts any non-empty name+number). When the real HTTP API
+        // becomes available, swap the binding here for HttpJea...Verifier
+        // — everything downstream (OfficeRegistrationValidator + the
+        // registration flow) depends on the interface only.
+        // See docs/architecture/office-registration-flow.md.
+        $this->app->bind(JeaMembershipVerifier::class, FakeJeaMembershipVerifier::class);
     }
 
     public function boot(): void

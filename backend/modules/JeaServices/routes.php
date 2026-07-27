@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Route;
 use Modules\JeaServices\Http\Controllers\ApplicationController;
 use Modules\JeaServices\Http\Controllers\CertificatesController;
 use Modules\JeaServices\Http\Controllers\ManualReferenceController;
+use Modules\JeaServices\Http\Controllers\OfficeRegistrationController;
 use Modules\JeaServices\Http\Controllers\PaymentsController;
 use Modules\JeaServices\Http\Controllers\ReviewDashboardController;
 use Modules\JeaServices\Http\Controllers\ReviewQueueController;
@@ -64,6 +65,12 @@ Route::prefix('api/v1')->group(function () {
     // (applicants get the URL from the app-detail endpoint; third
     // parties get the token from the printed certificate QR).
     Route::get('certificates/{certNumber}/pdf', [CertificatesController::class, 'downloadPdf']);
+
+    // Office-registration signup — anonymous submit. Rate-limited so a
+    // scripted attacker can't flood the queue with junk registrations.
+    // See docs/architecture/office-registration-flow.md.
+    Route::post('office-registrations', [OfficeRegistrationController::class, 'submit'])
+        ->middleware('throttle:5,1');
 });
 
 // ── Authenticated surface ─────────────────────────────────────────
@@ -128,5 +135,12 @@ Route::prefix('api/v1')->middleware(['auth:sanctum', 'token.inactivity', 'passwo
         // and the acknowledge endpoint clears the flag once dev updates.
         Route::patch('admin/manual-references/{id}',         [ManualReferenceController::class, 'update']);
         Route::post ('admin/manual-references/{id}/ack',     [ManualReferenceController::class, 'acknowledge']);
+
+        // Office-registration review (approve/reject public signups).
+        // See docs/architecture/office-registration-flow.md.
+        Route::get ('admin/office-registrations',                 [OfficeRegistrationController::class, 'index']);
+        Route::get ('admin/office-registrations/{id}',            [OfficeRegistrationController::class, 'show']);
+        Route::post('admin/office-registrations/{id}/approve',    [OfficeRegistrationController::class, 'approve']);
+        Route::post('admin/office-registrations/{id}/reject',     [OfficeRegistrationController::class, 'reject']);
     });
 });
