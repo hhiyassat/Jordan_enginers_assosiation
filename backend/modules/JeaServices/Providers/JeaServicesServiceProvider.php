@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Modules\JeaServices\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Modules\JeaServices\Engine\CadastralConflictGuard;
+use Modules\JeaServices\Engine\CrossCuttingSubmissionPipeline;
 use Modules\JeaServices\Engine\ServiceSubmissionGuardRegistry;
 use Modules\JeaServices\Engine\Srv001Guard;
 
@@ -54,6 +56,24 @@ class JeaServicesServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        // Cross-cutting submission pipeline — runs for EVERY application
+        // in ApplicationController::submit before the per-service guard
+        // registry. Each guard here decides whether it applies to the
+        // current application (typically by inspecting schema.fields).
+        // See docs/architecture/cross-cutting-submission-pipeline.md.
+        //
+        // Order matters — earlier guards short-circuit later ones. Current
+        // order corresponds to STK-2026-07-27-CC-001 through -004:
+        //   1. CadastralConflictGuard      (CC-001, this session)
+        //   TODO CC-002 OwnerMatchClearanceGuard (extends CC-001; conditional docs)
+        //   TODO CC-003 QuotaRoutingGuard        (may fold in existing CapacityGuard)
+        //   TODO CC-004 typed-notes taxonomy     (WorkflowEngine + ApplicationReview)
+        $this->app->singleton(CrossCuttingSubmissionPipeline::class, function () {
+            return new CrossCuttingSubmissionPipeline([
+                new CadastralConflictGuard(),
+            ]);
+        });
+
         // ApplicationController resolves this registry to run any
         // service-specific submission guard. The controller itself never
         // mentions service codes — new services with special submit-time

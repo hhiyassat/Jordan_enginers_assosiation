@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\JeaServices\Http\Controllers;
 
+use Modules\JeaServices\Engine\CrossCuttingSubmissionPipeline;
 use Modules\JeaServices\Engine\FeeCalculator;
 use Modules\JeaServices\Engine\SchemaValidator;
 use Modules\JeaServices\Engine\ServiceSubmissionGuardRegistry;
@@ -261,6 +262,21 @@ class ApplicationController extends Controller
             return response()->json([
                 'message' => 'يوجد مستندات مطلوبة غير مرفوعة.',
                 'errors'  => $docErrors,
+            ], 422);
+        }
+
+        // Cross-cutting submission pipeline — platform-wide invariants
+        // that apply to EVERY service regardless of code. Each guard
+        // decides its own scope (typically by inspecting the schema).
+        // Runs BEFORE the per-service guard registry — a cadastral
+        // conflict (CC-001) should reject before we spend cycles on
+        // service-specific validation. See
+        // docs/architecture/cross-cutting-submission-pipeline.md.
+        $crossCuttingErrors = app(CrossCuttingSubmissionPipeline::class)->validate($app);
+        if ($crossCuttingErrors) {
+            return response()->json([
+                'message' => 'لا يمكن تقديم الطلب. تحقق من الشروط العامة للتقديم.',
+                'errors'  => $crossCuttingErrors,
             ], 422);
         }
 
