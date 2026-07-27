@@ -4,15 +4,36 @@ namespace Modules\JeaServices\Models;
 
 use App\Models\Concerns\BelongsToOrganization;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 
 /**
  * ServiceDefinition
  *
  * BR-001: schema JSON column is the source of truth for the entire service.
  * BR-005: workflow stages are read from schema, never hardcoded.
+ *
+ * @property int $id
+ * @property int $organization_id
+ * @property string $code
+ * @property string $name_ar
+ * @property string $name_en
+ * @property string|null $description_ar
+ * @property string|null $description_en
+ * @property string $currency
+ * @property array<string, mixed> $schema
+ * @property string $status
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property string|null $parent_code
+ * @property string|null $base_fee
+ * @property int|null $sla_hours
+ * @property Carbon|null $deleted_at
+ * @property int|null $phase
+ * @property string|null $subcategory_ar
+ * @property string|null $subcategory_en
+ * @property bool $is_locked
  */
 class ServiceDefinition extends Model
 {
@@ -27,10 +48,10 @@ class ServiceDefinition extends Model
     ];
 
     protected $casts = [
-        'schema'    => 'array',
-        'base_fee'  => 'decimal:2',
+        'schema' => 'array',
+        'base_fee' => 'decimal:2',
         'sla_hours' => 'integer',
-        'phase'     => 'integer',
+        'phase' => 'integer',
         'is_locked' => 'boolean',
     ];
 
@@ -48,6 +69,7 @@ class ServiceDefinition extends Model
     // ── Relationships ─────────────────────────────────────────────────
     // organization() provided by BelongsToOrganization trait
 
+    /** @return HasMany<Application, $this> */
     public function applications(): HasMany
     {
         return $this->hasMany(Application::class);
@@ -69,6 +91,7 @@ class ServiceDefinition extends Model
                 return $stage;
             }
         }
+
         return null;
     }
 
@@ -95,6 +118,7 @@ class ServiceDefinition extends Model
                 return $stage;
             }
         }
+
         return $this->getFirstStage();
     }
 

@@ -7,6 +7,7 @@ namespace Modules\JeaServices\Models;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 /**
  * ManualReference — قاعدة واحدة من كتاب التعليمات الفنية 2025،
@@ -15,6 +16,24 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * يُعرَض للمستخدمين عبر أيقونة (?) بجانب الحقل أو القاعدة المطبَّقة،
  * قابل للتعديل من قبل admin/superuser، ويسبِّب flag على dashboard عند
  * التعديل ليُذكِّر الفريق التقني بمراجعة الكود.
+ *
+ * @property int $id
+ * @property string|null $chapter
+ * @property string|null $section
+ * @property int|null $page
+ * @property string|null $rule_type
+ * @property string $text_ar
+ * @property string $text_ar_original
+ * @property string|null $jord_ticket
+ * @property string $target_type
+ * @property string|null $target_id
+ * @property string|null $target_service_code
+ * @property int|null $edited_by
+ * @property Carbon|null $edited_at
+ * @property bool $needs_reimplementation
+ * @property string|null $edit_reason
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  */
 class ManualReference extends Model
 {
@@ -26,11 +45,12 @@ class ManualReference extends Model
     ];
 
     protected $casts = [
-        'page'                    => 'integer',
-        'edited_at'               => 'datetime',
-        'needs_reimplementation'  => 'boolean',
+        'page' => 'integer',
+        'edited_at' => 'datetime',
+        'needs_reimplementation' => 'boolean',
     ];
 
+    /** @return BelongsTo<User, $this> */
     public function editor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'edited_by');

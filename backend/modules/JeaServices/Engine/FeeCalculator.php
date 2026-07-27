@@ -25,11 +25,13 @@ class FeeCalculator
 {
     /** Precision used inside bcmath calls before final rounding. */
     private const CALC_SCALE = 6;
+
     /** Decimals persisted on applications.fee_amount (matches the DB cast). */
     private const STORAGE_SCALE = 2;
 
     public function __construct(private readonly ServiceDefinition $service) {}
 
+    /** @param array<string, mixed> $formData */
     public function calculate(array $formData): float
     {
         // Backwards-compatible entry: return the total only. Callers
@@ -55,6 +57,7 @@ class FeeCalculator
      * same but the surcharges array is empty. The old calculate()
      * behaviour is preserved verbatim — no caller change forced.
      *
+     * @param  array<string, mixed>  $formData
      * @return array{base: float, surcharges: list<array<string, mixed>>, total: float, currency: string}
      */
     public function calculateBreakdown(array $formData): array
@@ -83,11 +86,11 @@ class FeeCalculator
         }
 
         $baseDecimal = match ($fee['type'] ?? 'fixed') {
-            'tiered'   => $this->tiered($fee, $formData),
-            'formula'  => $this->formula($fee, $formData),
-            'matrix'   => $this->matrix($fee, $formData),
+            'tiered' => $this->tiered($fee, $formData),
+            'formula' => $this->formula($fee, $formData),
+            'matrix' => $this->matrix($fee, $formData),
             'per_unit' => $this->perUnit($fee, $formData),
-            default    => $this->toDecimal($fee['amount'] ?? 0),
+            default => $this->toDecimal($fee['amount'] ?? 0),
         };
         $base = $this->finalize($baseDecimal);
 
@@ -96,25 +99,29 @@ class FeeCalculator
         $surcharges = [];
         $totalDecimal = $baseDecimal;
         foreach ($fee['surcharges'] ?? [] as $s) {
-            if (!is_array($s)) continue;
+            if (! is_array($s)) {
+                continue;
+            }
             $amountDecimal = $this->surchargeAmount($s, $baseDecimal, $formData);
-            if ($amountDecimal === null) continue;
+            if ($amountDecimal === null) {
+                continue;
+            }
 
             $surcharges[] = [
-                'code'     => (string) ($s['code'] ?? ''),
-                'kind'     => (string) ($s['kind'] ?? ''),
+                'code' => (string) ($s['code'] ?? ''),
+                'kind' => (string) ($s['kind'] ?? ''),
                 'label_ar' => (string) ($s['label_ar'] ?? ''),
                 'label_en' => (string) ($s['label_en'] ?? ''),
-                'amount'   => $this->finalize($amountDecimal),
+                'amount' => $this->finalize($amountDecimal),
             ];
             $totalDecimal = bcadd($totalDecimal, $amountDecimal, self::CALC_SCALE);
         }
 
         return [
-            'base'       => $base,
+            'base' => $base,
             'surcharges' => $surcharges,
-            'total'      => $this->finalize($totalDecimal),
-            'currency'   => $currency,
+            'total' => $this->finalize($totalDecimal),
+            'currency' => $currency,
         ];
     }
 
@@ -126,6 +133,9 @@ class FeeCalculator
      * Supported kinds:
      *   percent_of_base — amount = base × rate  (rate as fraction, 0.01 = 1%)
      *   per_unit        — amount = form[basis] × rate  (with optional min/max)
+     *
+     * @param  array<string, mixed>  $s
+     * @param  array<string, mixed>  $formData
      */
     private function surchargeAmount(array $s, string $baseDecimal, array $formData): ?string
     {
@@ -133,6 +143,7 @@ class FeeCalculator
 
         if ($kind === 'percent_of_base') {
             $rate = $this->toDecimal($s['rate'] ?? 0);
+
             return bcmul($baseDecimal, $rate, self::CALC_SCALE);
         }
 
@@ -141,10 +152,15 @@ class FeeCalculator
             // capping / floor logic in one place.
             $synthetic = [
                 'basis' => $s['basis'] ?? null,
-                'rate'  => $s['rate']  ?? 0,
+                'rate' => $s['rate'] ?? 0,
             ];
-            if (array_key_exists('min', $s)) $synthetic['min'] = $s['min'];
-            if (array_key_exists('max', $s)) $synthetic['max'] = $s['max'];
+            if (array_key_exists('min', $s)) {
+                $synthetic['min'] = $s['min'];
+            }
+            if (array_key_exists('max', $s)) {
+                $synthetic['max'] = $s['max'];
+            }
+
             return $this->perUnit($synthetic, $formData);
         }
 
@@ -178,13 +194,16 @@ class FeeCalculator
      * a partial match) — an incomplete form must not silently produce
      * a wrong bill. The submit path enforces `required` on the form
      * fields separately, so this branch only runs on well-formed input.
+     *
+     * @param  array<string, mixed>  $fee
+     * @param  array<string, mixed>  $formData
      */
     private function matrix(array $fee, array $formData): string
     {
-        $keys    = is_array($fee['keys'] ?? null)    ? $fee['keys']    : [];
-        $rates   = is_array($fee['rates'] ?? null)   ? $fee['rates']   : [];
+        $keys = is_array($fee['keys'] ?? null) ? $fee['keys'] : [];
+        $rates = is_array($fee['rates'] ?? null) ? $fee['rates'] : [];
         $buckets = is_array($fee['buckets'] ?? null) ? $fee['buckets'] : [];
-        $basis   = is_string($fee['basis'] ?? null)  ? $fee['basis']   : null;
+        $basis = is_string($fee['basis'] ?? null) ? $fee['basis'] : null;
         $default = $this->toDecimal($fee['default'] ?? 0);
 
         // Compose the lookup key by joining the (optionally-bucketed) form
@@ -192,9 +211,13 @@ class FeeCalculator
         // whole lookup to default — safer than partial-key matching.
         $parts = [];
         foreach ($keys as $key) {
-            if (!is_string($key)) return $default;
+            if (! is_string($key)) {
+                return $default;
+            }
             $raw = $formData[$key] ?? null;
-            if (!is_string($raw) && !is_int($raw)) return $default;
+            if (! is_string($raw) && ! is_int($raw)) {
+                return $default;
+            }
             $bucketMap = is_array($buckets[$key] ?? null) ? $buckets[$key] : [];
             $parts[] = (string) ($bucketMap[$raw] ?? $raw);
         }
@@ -219,14 +242,19 @@ class FeeCalculator
         if (bccomp($total, '0', self::CALC_SCALE) < 0) {
             return '0';
         }
+
         return $total;
     }
 
+    /**
+     * @param  array<string, mixed>  $fee
+     * @param  array<string, mixed>  $formData
+     */
     private function tiered(array $fee, array $formData): string
     {
         $fieldValue = $formData[$fee['field'] ?? ''] ?? null;
-        $tiers      = is_array($fee['tiers'] ?? null) ? $fee['tiers'] : [];
-        $default    = $this->toDecimal($fee['default'] ?? 0);
+        $tiers = is_array($fee['tiers'] ?? null) ? $fee['tiers'] : [];
+        $default = $this->toDecimal($fee['default'] ?? 0);
 
         // Only string/int keys are meaningful as tier lookups; anything
         // else silently falls back to default rather than tripping the
@@ -236,20 +264,25 @@ class FeeCalculator
                 return $this->toDecimal($tiers[$fieldValue]);
             }
         }
+
         return $default;
     }
 
+    /**
+     * @param  array<string, mixed>  $fee
+     * @param  array<string, mixed>  $formData
+     */
     private function formula(array $fee, array $formData): string
     {
         // fee = base + (rate * field_value), floored at 0.
-        $base  = $this->toDecimal($fee['base'] ?? 0);
-        $rate  = $this->toDecimal($fee['rate'] ?? 0);
+        $base = $this->toDecimal($fee['base'] ?? 0);
+        $rate = $this->toDecimal($fee['rate'] ?? 0);
         $field = is_string($fee['field'] ?? null) ? $fee['field'] : null;
-        $raw   = $field ? ($formData[$field] ?? 0) : 0;
+        $raw = $field ? ($formData[$field] ?? 0) : 0;
         $value = $this->toDecimal($raw);
 
         $product = bcmul($rate, $value, self::CALC_SCALE);
-        $total   = bcadd($base, $product, self::CALC_SCALE);
+        $total = bcadd($base, $product, self::CALC_SCALE);
 
         // Floor at zero — a schema-authored negative rate * positive value
         // would otherwise produce a refund-shaped fee, which the
@@ -257,6 +290,7 @@ class FeeCalculator
         if (bccomp($total, '0', self::CALC_SCALE) < 0) {
             return '0';
         }
+
         return $total;
     }
 
@@ -280,11 +314,14 @@ class FeeCalculator
      *   }
      *
      * Missing / non-numeric basis → 0 (same rationale as matrix()).
+     *
+     * @param  array<string, mixed>  $fee
+     * @param  array<string, mixed>  $formData
      */
     private function perUnit(array $fee, array $formData): string
     {
         $basis = is_string($fee['basis'] ?? null) ? $fee['basis'] : null;
-        $rate  = $this->toDecimal($fee['rate'] ?? 0);
+        $rate = $this->toDecimal($fee['rate'] ?? 0);
 
         $basisValue = $basis && is_numeric($formData[$basis] ?? null)
             ? $this->toDecimal($formData[$basis])
@@ -312,6 +349,7 @@ class FeeCalculator
         if (bccomp($total, '0', self::CALC_SCALE) < 0) {
             return '0';
         }
+
         return $total;
     }
 
@@ -324,9 +362,16 @@ class FeeCalculator
      */
     private function toDecimal(mixed $value): string
     {
-        if (is_int($value))    return (string) $value;
-        if (is_float($value))  return number_format($value, self::CALC_SCALE, '.', '');
-        if (is_string($value) && is_numeric($value)) return $value;
+        if (is_int($value)) {
+            return (string) $value;
+        }
+        if (is_float($value)) {
+            return number_format($value, self::CALC_SCALE, '.', '');
+        }
+        if (is_string($value) && is_numeric($value)) {
+            return $value;
+        }
+
         return '0';
     }
 
@@ -337,11 +382,11 @@ class FeeCalculator
         // (or subtracted for negatives) before bcmath's implicit
         // truncation to storage scale. This avoids the banker's-rounding
         // drift a plain (float) cast would introduce.
-        $offset     = bcdiv('5', bcpow('10', (string) (self::STORAGE_SCALE + 1), 0), self::CALC_SCALE + 2);
+        $offset = bcdiv('5', bcpow('10', (string) (self::STORAGE_SCALE + 1), 0), self::CALC_SCALE + 2);
         $withOffset = bccomp($amount, '0', self::CALC_SCALE) >= 0
             ? bcadd($amount, $offset, self::CALC_SCALE + 2)
             : bcsub($amount, $offset, self::CALC_SCALE + 2);
-        $truncated  = bcadd($withOffset, '0', self::STORAGE_SCALE);
+        $truncated = bcadd($withOffset, '0', self::STORAGE_SCALE);
 
         return (float) $truncated;
     }

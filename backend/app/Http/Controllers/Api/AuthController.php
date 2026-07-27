@@ -6,13 +6,15 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Middleware\ReadTokenFromCookie;
-use App\Models\AuditLog;
+use App\Http\Requests\ChangePasswordRequest;
+use App\Http\Requests\LoginRequest;
+use App\Http\Requests\RegisterRequest;
+use App\Http\Requests\UpdateProfileRequest;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rules\Password;
 use Symfony\Component\HttpFoundation\Cookie as SymfonyCookie;
 
 /**
@@ -24,12 +26,9 @@ use Symfony\Component\HttpFoundation\Cookie as SymfonyCookie;
  */
 class AuthController extends Controller
 {
-    public function login(Request $request): JsonResponse
+    public function login(LoginRequest $request): JsonResponse
     {
-        $data = $request->validate([
-            'email'    => ['required', 'email'],
-            'password' => ['required', 'string'],
-        ]);
+        $data = $request->validated();
 
         $user = User::where('email', $data['email'])
             ->where('is_active', true)
@@ -52,7 +51,7 @@ class AuthController extends Controller
         return response()
             ->json([
                 'token' => $token,
-                'user'  => $this->userPayload($user),
+                'user' => $this->userPayload($user),
             ])
             ->withCookie($this->buildSessionCookie($token));
     }
@@ -75,6 +74,7 @@ class AuthController extends Controller
         // sanctum guard reads the Authorization header and returns null
         // for guests instead of throwing / redirecting.
         $user = auth('sanctum')->user();
+
         return response()->json([
             'user' => $user instanceof User ? $this->userPayload($user) : null,
         ]);
@@ -83,6 +83,7 @@ class AuthController extends Controller
     public function logout(Request $request): JsonResponse
     {
         $request->user()->currentAccessToken()->delete();
+
         return response()
             ->json(['message' => 'تم تسجيل الخروج.'])
             // JORD-30: clear the httpOnly cookie so a stolen browser
@@ -115,14 +116,14 @@ class AuthController extends Controller
     private function buildSessionCookie(string $token): SymfonyCookie
     {
         return Cookie::make(
-            name:     ReadTokenFromCookie::COOKIE_NAME,
-            value:    $token,
-            minutes:  self::sessionLifetimeMinutes(),
-            path:     '/',
-            domain:   null,
-            secure:   self::cookieSecureFlag(),
+            name: ReadTokenFromCookie::COOKIE_NAME,
+            value: $token,
+            minutes: self::sessionLifetimeMinutes(),
+            path: '/',
+            domain: null,
+            secure: self::cookieSecureFlag(),
             httpOnly: true,
-            raw:      false,
+            raw: false,
             sameSite: 'strict',
         );
     }
@@ -135,6 +136,7 @@ class AuthController extends Controller
     private static function sessionLifetimeMinutes(): int
     {
         $raw = (int) env('ESP_SESSION_LIFETIME_MINUTES', 480);
+
         return max(30, min($raw, 60 * 24 * 30)); // 30 min .. 30 days
     }
 
@@ -147,29 +149,24 @@ class AuthController extends Controller
     private static function cookieSecureFlag(): bool
     {
         $mode = strtolower((string) env('ESP_SESSION_COOKIE_SECURE', 'auto'));
+
         return match ($mode) {
-            'true', '1', 'yes'  => true,
-            'false', '0', 'no'  => false,
-            default             => app()->environment('production'),
+            'true', '1', 'yes' => true,
+            'false', '0', 'no' => false,
+            default => app()->environment('production'),
         };
     }
 
-    public function register(Request $request): JsonResponse
+    public function register(RegisterRequest $request): JsonResponse
     {
-        $data = $request->validate([
-            'name'             => ['required', 'string', 'max:255'],
-            'email'            => ['required', 'email', 'unique:users,email'],
-            'password'         => ['required', 'confirmed', Password::min(8)->mixedCase()->numbers()],
-            'organization_id'  => ['required', 'exists:organizations,id'],
-            'phone'            => ['nullable', 'string', 'max:20'],
-        ]);
+        $data = $request->validated();
 
         $user = User::create([
-            'organization_id'    => $data['organization_id'],
-            'name'               => $data['name'],
-            'email'              => $data['email'],
-            'password'           => Hash::make($data['password']),
-            'role'               => 'applicant',
+            'organization_id' => $data['organization_id'],
+            'name' => $data['name'],
+            'email' => $data['email'],
+            'password' => Hash::make($data['password']),
+            'role' => 'applicant',
             'password_changed_at' => now(),
         ]);
 
@@ -179,7 +176,7 @@ class AuthController extends Controller
         return response()
             ->json([
                 'token' => $token,
-                'user'  => $this->userPayload($user),
+                'user' => $this->userPayload($user),
             ], 201)
             ->withCookie($this->buildSessionCookie($token));
     }
@@ -192,36 +189,22 @@ class AuthController extends Controller
      * legitimate rotation path is `php artisan user:credentials`. This makes
      * a stolen superuser token useless for lateral escalation.
      */
-    public function changePassword(Request $request): JsonResponse
+    public function changePassword(ChangePasswordRequest $request): JsonResponse
     {
+        // ChangePasswordRequest::authorize() already blocks a superuser
+        // who has completed their initial credential rotation — see its
+        // docblock for why that check lives there instead of here.
         $user = $request->user();
-
-        // Superusers who already changed initial creds can't rotate via API.
-        if ($user->isSuperuser() && ! $user->must_change_password) {
-            return response()->json([
-                'message' => 'يمكن تغيير بيانات المستخدم الأعلى فقط من خلال سطر الأوامر: '
-                           . 'php artisan user:credentials ' . $user->email,
-            ], 403);
-        }
-
-        $rules = [
-            'current_password' => ['required', 'string'],
-            'password'         => ['required', 'confirmed', Password::min(8)->mixedCase()->numbers()],
-        ];
-        // On first login the superuser may pick their own login email.
-        if ($user->isSuperuser() && $user->must_change_password) {
-            $rules['email'] = ['sometimes', 'email', 'unique:users,email,' . $user->id];
-        }
-        $data = $request->validate($rules);
+        $data = $request->validated();
 
         if (! Hash::check($data['current_password'], $user->password)) {
             return response()->json(['message' => 'كلمة المرور الحالية غير صحيحة.'], 422);
         }
 
         $update = [
-            'password'             => Hash::make($data['password']),
+            'password' => Hash::make($data['password']),
             'must_change_password' => false,
-            'password_changed_at'  => now(),
+            'password_changed_at' => now(),
         ];
         if (isset($data['email'])) {
             $update['email'] = $data['email'];
@@ -241,13 +224,10 @@ class AuthController extends Controller
      * must_change_password stay off-limits — those are admin-only fields
      * mutated via /admin/users.
      */
-    public function updateProfile(Request $request): JsonResponse
+    public function updateProfile(UpdateProfileRequest $request): JsonResponse
     {
         $user = $request->user();
-        $data = $request->validate([
-            'name'  => ['sometimes', 'string', 'max:120'],
-            'phone' => ['sometimes', 'nullable', 'string', 'max:32'],
-        ]);
+        $data = $request->validated();
         $user->update($data);
 
         return response()->json(['user' => $this->userPayload($user->fresh())]);
@@ -256,16 +236,16 @@ class AuthController extends Controller
     private function userPayload(User $user): array
     {
         return [
-            'id'                   => $user->id,
-            'name'                 => $user->name,
-            'email'                => $user->email,
-            'phone'                => $user->phone,
-            'role'                 => $user->role,
-            'organization_id'      => $user->organization_id,
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'phone' => $user->phone,
+            'role' => $user->role,
+            'organization_id' => $user->organization_id,
             // Frontend uses this to route to the change-credentials screen
             // and to gate the /admin/users nav link.
             'must_change_password' => (bool) $user->must_change_password,
-            'can_manage_users'     => $user->canManageUsers(),
+            'can_manage_users' => $user->canManageUsers(),
         ];
     }
 }

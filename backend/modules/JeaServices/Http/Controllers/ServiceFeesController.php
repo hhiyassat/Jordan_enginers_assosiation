@@ -6,9 +6,10 @@ namespace Modules\JeaServices\Http\Controllers;
 
 use App\Http\Concerns\RespondsWithLockedService;
 use App\Http\Controllers\Controller;
-use Modules\JeaServices\Models\ServiceDefinition;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Modules\JeaServices\Http\Requests\UpdateServiceFeeRequest;
+use Modules\JeaServices\Models\ServiceDefinition;
 
 /**
  * ServiceFeesController — Workstream 5 extraction from
@@ -66,14 +67,14 @@ class ServiceFeesController extends Controller
             ->orderBy('code')
             ->get(['id', 'code', 'parent_code', 'name_ar', 'name_en', 'status', 'is_locked', 'schema'])
             ->map(fn ($s) => [
-                'id'          => $s->id,
-                'code'        => $s->code,
+                'id' => $s->id,
+                'code' => $s->code,
                 'parent_code' => $s->parent_code,
-                'name_ar'     => $s->name_ar,
-                'name_en'     => $s->name_en,
-                'status'      => $s->status,
-                'is_locked'   => (bool) $s->is_locked,
-                'fee'         => $s->schema['fee'] ?? null,
+                'name_ar' => $s->name_ar,
+                'name_en' => $s->name_en,
+                'status' => $s->status,
+                'is_locked' => (bool) $s->is_locked,
+                'fee' => $s->schema['fee'] ?? null,
             ]);
 
         return response()->json(['fees' => $rows]);
@@ -86,12 +87,8 @@ class ServiceFeesController extends Controller
      * services still refuse — fee is part of the schema and shares
      * the lock invariant.
      */
-    public function update(Request $request, int $id): JsonResponse
+    public function update(UpdateServiceFeeRequest $request, int $id): JsonResponse
     {
-        if (! $request->user()->canEditServices()) {
-            abort(403, 'المسؤولون والمستخدم الأعلى فقط يمكنهم تعديل رسوم الخدمة.');
-        }
-
         $service = ServiceDefinition::where('organization_id', $request->user()->organization_id)
             ->findOrFail($id);
 
@@ -99,14 +96,7 @@ class ServiceFeesController extends Controller
             return $this->lockedResponse($service);
         }
 
-        $data = $request->validate([
-            'type'     => ['required', 'in:fixed,per_unit,free'],
-            'amount'   => ['nullable', 'numeric', 'min:0'],
-            'currency' => ['nullable', 'string', 'size:3'],
-            'basis'    => ['nullable', 'string', 'max:64'],
-            'rate'     => ['nullable', 'numeric', 'min:0'],
-            'notes'    => ['nullable', 'string', 'max:500'],
-        ]);
+        $data = $request->validated();
 
         $schema = $service->schema ?? [];
         $existingFee = $schema['fee'] ?? [];
@@ -116,22 +106,24 @@ class ServiceFeesController extends Controller
         if ($data['type'] === 'fixed') {
             $fee['amount'] = (float) ($data['amount'] ?? 0);
         } elseif ($data['type'] === 'per_unit') {
-            if (empty($data['basis']) || !isset($data['rate'])) {
+            if (empty($data['basis']) || ! isset($data['rate'])) {
                 return response()->json([
                     'message' => 'per_unit يتطلب basis + rate.',
                 ], 422);
             }
             $fee['basis'] = $data['basis'];
-            $fee['rate']  = (float) $data['rate'];
+            $fee['rate'] = (float) $data['rate'];
         }
         // free: no amount / basis / rate — a flag-only block.
 
         // Preserve surcharges + audit source across edits; append the
         // admin-set marker so the seeder's placeholder rule (which
         // treats fixed:0 as placeholder) will not overwrite this row.
-        if (!empty($existingFee['surcharges'])) $fee['surcharges'] = $existingFee['surcharges'];
+        if (! empty($existingFee['surcharges'])) {
+            $fee['surcharges'] = $existingFee['surcharges'];
+        }
         $fee['source'] = ($data['notes'] ?? null)
-            ?: ('Admin-set via fee editor on ' . now()->toDateString() . ' by user #' . $request->user()->id);
+            ?: ('Admin-set via fee editor on '.now()->toDateString().' by user #'.$request->user()->id);
 
         $schema['fee'] = $fee;
         $service->update(['schema' => $schema]);

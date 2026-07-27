@@ -10,13 +10,14 @@ parameters:
     # Laravel-heavy and add noise at level 6 — expand later once the app/
     # baseline stays green.
     #
-    # Post-refactor NOTE: modules/, plugins/, and integrations/ are NOT
-    # analysed today. Expanding coverage to those trees is a follow-up
-    # workstream — it will surface hundreds of pre-existing missing-generics
-    # and iterable-value warnings that predate the refactor and should be
-    # cleaned up module-by-module rather than in one giant baseline bump.
+    # modules/ joined app/ in scope once its models carried @property
+    # docblocks (generated from the actual DB schema) — that eliminated
+    # the bulk of missing-generics / undefined-property noise that used
+    # to make analysing modules/ impractical. plugins/ and integrations/
+    # remain out of scope for now.
     paths:
         - app
+        - modules
 
     # Baseline captures legacy findings (see phpstan-baseline.neon). Many
     # entries were rewritten in the refactor commit to point at their new

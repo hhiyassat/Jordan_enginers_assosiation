@@ -11,6 +11,7 @@ class ConfirmPaymentRequest extends FormRequest
         return $this->user()?->isAdmin() || $this->user()?->isStaff();
     }
 
+    /** @return array<string, mixed> */
     public function rules(): array
     {
         return [

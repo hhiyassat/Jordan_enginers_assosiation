@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace Modules\JeaServices\Http\Controllers;
 
-use Modules\JeaServices\Engine\SchemaStructureValidator;
 use App\Http\Concerns\RespondsWithLockedService;
 use App\Http\Controllers\Controller;
-use Modules\JeaServices\Models\ServiceDefinition;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Modules\JeaServices\Engine\SchemaStructureValidator;
+use Modules\JeaServices\Http\Requests\StoreServiceRequest;
+use Modules\JeaServices\Http\Requests\UpdateServiceRequest;
+use Modules\JeaServices\Http\Requests\UpdateServiceStatusRequest;
+use Modules\JeaServices\Models\ServiceDefinition;
 
 /**
  * ServiceCatalogController
@@ -93,7 +96,7 @@ class ServiceCatalogController extends Controller
             ->values();
 
         return response()->json([
-            'services'   => $services,
+            'services' => $services,
             'categories' => $categories,
         ]);
     }
@@ -106,12 +109,8 @@ class ServiceCatalogController extends Controller
         return response()->json(['service' => $service]);
     }
 
-    public function updateStatus(Request $request, int $id): JsonResponse
+    public function updateStatus(UpdateServiceStatusRequest $request, int $id): JsonResponse
     {
-        if (! $request->user()->canEditServices()) {
-            abort(403, 'المسؤولون والمستخدم الأعلى فقط يمكنهم تغيير حالة الخدمة.');
-        }
-
         $service = ServiceDefinition::where('organization_id', $request->user()->organization_id)
             ->findOrFail($id);
 
@@ -119,9 +118,7 @@ class ServiceCatalogController extends Controller
             return $this->lockedResponse($service);
         }
 
-        $data = $request->validate([
-            'status' => ['required', 'in:active,inactive,draft'],
-        ]);
+        $data = $request->validated();
 
         $service->update(['status' => $data['status']]);
 
@@ -143,6 +140,7 @@ class ServiceCatalogController extends Controller
         $service = ServiceDefinition::where('organization_id', $request->user()->organization_id)
             ->findOrFail($id);
         $service->update(['is_locked' => false]);
+
         return response()->json(['service' => $service, 'message' => 'تم فتح قفل الخدمة — يمكن الآن تعديل تفاصيلها.']);
     }
 
@@ -154,6 +152,7 @@ class ServiceCatalogController extends Controller
         $service = ServiceDefinition::where('organization_id', $request->user()->organization_id)
             ->findOrFail($id);
         $service->update(['is_locked' => true]);
+
         return response()->json(['service' => $service, 'message' => 'تم إقفال الخدمة — أصبحت للقراءة فقط.']);
     }
 
@@ -186,6 +185,7 @@ class ServiceCatalogController extends Controller
                     'description_ar', 'description_en', 'currency', 'base_fee', 'sla_hours', 'phase',
                 ]);
                 $arr['variant_keys'] = is_array($variants) ? array_keys($variants) : [];
+
                 return $arr;
             });
 
@@ -202,38 +202,25 @@ class ServiceCatalogController extends Controller
         return response()->json(['service' => $service]);
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(StoreServiceRequest $request): JsonResponse
     {
-        if (! $request->user()->canEditServices()) {
-            abort(403, 'المسؤولون والمستخدم الأعلى فقط يمكنهم إنشاء خدمات جديدة.');
-        }
-
-        $data = $request->validate([
-            'code'           => ['required', 'string', 'max:20', 'unique:service_definitions,code'],
-            'name_ar'        => ['required', 'string', 'max:255'],
-            'name_en'        => ['required', 'string', 'max:255'],
-            'description_ar' => ['nullable', 'string'],
-            'description_en' => ['nullable', 'string'],
-            'currency'       => ['nullable', 'string', 'size:3'],
-            'schema'         => ['required', 'array'],
-            'status'         => ['nullable', 'in:active,inactive,draft'],
-        ]);
+        $data = $request->validated();
 
         // ESP-SCHEMA-001: validate schema structure before persisting.
         // This ensures WorkflowEngine, SchemaValidator, and FeeCalculator
         // can run against ANY generated or manually-authored service schema.
-        $schemaErrors = (new SchemaStructureValidator())->validate($data['schema']);
+        $schemaErrors = (new SchemaStructureValidator)->validate($data['schema']);
         if ($schemaErrors) {
             return response()->json([
                 'message' => 'المخطط لا يتوافق مع بنية ESP v2. يرجى مراجعة الأخطاء أدناه.',
-                'errors'  => $schemaErrors,
+                'errors' => $schemaErrors,
             ], 422);
         }
 
         $service = ServiceDefinition::create([
             ...$data,
             'organization_id' => $request->user()->organization_id,
-            'status'          => $data['status'] ?? 'draft',
+            'status' => $data['status'] ?? 'draft',
         ]);
 
         return response()->json(['service' => $service], 201);
@@ -242,12 +229,8 @@ class ServiceCatalogController extends Controller
     // Workstream 5: adminFeesIndex() + updateFee() moved to
     // ServiceFeesController. Routes were updated to match.
 
-    public function update(Request $request, int $id): JsonResponse
+    public function update(UpdateServiceRequest $request, int $id): JsonResponse
     {
-        if (! $request->user()->canEditServices()) {
-            abort(403, 'المسؤولون والمستخدم الأعلى فقط يمكنهم تعديل الخدمات.');
-        }
-
         $service = ServiceDefinition::where('organization_id', $request->user()->organization_id)
             ->findOrFail($id);
 
@@ -255,22 +238,15 @@ class ServiceCatalogController extends Controller
             return $this->lockedResponse($service);
         }
 
-        $data = $request->validate([
-            'name_ar'        => ['sometimes', 'string', 'max:255'],
-            'name_en'        => ['sometimes', 'string', 'max:255'],
-            'description_ar' => ['nullable', 'string'],
-            'description_en' => ['nullable', 'string'],
-            'schema'         => ['sometimes', 'array'],
-            'status'         => ['sometimes', 'in:active,inactive,draft'],
-        ]);
+        $data = $request->validated();
 
         // ESP-SCHEMA-001: validate schema structure on update if schema is being changed.
         if (isset($data['schema'])) {
-            $schemaErrors = (new SchemaStructureValidator())->validate($data['schema']);
+            $schemaErrors = (new SchemaStructureValidator)->validate($data['schema']);
             if ($schemaErrors) {
                 return response()->json([
                     'message' => 'المخطط لا يتوافق مع بنية ESP v2. يرجى مراجعة الأخطاء أدناه.',
-                    'errors'  => $schemaErrors,
+                    'errors' => $schemaErrors,
                 ], 422);
             }
         }

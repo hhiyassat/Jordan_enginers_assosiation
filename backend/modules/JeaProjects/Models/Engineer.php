@@ -3,10 +3,12 @@
 namespace Modules\JeaProjects\Models;
 
 use App\Models\Concerns\BelongsToOrganization;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 
 /**
  * Engineer
@@ -17,6 +19,22 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  *
  * NFR-002: BelongsToOrganization → scoped by tenant.
  * DATA-004: soft-deletes for audit trail.
+ *
+ * @property int $id
+ * @property int $organization_id
+ * @property int $office_user_id
+ * @property string $name_ar
+ * @property string|null $name_en
+ * @property string $membership_number
+ * @property string|null $specialization
+ * @property string|null $phone
+ * @property string|null $email
+ * @property int|null $annual_quota_m2
+ * @property bool $is_active
+ * @property Carbon|null $deleted_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property bool $is_specialization_head
  */
 class Engineer extends Model
 {
@@ -34,8 +52,8 @@ class Engineer extends Model
     ];
 
     protected $casts = [
-        'annual_quota_m2'        => 'integer',
-        'is_active'              => 'boolean',
+        'annual_quota_m2' => 'integer',
+        'is_active' => 'boolean',
         'is_specialization_head' => 'boolean',
     ];
 

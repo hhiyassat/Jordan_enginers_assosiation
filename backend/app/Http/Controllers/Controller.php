@@ -20,7 +20,8 @@ abstract class Controller
     {
         $user = $request->user();
         abort_unless($user, 401);
-        abort_unless($user->organization_id, 500, 'Authenticated user has no organization_id');
+        abort_unless((bool) $user->organization_id, 500, 'Authenticated user has no organization_id');
+
         return $user->organization_id;
     }
 }

@@ -6,6 +6,7 @@ namespace Modules\JeaProjects\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 /**
  * JORD-67: per-engineer per-discipline yearly m² quota row.
@@ -14,16 +15,25 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * for the schema shape. Reads are always keyed on
  * (engineer_id, discipline, year) — the composite unique enforces
  * that at the DB level, so a Model::where(...)->first() is safe.
+ *
+ * @property int $id
+ * @property int $engineer_id
+ * @property string $discipline
+ * @property int $year
+ * @property int $m2_allowed
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  */
 class EngineerDisciplineQuota extends Model
 {
     protected $fillable = ['engineer_id', 'discipline', 'year', 'm2_allowed'];
 
     protected $casts = [
-        'year'        => 'integer',
-        'm2_allowed'  => 'integer',
+        'year' => 'integer',
+        'm2_allowed' => 'integer',
     ];
 
+    /** @return BelongsTo<Engineer, $this> */
     public function engineer(): BelongsTo
     {
         return $this->belongsTo(Engineer::class);

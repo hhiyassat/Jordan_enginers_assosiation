@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Modules\JeaDiscipline\Console\Commands;
 
-use Modules\JeaServices\Models\Application;
 use App\Services\Notifications\NotificationService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
+use Modules\JeaServices\Models\Application;
 
 /**
  * RemindExpiries — JORD-80
@@ -28,6 +28,7 @@ use Illuminate\Support\Facades\Log;
 class RemindExpiries extends Command
 {
     protected $signature = 'retention:remind {--dry-run : preview without emitting}';
+
     protected $description = 'Emit 30/7/1-day expiry reminders for drawing approvals + supervision contracts (JORD-80)';
 
     /** Trigger thresholds in days. Order matters: closest first so
@@ -42,14 +43,26 @@ class RemindExpiries extends Command
         $emitted = 0;
         $skipped = 0;
 
-        Application::where('status', Application::STATUS_APPROVED)
+        // This is a system-wide cron with no authenticated user, so the
+        // BelongsToOrganization global scope would silently no-op anyway
+        // (it only filters when Auth::check() finds an org-scoped user).
+        // withoutOrgScope() makes that explicit and intentional — the
+        // reminder job is meant to span every organization in one run —
+        // rather than relying on an implicit scope no-op that looks, at
+        // a glance, like an accidental BR-004 violation.
+        Application::withoutOrgScope()
+            ->where('status', Application::STATUS_APPROVED)
             ->with(['applicant', 'serviceDefinition', 'reviews'])
             ->chunkById(200, function ($apps) use (&$emitted, &$skipped, $notifier, $dryRun, $today) {
                 foreach ($apps as $app) {
                     foreach (['output_validity', 'supervision'] as $kind) {
                         $expiryAttr = "{$kind}_expiry";
                         $expiry = $app->{$expiryAttr};
-                        if (!$expiry) { $skipped++; continue; }
+                        if (! $expiry) {
+                            $skipped++;
+
+                            continue;
+                        }
 
                         $daysRemaining = (int) floor($today->diffInDays($expiry, false));
                         // Match highest-priority threshold the current
@@ -62,11 +75,16 @@ class RemindExpiries extends Command
                                 break;
                             }
                         }
-                        if ($matched === null) { $skipped++; continue; }
+                        if ($matched === null) {
+                            $skipped++;
+
+                            continue;
+                        }
 
                         if ($dryRun) {
                             $this->line("[dry] app={$app->id} kind={$kind} threshold={$matched}d remaining={$daysRemaining}d");
                             $emitted++;
+
                             continue;
                         }
 
@@ -76,8 +94,8 @@ class RemindExpiries extends Command
                         } catch (\Throwable $e) {
                             Log::warning('retention:remind failed to emit', [
                                 'application_id' => $app->id,
-                                'kind'           => $kind,
-                                'error'          => $e->getMessage(),
+                                'kind' => $kind,
+                                'error' => $e->getMessage(),
                             ]);
                         }
                     }
@@ -86,6 +104,7 @@ class RemindExpiries extends Command
 
         $prefix = $dryRun ? 'DRY RUN: ' : '';
         $this->info("{$prefix}✓ {$emitted} reminders emitted; {$skipped} apps had no upcoming expiry.");
+
         return self::SUCCESS;
     }
 }

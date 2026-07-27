@@ -29,7 +29,7 @@ class SchemaValidator
      *
      * WF-005 / EDA-10: Failure returns field-level errors, application stays in draft.
      *
-     * @param  array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      * @return array<string, string>|null
      */
     public function validateData(array $data): ?array
@@ -54,7 +54,8 @@ class SchemaValidator
 
             // Required check
             if (($field['required'] ?? false) && $this->isEmpty($value)) {
-                $errors[$fieldId] = $field['label_ar'] . ' مطلوب.';
+                $errors[$fieldId] = $field['label_ar'].' مطلوب.';
+
                 continue;
             }
 
@@ -66,6 +67,7 @@ class SchemaValidator
             $typeError = $this->validateType($field, $value);
             if ($typeError) {
                 $errors[$fieldId] = $typeError;
+
                 continue;
             }
 
@@ -88,11 +90,13 @@ class SchemaValidator
                 if ($ok === null) {
                     // Invalid pattern in schema — treat as fail-closed so
                     // a broken schema never silently accepts anything.
-                    $errors[$fieldId] = $field['label_ar'] . ': نمط التحقق في المخطط غير صالح.';
+                    $errors[$fieldId] = $field['label_ar'].': نمط التحقق في المخطط غير صالح.';
+
                     continue;
                 }
                 if ($ok === false) {
-                    $errors[$fieldId] = $field['label_ar'] . ': التنسيق غير صحيح.';
+                    $errors[$fieldId] = $field['label_ar'].': التنسيق غير صحيح.';
+
                     continue;
                 }
             }
@@ -100,11 +104,13 @@ class SchemaValidator
             // Length constraints
             if (is_string($value)) {
                 if (isset($field['min_length']) && mb_strlen($value) < (int) $field['min_length']) {
-                    $errors[$fieldId] = $field['label_ar'] . ': يجب أن يكون على الأقل ' . $field['min_length'] . ' أحرف.';
+                    $errors[$fieldId] = $field['label_ar'].': يجب أن يكون على الأقل '.$field['min_length'].' أحرف.';
+
                     continue;
                 }
                 if (isset($field['max_length']) && mb_strlen($value) > (int) $field['max_length']) {
-                    $errors[$fieldId] = $field['label_ar'] . ': يجب ألا يتجاوز ' . $field['max_length'] . ' حرفاً.';
+                    $errors[$fieldId] = $field['label_ar'].': يجب ألا يتجاوز '.$field['max_length'].' حرفاً.';
+
                     continue;
                 }
             }
@@ -112,11 +118,13 @@ class SchemaValidator
             // Numeric range
             if (is_numeric($value)) {
                 if (isset($field['min']) && (float) $value < (float) $field['min']) {
-                    $errors[$fieldId] = $field['label_ar'] . ': يجب أن يكون ' . $field['min'] . ' أو أكثر.';
+                    $errors[$fieldId] = $field['label_ar'].': يجب أن يكون '.$field['min'].' أو أكثر.';
+
                     continue;
                 }
                 if (isset($field['max']) && (float) $value > (float) $field['max']) {
-                    $errors[$fieldId] = $field['label_ar'] . ': يجب أن يكون ' . $field['max'] . ' أو أقل.';
+                    $errors[$fieldId] = $field['label_ar'].': يجب أن يكون '.$field['max'].' أو أقل.';
+
                     continue;
                 }
             }
@@ -134,17 +142,17 @@ class SchemaValidator
             if (in_array($field['type'], ['select', 'radio']) && $hasStaticOptions && ! $usesEndpoint) {
                 $validValues = array_column($field['options'], 'value');
                 if (! in_array($value, $validValues)) {
-                    $errors[$fieldId] = $field['label_ar'] . ': قيمة غير مسموح بها.';
+                    $errors[$fieldId] = $field['label_ar'].': قيمة غير مسموح بها.';
                 }
             }
 
             // Options validation for multi-value types (multiselect / checkbox_group)
             if (in_array($field['type'], ['multiselect', 'checkbox_group']) && $hasStaticOptions && ! $usesEndpoint) {
-                $validValues  = array_column($field['options'], 'value');
+                $validValues = array_column($field['options'], 'value');
                 $selectedVals = is_array($value) ? $value : [$value];
-                $invalid      = array_diff($selectedVals, $validValues);
+                $invalid = array_diff($selectedVals, $validValues);
                 if (! empty($invalid)) {
-                    $errors[$fieldId] = $field['label_ar'] . ': قيم غير مسموح بها: ' . implode(', ', $invalid) . '.';
+                    $errors[$fieldId] = $field['label_ar'].': قيم غير مسموح بها: '.implode(', ', $invalid).'.';
                 }
             }
         }
@@ -158,8 +166,8 @@ class SchemaValidator
      * Returns null if valid; returns associative error array if required docs missing.
      * Conditional documents are only required if their condition is met.
      *
-     * @param  list<mixed>          $uploadedDocumentIds
-     * @param  array<string, mixed> $formData
+     * @param  list<mixed>  $uploadedDocumentIds
+     * @param  array<string, mixed>  $formData
      * @return array<string, string>|null
      */
     public function validateDocuments(array $uploadedDocumentIds, array $formData = []): ?array
@@ -195,7 +203,7 @@ class SchemaValidator
             // strict=true so '1' isn't treated as 1.
             if (! in_array($docId, $uploaded, true)) {
                 $label = $doc['label_ar'] ?? $docId;
-                $errors[$docId] = $label . ' مطلوب.';
+                $errors[$docId] = $label.' مطلوب.';
             }
         }
 
@@ -209,13 +217,14 @@ class SchemaValidator
         return $value === null || $value === '' || (is_array($value) && empty($value));
     }
 
+    /** @param array<string, mixed> $field */
     private function validateType(array $field, mixed $value): ?string
     {
         return match ($field['type']) {
-            'number' => is_numeric($value) ? null : ($field['label_ar'] . ': يجب أن يكون رقماً.'),
-            'email'  => filter_var($value, FILTER_VALIDATE_EMAIL) ? null : ($field['label_ar'] . ': بريد إلكتروني غير صحيح.'),
-            'date'   => $this->isValidDate($value) ? null : ($field['label_ar'] . ': تاريخ غير صحيح.'),
-            default  => null,
+            'number' => is_numeric($value) ? null : ($field['label_ar'].': يجب أن يكون رقماً.'),
+            'email' => filter_var($value, FILTER_VALIDATE_EMAIL) ? null : ($field['label_ar'].': بريد إلكتروني غير صحيح.'),
+            'date' => $this->isValidDate($value) ? null : ($field['label_ar'].': تاريخ غير صحيح.'),
+            default => null,
         };
     }
 
@@ -225,6 +234,7 @@ class SchemaValidator
             return false;
         }
         $d = \DateTime::createFromFormat('Y-m-d', $value);
+
         return $d && $d->format('Y-m-d') === $value;
     }
 
@@ -248,13 +258,15 @@ class SchemaValidator
         // close the delimiter early and add whatever follows as modifiers.
         // We accept the pattern as-is otherwise; escaping the wrapper
         // delimiter is the caller's obligation only if they use it.
-        $delimited = '~' . str_replace('~', '\\~', $pattern) . '~D';
+        $delimited = '~'.str_replace('~', '\\~', $pattern).'~D';
 
         // @preg_match silences the "invalid regex" warning that would
         // otherwise pollute logs on every schema-authored bad pattern.
         // We rely on preg_last_error() instead.
         $result = @preg_match($delimited, $subject);
-        if ($result === false) return null;
+        if ($result === false) {
+            return null;
+        }
 
         // Runtime failures — e.g. catastrophic backtracking hitting
         // pcre.backtrack_limit — are treated as pattern-invalid so we
@@ -262,6 +274,7 @@ class SchemaValidator
         if (preg_last_error() !== PREG_NO_ERROR) {
             return null;
         }
+
         return $result === 1;
     }
 }

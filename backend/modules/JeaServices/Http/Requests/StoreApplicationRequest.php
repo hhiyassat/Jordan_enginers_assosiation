@@ -15,6 +15,7 @@ class StoreApplicationRequest extends FormRequest
         return $this->user() !== null;
     }
 
+    /** @return array<string, mixed> */
     public function rules(): array
     {
         return [
@@ -26,11 +27,11 @@ class StoreApplicationRequest extends FormRequest
             // load-bearing for schemas without any applicant-facing fields
             // (e.g. the tile-level placeholders and drawing services where
             // all inputs come from the linked project + attached documents).
-            'data'         => ['present', 'array'],
+            'data' => ['present', 'array'],
             // Optional link to the applicant's project. When present the
             // Apply flow renders the project's read-only header instead of
             // asking the applicant to re-type the project's fields.
-            'project_id'   => ['sometimes', 'nullable', 'integer', 'exists:projects,id'],
+            'project_id' => ['sometimes', 'nullable', 'integer', 'exists:projects,id'],
         ];
     }
 
@@ -38,9 +39,9 @@ class StoreApplicationRequest extends FormRequest
     {
         return [
             'service_code.required' => 'رمز الخدمة مطلوب.',
-            'data.present'          => 'حقل بيانات الطلب مفقود من الطلب.',
-            'data.array'            => 'بيانات الطلب يجب أن تكون كائناً.',
-            'project_id.exists'     => 'المشروع غير موجود.',
+            'data.present' => 'حقل بيانات الطلب مفقود من الطلب.',
+            'data.array' => 'بيانات الطلب يجب أن تكون كائناً.',
+            'project_id.exists' => 'المشروع غير موجود.',
         ];
     }
 }

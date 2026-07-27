@@ -25,20 +25,39 @@ use Symfony\Component\Finder\Finder;
  */
 class BoundariesTest extends TestCase
 {
-    private const APP_PATH = __DIR__ . '/../../app';
+    private const APP_PATH = __DIR__.'/../../app';
+
+    /**
+     * Path to $relative relative to APP_PATH, always forward-slashed.
+     *
+     * Symfony Finder returns native-separator paths (backslashes on
+     * Windows), but APP_PATH and PC_ALLOWLIST keys are written with
+     * forward slashes. Without normalizing both sides, the str_replace
+     * below silently fails to strip the prefix on Windows — every file
+     * keeps its full absolute path, PC_ALLOWLIST lookups never hit, and
+     * test_platform_does_not_import_service_modules fails unconditionally
+     * regardless of real violations.
+     */
+    private function relativeToApp(SplFileInfo $file): string
+    {
+        $normalizedBase = str_replace('\\', '/', self::APP_PATH).'/';
+        $normalizedPath = str_replace('\\', '/', $file->getPathname());
+
+        return str_replace($normalizedBase, '', $normalizedPath);
+    }
 
     /** @return array<string, list<string>> */
     private function grepImports(string $subdir, string $forbiddenPattern): array
     {
         $offenders = [];
-        $finder = (new Finder())
+        $finder = (new Finder)
             ->files()
-            ->in(self::APP_PATH . '/' . $subdir)
+            ->in(self::APP_PATH.'/'.$subdir)
             ->name('*.php');
 
         foreach ($finder as $file) {
-            $relative = str_replace(self::APP_PATH . '/', '', $file->getPathname());
-            $content  = (string) file_get_contents($file->getPathname());
+            $relative = $this->relativeToApp($file);
+            $content = (string) file_get_contents($file->getPathname());
             // Match `use App\...` lines (Laravel's import style).
             preg_match_all('/^use\s+(App\\\\[^;\s]+)/m', $content, $matches);
             foreach (($matches[1] ?? []) as $import) {
@@ -48,6 +67,7 @@ class BoundariesTest extends TestCase
                 }
             }
         }
+
         return $offenders;
     }
 
@@ -61,7 +81,7 @@ class BoundariesTest extends TestCase
         $offenders = $this->grepImports('Models', '/^App\\\\Http\\\\Controllers\\\\/');
         $this->assertEmpty(
             $offenders,
-            "Models must not import controllers:\n" . $this->pretty($offenders),
+            "Models must not import controllers:\n".$this->pretty($offenders),
         );
     }
 
@@ -75,7 +95,7 @@ class BoundariesTest extends TestCase
         $offenders = $this->grepImports('Http/Middleware', '/^App\\\\Http\\\\Controllers\\\\/');
         $this->assertEmpty(
             $offenders,
-            "Middleware must not import controllers:\n" . $this->pretty($offenders),
+            "Middleware must not import controllers:\n".$this->pretty($offenders),
         );
     }
 
@@ -88,11 +108,11 @@ class BoundariesTest extends TestCase
     {
         $offenders = array_merge(
             $this->grepImports('Services', '/^App\\\\Http\\\\Controllers\\\\/'),
-            $this->grepImports('Engine',   '/^App\\\\Http\\\\Controllers\\\\/'),
+            $this->grepImports('Engine', '/^App\\\\Http\\\\Controllers\\\\/'),
         );
         $this->assertEmpty(
             $offenders,
-            "Services / Engine must not import controllers:\n" . $this->pretty($offenders),
+            "Services / Engine must not import controllers:\n".$this->pretty($offenders),
         );
     }
 
@@ -102,13 +122,13 @@ class BoundariesTest extends TestCase
      */
     public function test_console_commands_do_not_import_controllers(): void
     {
-        if (!is_dir(self::APP_PATH . '/Console/Commands')) {
+        if (! is_dir(self::APP_PATH.'/Console/Commands')) {
             $this->markTestSkipped('No console commands directory.');
         }
         $offenders = $this->grepImports('Console/Commands', '/^App\\\\Http\\\\Controllers\\\\/');
         $this->assertEmpty(
             $offenders,
-            "Console commands must not import controllers:\n" . $this->pretty($offenders),
+            "Console commands must not import controllers:\n".$this->pretty($offenders),
         );
     }
 
@@ -118,13 +138,13 @@ class BoundariesTest extends TestCase
      */
     public function test_form_requests_do_not_import_controllers(): void
     {
-        if (!is_dir(self::APP_PATH . '/Http/Requests')) {
+        if (! is_dir(self::APP_PATH.'/Http/Requests')) {
             $this->markTestSkipped('No FormRequest directory.');
         }
         $offenders = $this->grepImports('Http/Requests', '/^App\\\\Http\\\\Controllers\\\\/');
         $this->assertEmpty(
             $offenders,
-            "FormRequests must not import controllers:\n" . $this->pretty($offenders),
+            "FormRequests must not import controllers:\n".$this->pretty($offenders),
         );
     }
 
@@ -137,20 +157,20 @@ class BoundariesTest extends TestCase
     {
         $threshold = 500;
         $oversize = [];
-        $finder = (new Finder())
+        $finder = (new Finder)
             ->files()
-            ->in(self::APP_PATH . '/Http/Controllers')
+            ->in(self::APP_PATH.'/Http/Controllers')
             ->name('*.php');
         foreach ($finder as $file) {
             $lines = count(file($file->getPathname()) ?: []);
             if ($lines > $threshold) {
-                $oversize[str_replace(self::APP_PATH . '/', '', $file->getPathname())] = $lines;
+                $oversize[$this->relativeToApp($file)] = $lines;
             }
         }
         $this->assertEmpty(
             $oversize,
             "Platform controllers must stay under {$threshold} lines. Offenders:\n"
-            . $this->pretty($oversize),
+            .$this->pretty($oversize),
         );
     }
 
@@ -170,50 +190,42 @@ class BoundariesTest extends TestCase
      * @var array<string, string>
      */
     private const PC_ALLOWLIST = [
-        'Http/Controllers/Api/AdminDashboardController.php' =>
-            'RED: reads Modules\JeaServices for org-wide app list + '
-            . 'certificate count. Splits into a platform admin shell + '
-            . 'a jea-services "recent apps" widget in a future WS.',
-        'Providers/AppServiceProvider.php' =>
-            'Composition root binds Integrations\Gsb\* into the container. '
-            . 'The wiring belongs at the composition boundary; a future WS '
-            . 'can move the bindings into GsbServiceProvider itself.',
-        'Models/User.php' =>
-            'User has JEA relations (OfficeCoalition, OfficeCoalitionMember) '
-            . 'from JORD-77. Needs a User contract that jea-projects can '
-            . 'extend without the platform User importing it.',
-        'Models/Organization.php' =>
-            'Organization hasMany JEA aggregations (services, applications, '
-            . 'coalitions). Same pattern as User.php — needs a contract so '
-            . 'the tenant model can enumerate its domain data without '
-            . 'importing modules directly.',
-        'Http/Concerns/RespondsWithLockedService.php' =>
-            'The 423 locked-service response reads Modules\JeaServices\Models\ServiceDefinition. '
-            . 'Trait should move to modules/JeaServices/Http/Concerns/ since '
-            . 'the "locked" concept IS jea-services.',
-        'Services/Payment/MockPaymentGateway.php' =>
-            'Payment abstraction takes Modules\JeaServices\Models\Application directly. '
-            . 'Should invert: Application implements a PaymentTarget contract; '
-            . 'gateway takes the contract.',
-        'Services/Payment/PaymentGateway.php' =>
-            'Same as MockPaymentGateway — takes Application concrete instead of '
-            . 'a PaymentTarget contract. Follow-up contract-inversion refactor.',
-        'Services/Notifications/NotificationService.php' =>
-            'Notification service has Application knowledge baked in. Should '
-            . 'accept a domain-neutral Notifiable + template payload; each '
-            . 'module builds its own payload.',
+        'Http/Controllers/Api/AdminDashboardController.php' => 'RED: reads Modules\JeaServices for org-wide app list + '
+            .'certificate count. Splits into a platform admin shell + '
+            .'a jea-services "recent apps" widget in a future WS.',
+        'Providers/AppServiceProvider.php' => 'Composition root binds Integrations\Gsb\* into the container. '
+            .'The wiring belongs at the composition boundary; a future WS '
+            .'can move the bindings into GsbServiceProvider itself.',
+        'Models/User.php' => 'User has JEA relations (OfficeCoalition, OfficeCoalitionMember) '
+            .'from JORD-77. Needs a User contract that jea-projects can '
+            .'extend without the platform User importing it.',
+        'Models/Organization.php' => 'Organization hasMany JEA aggregations (services, applications, '
+            .'coalitions). Same pattern as User.php — needs a contract so '
+            .'the tenant model can enumerate its domain data without '
+            .'importing modules directly.',
+        'Http/Concerns/RespondsWithLockedService.php' => 'The 423 locked-service response reads Modules\JeaServices\Models\ServiceDefinition. '
+            .'Trait should move to modules/JeaServices/Http/Concerns/ since '
+            .'the "locked" concept IS jea-services.',
+        'Services/Payment/MockPaymentGateway.php' => 'Payment abstraction takes Modules\JeaServices\Models\Application directly. '
+            .'Should invert: Application implements a PaymentTarget contract; '
+            .'gateway takes the contract.',
+        'Services/Payment/PaymentGateway.php' => 'Same as MockPaymentGateway — takes Application concrete instead of '
+            .'a PaymentTarget contract. Follow-up contract-inversion refactor.',
+        'Services/Notifications/NotificationService.php' => 'Notification service has Application knowledge baked in. Should '
+            .'accept a domain-neutral Notifiable + template payload; each '
+            .'module builds its own payload.',
     ];
 
     public function test_platform_does_not_import_service_modules(): void
     {
         $violations = [];
-        $finder = (new Finder())
+        $finder = (new Finder)
             ->files()
             ->in(self::APP_PATH)
             ->name('*.php');
 
         foreach ($finder as $file) {
-            $relative = str_replace(self::APP_PATH . '/', '', $file->getPathname());
+            $relative = $this->relativeToApp($file);
             if (isset(self::PC_ALLOWLIST[$relative])) {
                 continue;
             }
@@ -231,11 +243,11 @@ class BoundariesTest extends TestCase
 
         $this->assertEmpty(
             $violations,
-            "Platform code (app/) must not import from Modules\\, "
-            . "Plugins\\, or Integrations\\. Invert the dependency "
-            . "(contract in platform, impl in module) or add the file "
-            . "to PC_ALLOWLIST with a documented retirement path.\n"
-            . $this->pretty($violations),
+            'Platform code (app/) must not import from Modules\\, '
+            .'Plugins\\, or Integrations\\. Invert the dependency '
+            .'(contract in platform, impl in module) or add the file '
+            ."to PC_ALLOWLIST with a documented retirement path.\n"
+            .$this->pretty($violations),
         );
     }
 
@@ -247,20 +259,21 @@ class BoundariesTest extends TestCase
     {
         $missing = [];
         foreach (array_keys(self::PC_ALLOWLIST) as $relative) {
-            if (!file_exists(self::APP_PATH . '/' . $relative)) {
+            if (! file_exists(self::APP_PATH.'/'.$relative)) {
                 $missing[] = $relative;
             }
         }
         $this->assertEmpty(
             $missing,
-            "PC_ALLOWLIST references files that no longer exist. "
-            . "Remove them from the allowlist:\n  "
-            . implode("\n  ", $missing),
+            'PC_ALLOWLIST references files that no longer exist. '
+            ."Remove them from the allowlist:\n  "
+            .implode("\n  ", $missing),
         );
     }
 
     /**
      * Pretty-print an offender map for assertion messages.
+     *
      * @param  array<string, list<string>|int>  $offenders
      */
     private function pretty(array $offenders): string
@@ -276,6 +289,7 @@ class BoundariesTest extends TestCase
                 $lines[] = "  {$file} — {$detail} lines";
             }
         }
+
         return implode("\n", $lines);
     }
 }

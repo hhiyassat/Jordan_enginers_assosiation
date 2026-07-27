@@ -5,18 +5,18 @@ declare(strict_types=1);
 namespace Modules\JeaServices\Engine;
 
 use App\Engine\Exceptions;
-use Modules\JeaProjects\Engine\QuotaLedger;
-use Modules\JeaServices\Models\Application;
-use Modules\JeaServices\Models\ApplicationReview;
 use App\Models\AuditLog;
-use Modules\JeaServices\Models\Certificate;
-use Modules\JeaServices\Models\ServiceDefinition;
 use App\Models\User;
 use App\Services\Notifications\NotificationService;
 use App\Services\Payment\PaymentReceipt;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
-use Symfony\Component\HttpKernel\Exception\HttpException;
+use Illuminate\Support\Facades\Log;
+use Modules\JeaProjects\Engine\QuotaLedger;
+use Modules\JeaServices\Models\Application;
+use Modules\JeaServices\Models\ApplicationReview;
+use Modules\JeaServices\Models\Certificate;
+use Modules\JeaServices\Models\CertificateCounter;
+use Modules\JeaServices\Models\ServiceDefinition;
 
 /**
  * WorkflowEngine — EDA-Compliant Generic State Machine
@@ -47,18 +47,18 @@ class WorkflowEngine
      * transitionTo() checks against this constant — nowhere else.
      */
     public const ALLOWED_TRANSITIONS = [
-        Application::STATUS_DRAFT                   => [Application::STATUS_SUBMITTED],
-        Application::STATUS_SUBMITTED               => [Application::STATUS_UNDER_REVIEW],
-        Application::STATUS_UNDER_REVIEW            => [
+        Application::STATUS_DRAFT => [Application::STATUS_SUBMITTED],
+        Application::STATUS_SUBMITTED => [Application::STATUS_UNDER_REVIEW],
+        Application::STATUS_UNDER_REVIEW => [
             Application::STATUS_APPROVED,
             Application::STATUS_REJECTED,
             Application::STATUS_MODIFICATIONS_REQUESTED,
             Application::STATUS_SUBMITTED, // PR#1 (WF-011): reviewer releasing their claim
         ],
         Application::STATUS_MODIFICATIONS_REQUESTED => [Application::STATUS_SUBMITTED],
-        Application::STATUS_APPROVED                => [Application::STATUS_CERTIFICATE_ISSUED],
-        Application::STATUS_REJECTED                => [],
-        Application::STATUS_CERTIFICATE_ISSUED      => [],
+        Application::STATUS_APPROVED => [Application::STATUS_CERTIFICATE_ISSUED],
+        Application::STATUS_REJECTED => [],
+        Application::STATUS_CERTIFICATE_ISSUED => [],
     ];
 
     public function __construct(private readonly ServiceDefinition $service) {}
@@ -82,8 +82,8 @@ class WorkflowEngine
      *   B-9 Effect:         AuditLog::record() inside DB::transaction()
      *   B-10 Residuals:     Validation failure → 422 (handled in controller before calling this)
      *
-     * @param Application $app    Already-validated application (controller called SchemaValidator)
-     * @param User        $actor  The applicant
+     * @param  Application  $app  Already-validated application (controller called SchemaValidator)
+     * @param  User  $actor  The applicant
      */
     public function submit(Application $app, User $actor): Application
     {
@@ -116,13 +116,13 @@ class WorkflowEngine
 
             // B-9 + WF-003: effect recorded
             AuditLog::record(
-                user:    $actor,
+                user: $actor,
                 subject: $app,
-                action:  'application.submitted',
+                action: 'application.submitted',
                 extra: [
-                    'rule_id'        => 'ESP-WF-001',
-                    'from_status'    => $prevStatus,
-                    'to_status'      => Application::STATUS_SUBMITTED,
+                    'rule_id' => 'ESP-WF-001',
+                    'from_status' => $prevStatus,
+                    'to_status' => Application::STATUS_SUBMITTED,
                     'input_snapshot' => $app->data ?? [],
                 ],
             );
@@ -135,7 +135,7 @@ class WorkflowEngine
         try {
             app(NotificationService::class)->emitApplicationSubmitted($app->fresh());
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::warning('notification emit failed', [
+            Log::warning('notification emit failed', [
                 'event' => 'application.submitted',
                 'application_id' => $app->id,
                 'error' => $e->getMessage(),
@@ -169,7 +169,7 @@ class WorkflowEngine
                 $stageLabel = $stage['label_ar'] ?? $app->current_stage;
                 throw new Exceptions\RoleMismatchException(
                     "هذه المرحلة (\"{$stageLabel}\") مخصصة لدور: {$stage['role']}. لا يمكنك استلام الطلب.",
-                    stageId:      $app->current_stage,
+                    stageId: $app->current_stage,
                     requiredRole: $stage['role'],
                 );
             }
@@ -203,13 +203,13 @@ class WorkflowEngine
 
             // B-9 + WF-003
             AuditLog::record(
-                user:    $actor,
+                user: $actor,
                 subject: $locked,
-                action:  'application.claimed',
+                action: 'application.claimed',
                 extra: [
-                    'rule_id'     => 'ESP-WF-002',
+                    'rule_id' => 'ESP-WF-002',
                     'from_status' => $prevStatus,
-                    'to_status'   => Application::STATUS_UNDER_REVIEW,
+                    'to_status' => Application::STATUS_UNDER_REVIEW,
                 ],
             );
 
@@ -248,7 +248,7 @@ class WorkflowEngine
             if ($locked->assigned_reviewer_id !== $actor->id && ! $actor->isAdmin()) {
                 throw new Exceptions\RoleMismatchException(
                     'المراجع المستلم أو المسؤول فقط يمكنهم تحرير الطلب.',
-                    stageId:      $locked->current_stage,
+                    stageId: $locked->current_stage,
                     requiredRole: 'assigned_reviewer_or_admin',
                 );
             }
@@ -258,13 +258,13 @@ class WorkflowEngine
             $locked->save();
 
             AuditLog::record(
-                user:    $actor,
+                user: $actor,
                 subject: $locked,
-                action:  'application.released',
+                action: 'application.released',
                 extra: [
-                    'rule_id'     => 'ESP-WF-011',
+                    'rule_id' => 'ESP-WF-011',
                     'from_status' => $prevStatus,
-                    'to_status'   => Application::STATUS_SUBMITTED,
+                    'to_status' => Application::STATUS_SUBMITTED,
                 ],
             );
 
@@ -291,13 +291,15 @@ class WorkflowEngine
      *   B-8 Blockers:       Terminal state guard
      *   B-9 Effect:         ApplicationReview created + AuditLog::record()
      *   B-10 Residuals:     modifications_requested → review_round++; approved → fee notification
+     *
+     * @param  array<string, mixed>  $annotations
      */
     public function decide(
         Application $app,
-        User        $actor,
-        string      $decision,
-        ?string     $notes      = null,
-        array       $annotations = [],
+        User $actor,
+        string $decision,
+        ?string $notes = null,
+        array $annotations = [],
     ): ApplicationReview {
         // B-6: Must be under review and claimed by this actor
         if ($app->status !== Application::STATUS_UNDER_REVIEW) {
@@ -311,8 +313,10 @@ class WorkflowEngine
             );
         }
 
-        // B-5: Validate decision is an allowed transition (global list)
-        $allowedDecisions = self::ALLOWED_TRANSITIONS[Application::STATUS_UNDER_REVIEW] ?? [];
+        // B-5: Validate decision is an allowed transition (global list).
+        // STATUS_UNDER_REVIEW is always a key in ALLOWED_TRANSITIONS (see
+        // the const above) — no ?? fallback needed.
+        $allowedDecisions = self::ALLOWED_TRANSITIONS[Application::STATUS_UNDER_REVIEW];
         if (! in_array($decision, $allowedDecisions)) {
             throw new Exceptions\InvalidStateException("القرار '{$decision}' غير صالح للحالة الحالية.");
         }
@@ -347,7 +351,7 @@ class WorkflowEngine
         }
 
         $prevStatus = $app->status;
-        $review     = null;
+        $review = null;
 
         // Decide whether this is a mid-workflow stage-approve (more stages
         // to go) or the final approval. Same for rejection paths later.
@@ -362,7 +366,7 @@ class WorkflowEngine
                 // matches the transition table (approved→under_review is
                 // NOT allowed), and semantically the case isn't done —
                 // another reviewer still has work to do.
-                $app->current_stage        = $nextStageIfApproving['id'];
+                $app->current_stage = $nextStageIfApproving['id'];
                 $app->assigned_reviewer_id = null; // freed for the next stage's role to claim
                 if (isset($nextStageIfApproving['sla_hours'])) {
                     $app->sla_deadline = now()->addHours($nextStageIfApproving['sla_hours']);
@@ -387,25 +391,25 @@ class WorkflowEngine
             // Store the review record
             $review = ApplicationReview::create([
                 'application_id' => $app->id,
-                'reviewer_id'    => $actor->id,
-                'stage_id'       => $app->current_stage,
-                'decision'       => $decision,
-                'notes'          => $notes,
-                'annotations'    => $annotations,
-                'review_round'   => $app->review_round,
+                'reviewer_id' => $actor->id,
+                'stage_id' => $app->current_stage,
+                'decision' => $decision,
+                'notes' => $notes,
+                'annotations' => $annotations,
+                'review_round' => $app->review_round,
             ]);
 
             // B-9 + WF-003
             AuditLog::record(
-                user:    $actor,
+                user: $actor,
                 subject: $app,
-                action:  'application.decided',
+                action: 'application.decided',
                 extra: [
-                    'rule_id'     => 'ESP-WF-003',
+                    'rule_id' => 'ESP-WF-003',
                     'from_status' => $prevStatus,
-                    'to_status'   => $app->status,
-                    'decision'    => $decision,
-                    'review_id'   => $review->id,
+                    'to_status' => $app->status,
+                    'decision' => $decision,
+                    'review_id' => $review->id,
                 ],
             );
 
@@ -429,7 +433,7 @@ class WorkflowEngine
                 app(NotificationService::class)
                     ->emitApplicationDecided($app->fresh(), $actor, $decision);
             } catch (\Throwable $e) {
-                \Illuminate\Support\Facades\Log::warning('notification emit failed', [
+                Log::warning('notification emit failed', [
                     'event' => 'application.decided',
                     'application_id' => $app->id,
                     'decision' => $decision,
@@ -460,10 +464,10 @@ class WorkflowEngine
             $actor,
             new PaymentReceipt(
                 reference: $paymentReference,
-                amount:    (float) $app->fee_amount,
-                currency:  (string) ($this->service->currency ?? 'JOD'),
+                amount: (float) $app->fee_amount,
+                currency: (string) ($this->service->currency ?? 'JOD'),
                 settledAt: now()->toIso8601String(),
-                meta:      ['source' => 'manual'],
+                meta: ['source' => 'manual'],
             ),
         );
     }
@@ -494,22 +498,22 @@ class WorkflowEngine
 
         DB::transaction(function () use ($app, $actor, $receipt) {
             $app->update([
-                'payment_status'        => 'paid',
-                'payment_reference'     => $receipt->reference,
-                'payment_confirmed_at'  => now(),
+                'payment_status' => 'paid',
+                'payment_reference' => $receipt->reference,
+                'payment_confirmed_at' => now(),
             ]);
 
             AuditLog::record(
-                user:    $actor,
+                user: $actor,
                 subject: $app,
-                action:  'application.payment_confirmed',
+                action: 'application.payment_confirmed',
                 extra: [
-                    'rule_id'           => 'ESP-WF-005',
+                    'rule_id' => 'ESP-WF-005',
                     'payment_reference' => $receipt->reference,
-                    'amount'            => $receipt->amount,
-                    'currency'          => $receipt->currency,
-                    'settled_at'        => $receipt->settledAt,
-                    'gateway_meta'      => $receipt->meta,
+                    'amount' => $receipt->amount,
+                    'currency' => $receipt->currency,
+                    'settled_at' => $receipt->settledAt,
+                    'gateway_meta' => $receipt->meta,
                 ],
             );
         });
@@ -518,7 +522,7 @@ class WorkflowEngine
         try {
             app(NotificationService::class)->emitPaymentConfirmed($app->fresh());
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::warning('notification emit failed', [
+            Log::warning('notification emit failed', [
                 'event' => 'application.paid',
                 'application_id' => $app->id,
                 'error' => $e->getMessage(),
@@ -570,38 +574,38 @@ class WorkflowEngine
             // ended up with fewer fields than expected. Filter to strings
             // first so the intent is explicit and the diagnostic is
             // caught at authoring time, not from a mysterious blank cert.
-            $rawFields   = is_array($certConfig['fields_on_cert'] ?? null) ? $certConfig['fields_on_cert'] : [];
-            $certFields  = array_values(array_filter($rawFields, static fn ($v) => is_string($v) && $v !== ''));
-            $certData    = array_intersect_key($app->data ?? [], array_flip($certFields));
+            $rawFields = is_array($certConfig['fields_on_cert'] ?? null) ? $certConfig['fields_on_cert'] : [];
+            $certFields = array_values(array_filter($rawFields, static fn ($v) => is_string($v) && $v !== ''));
+            $certData = array_intersect_key($app->data ?? [], array_flip($certFields));
 
             // DATA-005: QR token is HMAC-signed
             $certNumber = $this->generateCertificateNumber($app);
-            $qrToken    = hash_hmac('sha256', $certNumber, config('app.key'));
+            $qrToken = hash_hmac('sha256', $certNumber, config('app.key'));
 
             $validityMonths = $certConfig['validity_months'] ?? 12;
 
             $certificate = Certificate::create([
-                'application_id'     => $app->id,
-                'organization_id'    => $app->organization_id,
-                'issued_to'          => $app->applicant_id,
-                'issued_by'          => $actor->id,
+                'application_id' => $app->id,
+                'organization_id' => $app->organization_id,
+                'issued_to' => $app->applicant_id,
+                'issued_by' => $actor->id,
                 'certificate_number' => $certNumber,
-                'qr_token'           => $qrToken,
-                'status'             => 'active',
-                'issued_date'        => now()->toDateString(),
-                'expiry_date'        => now()->addMonths($validityMonths)->toDateString(),
-                'cert_data'          => $certData,
+                'qr_token' => $qrToken,
+                'status' => 'active',
+                'issued_date' => now()->toDateString(),
+                'expiry_date' => now()->addMonths($validityMonths)->toDateString(),
+                'cert_data' => $certData,
             ]);
 
             // B-9 + WF-003
             AuditLog::record(
-                user:    $actor,
+                user: $actor,
                 subject: $app,
-                action:  'application.certificate_issued',
+                action: 'application.certificate_issued',
                 extra: [
-                    'rule_id'            => 'ESP-WF-004',
-                    'from_status'        => $prevStatus,
-                    'to_status'          => Application::STATUS_CERTIFICATE_ISSUED,
+                    'rule_id' => 'ESP-WF-004',
+                    'from_status' => $prevStatus,
+                    'to_status' => Application::STATUS_CERTIFICATE_ISSUED,
                     'certificate_number' => $certNumber,
                 ],
             );
@@ -611,7 +615,7 @@ class WorkflowEngine
         try {
             app(NotificationService::class)->emitCertificateIssued($app->fresh());
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::warning('notification emit failed', [
+            Log::warning('notification emit failed', [
                 'event' => 'application.certificate_issued',
                 'application_id' => $app->id,
                 'error' => $e->getMessage(),
@@ -656,6 +660,7 @@ class WorkflowEngine
                 return $stages[$i + 1];
             }
         }
+
         return null;
     }
 
@@ -679,8 +684,8 @@ class WorkflowEngine
      */
     private function generateCertificateNumber(Application $app): string
     {
-        $year   = (int) now()->format('Y');
-        $orgId  = (int) $app->organization_id;
+        $year = (int) now()->format('Y');
+        $orgId = (int) $app->organization_id;
         $serial = $this->allocateCertificateSerial($orgId, $year);
 
         return sprintf('CERT-%s-%s-%05d',
@@ -696,12 +701,12 @@ class WorkflowEngine
         // if two writers race, one gets a unique-key violation and the
         // outer transaction retries via Laravel's built-in retry logic
         // for serialization errors.
-        \Modules\JeaServices\Models\CertificateCounter::firstOrCreate(
+        CertificateCounter::firstOrCreate(
             ['organization_id' => $orgId, 'year' => $year],
             ['next_serial' => 1],
         );
 
-        $row = \Modules\JeaServices\Models\CertificateCounter::where('organization_id', $orgId)
+        $row = CertificateCounter::where('organization_id', $orgId)
             ->where('year', $year)
             ->lockForUpdate()
             ->first();

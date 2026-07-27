@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 // Workstream 8A: Project lives in a sibling module — needs an
 // explicit use so the short-ref Project::class in belongsTo() resolves.
+use Modules\JeaProjects\Engine\QuotaLedger;
 use Modules\JeaProjects\Models\Project;
 
 /**
@@ -24,22 +25,35 @@ use Modules\JeaProjects\Models\Project;
  * BR-004: organization_id scope enforced on every query (never query without it).
  * DATA-001: form data stored in JSON `data` column.
  *
- * @property int                                $id
- * @property string                             $reference_number
- * @property string                             $status
- * @property string|null                        $current_stage
- * @property int                                $applicant_id
- * @property int|null                           $assigned_reviewer_id
- * @property array<string, mixed>|null          $data
- * @property float|string                       $fee_amount
- * @property ServiceDefinition|null             $serviceDefinition
- * @property Project|null                       $project
- * @property Certificate|null                   $certificate
- * @property User|null                          $applicant
+ * @property int $id
+ * @property string $reference_number
+ * @property int $organization_id
+ * @property int $service_definition_id
+ * @property int|null $project_id
+ * @property string|null $contract_no
+ * @property int $applicant_id
+ * @property int|null $assigned_reviewer_id
+ * @property string $status
+ * @property string|null $current_stage
+ * @property array<string, mixed>|null $data
+ * @property string $fee_amount
+ * @property string $payment_status
+ * @property string|null $payment_reference
+ * @property Carbon|null $payment_confirmed_at
+ * @property Carbon|null $sla_deadline
+ * @property Carbon|null $sla_breached_at
+ * @property int $review_round
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property Carbon|null $deleted_at
+ * @property ServiceDefinition|null $serviceDefinition
+ * @property Project|null $project
+ * @property Certificate|null $certificate
+ * @property User|null $applicant
  */
 class Application extends Model
 {
-    use SoftDeletes, BelongsToOrganization;
+    use BelongsToOrganization, SoftDeletes;
 
     /**
      * JORD-68: on soft-delete, release any quota this application had
@@ -51,7 +65,7 @@ class Application extends Model
     protected static function booted(): void
     {
         static::deleted(function (Application $app) {
-            app(\Modules\JeaProjects\Engine\QuotaLedger::class)->releaseFor($app);
+            app(QuotaLedger::class)->releaseFor($app);
         });
     }
 
@@ -63,28 +77,35 @@ class Application extends Model
     ];
 
     protected $casts = [
-        'data'                 => 'array',
-        'fee_amount'           => 'decimal:2',
+        'data' => 'array',
+        'fee_amount' => 'decimal:2',
         'payment_confirmed_at' => 'datetime',
-        'sla_deadline'         => 'datetime',
-        'sla_breached_at'      => 'datetime',
+        'sla_deadline' => 'datetime',
+        'sla_breached_at' => 'datetime',
     ];
 
     // ── Status constants (mirrors ALLOWED_TRANSITIONS keys) ────────────
 
-    const STATUS_DRAFT                   = 'draft';
-    const STATUS_SUBMITTED               = 'submitted';
-    const STATUS_UNDER_REVIEW            = 'under_review';
+    const STATUS_DRAFT = 'draft';
+
+    const STATUS_SUBMITTED = 'submitted';
+
+    const STATUS_UNDER_REVIEW = 'under_review';
+
     const STATUS_MODIFICATIONS_REQUESTED = 'modifications_requested';
-    const STATUS_APPROVED                = 'approved';
-    const STATUS_REJECTED                = 'rejected';
-    const STATUS_CERTIFICATE_ISSUED      = 'certificate_issued';
+
+    const STATUS_APPROVED = 'approved';
+
+    const STATUS_REJECTED = 'rejected';
+
+    const STATUS_CERTIFICATE_ISSUED = 'certificate_issued';
 
     const TERMINAL_STATUSES = [self::STATUS_REJECTED, self::STATUS_CERTIFICATE_ISSUED];
 
     // ── Relationships ────────────────────────────────────────────────────
     // organization() provided by BelongsToOrganization trait
 
+    /** @return BelongsTo<ServiceDefinition, $this> */
     public function serviceDefinition(): BelongsTo
     {
         return $this->belongsTo(ServiceDefinition::class);
@@ -94,32 +115,39 @@ class Application extends Model
      * Optional link to the applicant's project — populated when the Apply
      * flow was reached from /projects/{id}/…. Nullable because certificates,
      * financial requests, and other non-drawing services carry no project.
+     *
+     * @return BelongsTo<Project, $this>
      */
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
     }
 
+    /** @return BelongsTo<User, $this> */
     public function applicant(): BelongsTo
     {
         return $this->belongsTo(User::class, 'applicant_id');
     }
 
+    /** @return BelongsTo<User, $this> */
     public function assignedReviewer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_reviewer_id');
     }
 
+    /** @return HasMany<ApplicationDocument, $this> */
     public function documents(): HasMany
     {
         return $this->hasMany(ApplicationDocument::class);
     }
 
+    /** @return HasMany<ApplicationReview, $this> */
     public function reviews(): HasMany
     {
         return $this->hasMany(ApplicationReview::class);
     }
 
+    /** @return HasOne<Certificate, $this> */
     public function certificate(): HasOne
     {
         return $this->hasOne(Certificate::class);
@@ -173,15 +201,21 @@ class Application extends Model
     public function getOutputValidityExpiryAttribute(): ?Carbon
     {
         $svc = $this->serviceDefinition;
-        if (!$svc) return null;
+        if (! $svc) {
+            return null;
+        }
         $months = (int) (data_get($svc->schema, 'certificate.validity_months') ?? 0);
-        if ($months <= 0) return null;
+        if ($months <= 0) {
+            return null;
+        }
 
         $approvedAt = $this->reviews
             ->where('decision', Application::STATUS_APPROVED)
             ->sortByDesc('created_at')
             ->first()?->created_at;
-        if (!$approvedAt) return null;
+        if (! $approvedAt) {
+            return null;
+        }
 
         return Carbon::parse($approvedAt)->addMonths($months);
     }
@@ -216,14 +250,15 @@ class Application extends Model
     public function getSupervisionExpiryAttribute(): ?Carbon
     {
         $svc = $this->serviceDefinition;
-        if (!$svc || $svc->parent_code !== 'JEA-PROJ') {
+        if (! $svc || $svc->parent_code !== 'JEA-PROJ') {
             return null;
         }
 
         $documents = data_get($svc->schema, 'documents', []);
+        $documents = is_array($documents) ? $documents : [];
         $hasSupervisionDoc = collect($documents)
-            ->contains(fn ($d) => ($d['id'] ?? null) === 'supervision_services_agreement');
-        if (!$hasSupervisionDoc) {
+            ->contains(fn ($d) => is_array($d) && ($d['id'] ?? null) === 'supervision_services_agreement');
+        if (! $hasSupervisionDoc) {
             return null;
         }
 
@@ -234,11 +269,12 @@ class Application extends Model
             ->where('decision', Application::STATUS_APPROVED)
             ->sortByDesc('created_at')
             ->first()?->created_at;
-        if (!$approvedAt) {
+        if (! $approvedAt) {
             return null;
         }
 
         $windowMonths = (int) config('esp.supervision_window_months', 6);
+
         return Carbon::parse($approvedAt)->addMonths($windowMonths);
     }
 
@@ -258,7 +294,7 @@ class Application extends Model
      */
     public static function generateReference(ServiceDefinition $service): string
     {
-        $yy      = str_pad((string) (now()->year % 100), 2, '0', STR_PAD_LEFT);
+        $yy = str_pad((string) (now()->year % 100), 2, '0', STR_PAD_LEFT);
         $svcCode = str_pad((string) ($service->id % 10000), 4, '0', STR_PAD_LEFT);
 
         $yearStart = now()->startOfYear();
@@ -269,6 +305,6 @@ class Application extends Model
 
         $seqStr = str_pad((string) $seq, 4, '0', STR_PAD_LEFT);
 
-        return $yy . $svcCode . $seqStr;
+        return $yy.$svcCode.$seqStr;
     }
 }

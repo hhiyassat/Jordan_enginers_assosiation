@@ -3,8 +3,8 @@
 namespace Modules\JeaServices\Database\Seeders;
 
 use App\Models\Organization;
-use Modules\JeaServices\Models\ServiceDefinition;
 use Illuminate\Database\Seeder;
+use Modules\JeaServices\Models\ServiceDefinition;
 
 /**
  * ServiceFeeDefaultsSeeder — JORD-85 (partial F-07)
@@ -35,13 +35,15 @@ use Illuminate\Database\Seeder;
 class ServiceFeeDefaultsSeeder extends Seeder
 {
     public const DEFAULT_AMOUNT_JOD = 50000;
-    public const DEFAULT_CURRENCY   = 'JOD';
+
+    public const DEFAULT_CURRENCY = 'JOD';
 
     public function run(): void
     {
         $org = Organization::where('slug', 'demo')->first();
-        if (!$org) {
+        if (! $org) {
             $this->command?->error('Demo organization not found. Run DemoSeeder first.');
+
             return;
         }
 
@@ -49,26 +51,28 @@ class ServiceFeeDefaultsSeeder extends Seeder
         $services = ServiceDefinition::where('organization_id', $org->id)->get();
         foreach ($services as $svc) {
             $schema = $svc->schema ?? [];
-            $fee    = $schema['fee'] ?? null;
+            $fee = $schema['fee'] ?? null;
 
             // Only replace the placeholder — never clobber a real fee.
             $isPlaceholder = is_array($fee)
-                && ($fee['type']   ?? null) === 'fixed'
+                && ($fee['type'] ?? null) === 'fixed'
                 && ((float) ($fee['amount'] ?? 0)) === 0.0;
 
-            if (!$isPlaceholder) continue;
+            if (! $isPlaceholder) {
+                continue;
+            }
 
             $schema['fee'] = [
-                'type'     => 'fixed',
-                'amount'   => self::DEFAULT_AMOUNT_JOD,
+                'type' => 'fixed',
+                'amount' => self::DEFAULT_AMOUNT_JOD,
                 'currency' => self::DEFAULT_CURRENCY,
-                'source'   => 'JORD-85 admin-default — override per service via PATCH /admin/services/{id}/fee once F-07 amounts are published.',
+                'source' => 'JORD-85 admin-default — override per service via PATCH /admin/services/{id}/fee once F-07 amounts are published.',
             ];
             $svc->update(['schema' => $schema]);
             $updated++;
         }
 
         $this->command?->info("✓ Service fee defaults ({$updated} services set to "
-            . self::DEFAULT_AMOUNT_JOD . ' ' . self::DEFAULT_CURRENCY . ' — admin-editable).');
+            .self::DEFAULT_AMOUNT_JOD.' '.self::DEFAULT_CURRENCY.' — admin-editable).');
     }
 }

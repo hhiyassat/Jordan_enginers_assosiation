@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreUserRequest;
+use App\Http\Requests\UpdateUserRequest;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rules\Password;
 
 /**
  * UserManagementController — tiered user-account CRUD.
@@ -43,6 +45,7 @@ class UserManagementController extends Controller
                 'message' => 'ليس لديك صلاحية لإدارة حسابات بهذا المستوى — العملية محصورة بالمستخدم الأعلى.',
             ], 403);
         }
+
         return null;
     }
 
@@ -52,12 +55,19 @@ class UserManagementController extends Controller
      *   • idle    — seen within the last 30 minutes
      *   • offline — otherwise (or null = never seen since login)
      */
-    private function presenceBucket(?\Carbon\Carbon $seen): string
+    private function presenceBucket(?Carbon $seen): string
     {
-        if ($seen === null) return 'offline';
+        if ($seen === null) {
+            return 'offline';
+        }
         $seconds = $seen->diffInSeconds(now());
-        if ($seconds <= 300)  return 'online';
-        if ($seconds <= 1800) return 'idle';
+        if ($seconds <= 300) {
+            return 'online';
+        }
+        if ($seconds <= 1800) {
+            return 'idle';
+        }
+
         return 'offline';
     }
 
@@ -83,53 +93,39 @@ class UserManagementController extends Controller
             ->map(function (User $u): array {
                 $arr = $u->toArray();
                 $arr['presence'] = $this->presenceBucket($u->last_seen_at);
+
                 return $arr;
             });
+
         return response()->json(['users' => $users]);
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(StoreUserRequest $request): JsonResponse
     {
-        $this->guardCanManageUsers($request);
+        $data = $request->validated();
 
-        $data = $request->validate([
-            'name'     => ['required', 'string', 'max:255'],
-            'email'    => ['required', 'email', 'unique:users,email'],
-            'password' => ['required', Password::min(8)->mixedCase()->numbers()],
-            'role'     => ['required', 'in:applicant,staff,auditor,admin,superuser'],
-            'phone'    => ['nullable', 'string', 'max:20'],
-        ]);
-
-        if ($refusal = $this->refuseTierCrossing($request, $data['role'])) return $refusal;
+        if ($refusal = $this->refuseTierCrossing($request, $data['role'])) {
+            return $refusal;
+        }
 
         $user = User::create([
             ...$data,
-            'organization_id'      => $request->user()->organization_id,
-            'password'             => Hash::make($data['password']),
+            'organization_id' => $request->user()->organization_id,
+            'password' => Hash::make($data['password']),
             'must_change_password' => true,
-            'password_changed_at'  => null,
-            'is_active'            => true,
+            'password_changed_at' => null,
+            'is_active' => true,
         ]);
 
         return response()->json(['user' => $user], 201);
     }
 
-    public function update(Request $request, int $id): JsonResponse
+    public function update(UpdateUserRequest $request): JsonResponse
     {
-        $this->guardCanManageUsers($request);
-
-        $target = User::where('organization_id', $request->user()->organization_id)->findOrFail($id);
-
-        // Actor cannot touch a target above their tier at all.
-        if ($refusal = $this->refuseTierCrossing($request, $target->role)) return $refusal;
-
-        $data = $request->validate([
-            'name'      => ['sometimes', 'string', 'max:255'],
-            'email'     => ['sometimes', 'email', 'unique:users,email,' . $target->id],
-            'role'      => ['sometimes', 'in:applicant,staff,auditor,admin,superuser'],
-            'is_active' => ['sometimes', 'boolean'],
-            'password'  => ['sometimes', Password::min(8)->mixedCase()->numbers()],
-        ]);
+        // UpdateUserRequest::authorize() already ran guardCanManageUsers()
+        // and the target-tier check before validation — see its docblock.
+        $target = $request->target();
+        $data = $request->validated();
 
         // Nor can they promote a target into a tier above what they can manage.
         if (isset($data['role']) && $refusal = $this->refuseTierCrossing($request, $data['role'])) {
@@ -144,13 +140,13 @@ class UserManagementController extends Controller
         if ($target->isSuperuser() && ! $target->must_change_password && $touchesCredentials) {
             return response()->json([
                 'message' => 'بيانات المستخدم الأعلى تُدار حصراً من سطر الأوامر: '
-                           . 'php artisan user:credentials ' . $target->email,
+                           .'php artisan user:credentials '.$target->email,
             ], 403);
         }
 
         // Never leave the org without a superuser.
         if ($target->isSuperuser()) {
-            $demoting     = isset($data['role'])      && $data['role']      !== 'superuser';
+            $demoting = isset($data['role']) && $data['role'] !== 'superuser';
             $deactivating = isset($data['is_active']) && $data['is_active'] === false;
             if (($demoting || $deactivating) && $this->lastActiveSuperuser($request, $target)) {
                 return response()->json([
@@ -160,12 +156,13 @@ class UserManagementController extends Controller
         }
 
         if (isset($data['password'])) {
-            $data['password']             = Hash::make($data['password']);
+            $data['password'] = Hash::make($data['password']);
             $data['must_change_password'] = true;
-            $data['password_changed_at']  = null;
+            $data['password_changed_at'] = null;
         }
 
         $target->update($data);
+
         return response()->json(['user' => $target]);
     }
 
@@ -175,7 +172,9 @@ class UserManagementController extends Controller
 
         $target = User::where('organization_id', $request->user()->organization_id)->findOrFail($id);
 
-        if ($refusal = $this->refuseTierCrossing($request, $target->role)) return $refusal;
+        if ($refusal = $this->refuseTierCrossing($request, $target->role)) {
+            return $refusal;
+        }
 
         if ($target->id === $request->user()->id) {
             return response()->json([
@@ -190,6 +189,7 @@ class UserManagementController extends Controller
         }
 
         $target->delete();
+
         return response()->json(['message' => 'تم حذف المستخدم.']);
     }
 

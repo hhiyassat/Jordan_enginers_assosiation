@@ -16,11 +16,12 @@ class DecideApplicationRequest extends FormRequest
         return $this->user()?->isReviewer() ?? false;
     }
 
+    /** @return array<string, mixed> */
     public function rules(): array
     {
         $rules = [
-            'decision'    => ['required', 'in:approved,rejected,modifications_requested'],
-            'notes'       => ['nullable', 'string', 'max:2000'],
+            'decision' => ['required', 'in:approved,rejected,modifications_requested'],
+            'notes' => ['nullable', 'string', 'max:2000'],
             'annotations' => ['nullable', 'array'],
         ];
 
@@ -36,8 +37,8 @@ class DecideApplicationRequest extends FormRequest
     {
         return [
             'decision.required' => 'القرار مطلوب.',
-            'decision.in'       => 'القرار يجب أن يكون: approved أو rejected أو modifications_requested.',
-            'notes.required'    => 'ملاحظات القرار مطلوبة عند الرفض أو طلب التعديل.',
+            'decision.in' => 'القرار يجب أن يكون: approved أو rejected أو modifications_requested.',
+            'notes.required' => 'ملاحظات القرار مطلوبة عند الرفض أو طلب التعديل.',
         ];
     }
 }

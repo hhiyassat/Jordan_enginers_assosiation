@@ -3,8 +3,8 @@
 namespace Modules\JeaServices\Database\Seeders;
 
 use App\Models\Organization;
-use Modules\JeaServices\Models\ServiceDefinition;
 use Illuminate\Database\Seeder;
+use Modules\JeaServices\Models\ServiceDefinition;
 
 /**
  * CatalogWorkflowsSeeder
@@ -42,8 +42,9 @@ class CatalogWorkflowsSeeder extends Seeder
     public function run(): void
     {
         $org = Organization::where('slug', 'demo')->first();
-        if (!$org) {
+        if (! $org) {
             $this->command->error('Demo organization not found. Run DemoSeeder first.');
+
             return;
         }
 
@@ -54,7 +55,9 @@ class CatalogWorkflowsSeeder extends Seeder
             $service = ServiceDefinition::where('organization_id', $org->id)
                 ->where('code', $code)
                 ->first();
-            if (!$service) continue;
+            if (! $service) {
+                continue;
+            }
 
             $schema = $service->schema;
             $schema['workflow'] = $workflowBundle;
@@ -67,21 +70,24 @@ class CatalogWorkflowsSeeder extends Seeder
             $updated++;
         }
 
-        $this->command->info("✓ Catalog workflows applied to {$updated} services (out of " . count($mappings) . ' mapped).');
+        $this->command->info("✓ Catalog workflows applied to {$updated} services (out of ".count($mappings).' mapped).');
     }
 
     /* ── Stage helpers ────────────────────────────────────────────────── */
 
-    /** @return array<string, mixed> */
+    /**
+     * @param  list<string>  $actions
+     * @return array<string, mixed>
+     */
     private function stage(string $id, string $labelAr, string $labelEn, string $role, int $slaHours, array $actions): array
     {
         return [
-            'id'        => $id,
-            'label_ar'  => $labelAr,
-            'label_en'  => $labelEn,
-            'role'      => $role,
+            'id' => $id,
+            'label_ar' => $labelAr,
+            'label_en' => $labelEn,
+            'role' => $role,
             'sla_hours' => $slaHours,
-            'actions'   => $actions,
+            'actions' => $actions,
         ];
     }
 
@@ -134,7 +140,7 @@ class CatalogWorkflowsSeeder extends Seeder
                 $this->issueDocuments(),
             ],
             'metadata' => [
-                'has_first_auditor'         => true,
+                'has_first_auditor' => true,
                 'second_can_override_first' => true,
             ],
         ];
@@ -208,7 +214,7 @@ class CatalogWorkflowsSeeder extends Seeder
             ],
             'metadata' => [
                 'is_financial_disbursement' => true,
-                'no_certificate_issued'     => true,
+                'no_certificate_issued' => true,
             ],
         ];
     }
@@ -282,7 +288,7 @@ class CatalogWorkflowsSeeder extends Seeder
             ],
             'metadata' => [
                 'is_board_decision' => true,
-                'appeal_allowed'    => true,
+                'appeal_allowed' => true,
             ],
         ];
     }
@@ -297,7 +303,7 @@ class CatalogWorkflowsSeeder extends Seeder
             ],
             'metadata' => [
                 'is_direct_response' => true,
-                'no_review_needed'   => true,
+                'no_review_needed' => true,
             ],
         ];
     }
@@ -391,7 +397,7 @@ class CatalogWorkflowsSeeder extends Seeder
         return [
             'label_ar' => 'تعديل طلب سابق',
             'label_en' => 'Modify Previous Application',
-            'stages'   => [
+            'stages' => [
                 $this->stage('select_data_source', 'حالة الطلب: نظام جديد أم قديم / ورقي', 'Application Source: New System vs Legacy / Paper', 'applicant', 24, ['choose_new_system', 'choose_legacy_system']),
                 $this->stage('ingest_or_reenter_data', 'استدعاء البيانات وتحديد التعديلات أو إعادة الإدخال', 'Retrieve Data & Define Modifications — or Re-enter', 'applicant', 48, ['confirm_data']),
                 $this->stage('classify_modification', 'تحديد نوع التعديل: فني أم إداري', 'Modification Type: Technical vs Administrative', 'staff', 24, ['classify_technical', 'classify_administrative']),
@@ -407,7 +413,7 @@ class CatalogWorkflowsSeeder extends Seeder
     /** @return array<string, array<string, mixed>> */
     private function buildMappings(): array
     {
-        $withMod = fn(array $wf) => $wf + ['variants' => ['modification' => $this->modificationVariant()]];
+        $withMod = fn (array $wf) => $wf + ['variants' => ['modification' => $this->modificationVariant()]];
 
         return [
             // ── JEA-PROJ Drawings ────────────────────────────────────

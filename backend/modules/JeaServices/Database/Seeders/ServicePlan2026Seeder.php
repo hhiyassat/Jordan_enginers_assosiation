@@ -3,8 +3,8 @@
 namespace Modules\JeaServices\Database\Seeders;
 
 use App\Models\Organization;
-use Modules\JeaServices\Models\ServiceDefinition;
 use Illuminate\Database\Seeder;
+use Modules\JeaServices\Models\ServiceDefinition;
 
 /**
  * ServicePlan2026Seeder
@@ -31,8 +31,9 @@ class ServicePlan2026Seeder extends Seeder
     public function run(): void
     {
         $org = Organization::where('slug', 'demo')->first();
-        if (!$org) {
+        if (! $org) {
             $this->command->error('Demo organization not found. Run DemoSeeder first.');
+
             return;
         }
 
@@ -63,8 +64,11 @@ class ServicePlan2026Seeder extends Seeder
         //    themselves aren't in services() so we set them here so refresh
         //    runs keep the paragraph copy in sync with the DESCRIPTIONS map.
         foreach (['JEA-CERT', 'JEA-FIN', 'JEA-PROJ', 'JEA-MISC', 'JEA-DEC', 'JEA-ENG', 'JEA-SURV'] as $tileCode) {
-            $desc = self::DESCRIPTIONS[$tileCode] ?? null;
-            if (!$desc) continue;
+            // Every tile code above is a guaranteed key in DESCRIPTIONS
+            // (see the const below) — no ?? fallback needed here, unlike
+            // the per-service lookup below which covers codes that
+            // legitimately have no description.
+            $desc = self::DESCRIPTIONS[$tileCode];
             ServiceDefinition::where('organization_id', $org->id)
                 ->where('code', $tileCode)
                 ->update([
@@ -82,17 +86,17 @@ class ServicePlan2026Seeder extends Seeder
         }
         $this->command->info("✓ Legacy placeholders soft-deleted: {$deleted}");
         $this->command->info('✓ ServicePlan2026 seeded — phase counts: '
-            . "1={$counts[1]}, 2={$counts[2]}, 3={$counts[3]}, 4={$counts[4]}, 5={$counts[5]}");
+            ."1={$counts[1]}, 2={$counts[2]}, 3={$counts[3]}, 4={$counts[4]}, 5={$counts[5]}");
     }
 
     /** @param array<string, mixed> $data */
     private function upsert(int $orgId, array $data): void
     {
         $data['organization_id'] = $orgId;
-        $data['currency']      ??= 'JOD';
-        $data['status']        ??= 'active';
-        $data['name_en']       ??= $data['name_ar'];
-        $data['schema']        ??= $this->placeholderSchema(
+        $data['currency'] ??= 'JOD';
+        $data['status'] ??= 'active';
+        $data['name_en'] ??= $data['name_ar'];
+        $data['schema'] ??= $this->placeholderSchema(
             $data['code'], $data['name_ar'], $data['name_en']
         );
 
@@ -373,37 +377,34 @@ class ServicePlan2026Seeder extends Seeder
     ];
 
     /**
-     * @param  string  $code
-     * @param  string  $nameAr
-     * @param  string  $nameEn
      * @return array<string, mixed>
      */
     private function placeholderSchema(string $code, string $nameAr, string $nameEn): array
     {
         return [
             'service_code' => $code,
-            'name_ar'      => $nameAr,
-            'name_en'      => $nameEn,
-            'version'      => '0.1-plan-2026',
-            'workflow'     => [
+            'name_ar' => $nameAr,
+            'name_en' => $nameEn,
+            'version' => '0.1-plan-2026',
+            'workflow' => [
                 'stages' => [[
-                    'id'        => 'placeholder_review',
-                    'label_ar'  => 'مراجعة أولية',
-                    'label_en'  => 'Placeholder Review',
-                    'role'      => 'staff',
+                    'id' => 'placeholder_review',
+                    'label_ar' => 'مراجعة أولية',
+                    'label_en' => 'Placeholder Review',
+                    'role' => 'staff',
                     'sla_hours' => 24,
-                    'actions'   => ['approve', 'reject'],
+                    'actions' => ['approve', 'reject'],
                 ]],
             ],
-            'fee'         => ['type' => 'fixed', 'amount' => 0, 'currency' => 'JOD'],
-            'sections'    => [],
-            'fields'      => [],
-            'documents'   => [],
+            'fee' => ['type' => 'fixed', 'amount' => 0, 'currency' => 'JOD'],
+            'sections' => [],
+            'fields' => [],
+            'documents' => [],
             'certificate' => [
                 'validity_months' => 0,
-                'title_ar'        => $nameAr,
-                'title_en'        => $nameEn,
-                'fields_on_cert'  => [],
+                'title_ar' => $nameAr,
+                'title_en' => $nameEn,
+                'fields_on_cert' => [],
             ],
         ];
     }

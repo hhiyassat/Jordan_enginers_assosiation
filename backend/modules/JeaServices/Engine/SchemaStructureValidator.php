@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Modules\JeaServices\Engine;
 
-use Modules\JeaServices\Engine\StageActions;
-
 /**
  * SchemaStructureValidator — validates that a saved JSON schema conforms to the
  * ESP v2 schema contract before it is persisted as a ServiceDefinition.
@@ -24,7 +22,7 @@ class SchemaStructureValidator
     private array $errors = [];
 
     /**
-     * @param  array<string, mixed> $schema
+     * @param  array<string, mixed>  $schema
      * @return array<string, string>|null
      */
     public function validate(array $schema): ?array
@@ -41,15 +39,18 @@ class SchemaStructureValidator
 
     // ── Workflow ─────────────────────────────────────────────────────────
 
+    /** @param array<string, mixed> $schema */
     private function checkWorkflow(array $schema): void
     {
         if (! isset($schema['workflow']['stages']) || ! is_array($schema['workflow']['stages'])) {
             $this->errors['schema.workflow.stages'] = 'المخطط يجب أن يحتوي على workflow.stages كمصفوفة.';
+
             return;
         }
 
         if (count($schema['workflow']['stages']) === 0) {
             $this->errors['schema.workflow.stages'] = 'يجب تعريف مرحلة مراجعة واحدة على الأقل في workflow.stages.';
+
             return;
         }
 
@@ -76,24 +77,24 @@ class SchemaStructureValidator
             $prefix = "schema.workflow.stages[$i]";
 
             if (empty($stage['id'])) {
-                $this->errors[$prefix . '.id'] = "المرحلة [{$i}] يجب أن تحتوي على حقل id.";
+                $this->errors[$prefix.'.id'] = "المرحلة [{$i}] يجب أن تحتوي على حقل id.";
             } else {
                 if (in_array($stage['id'], $stageIds)) {
-                    $this->errors[$prefix . '.id'] = "معرف المرحلة '{$stage['id']}' مكرر.";
+                    $this->errors[$prefix.'.id'] = "معرف المرحلة '{$stage['id']}' مكرر.";
                 }
                 $stageIds[] = $stage['id'];
             }
 
             if (empty($stage['label_ar'])) {
-                $this->errors[$prefix . '.label_ar'] = "المرحلة [{$i}] يجب أن تحتوي على label_ar.";
+                $this->errors[$prefix.'.label_ar'] = "المرحلة [{$i}] يجب أن تحتوي على label_ar.";
             }
 
             if (empty($stage['role']) || ! in_array($stage['role'], $validRoles)) {
-                $this->errors[$prefix . '.role'] = "المرحلة [{$i}]: role يجب أن يكون: " . implode('، ', $validRoles) . '.';
+                $this->errors[$prefix.'.role'] = "المرحلة [{$i}]: role يجب أن يكون: ".implode('، ', $validRoles).'.';
             }
 
             if (! isset($stage['sla_hours']) || ! is_numeric($stage['sla_hours'])) {
-                $this->errors[$prefix . '.sla_hours'] = "المرحلة [{$i}]: sla_hours مطلوب ويجب أن يكون رقماً.";
+                $this->errors[$prefix.'.sla_hours'] = "المرحلة [{$i}]: sla_hours مطلوب ويجب أن يكون رقماً.";
             } else {
                 // JORD-8: bound sla_hours so a schema-authoring slip can't
                 // schedule a stage for 10 years, or worse, produce a
@@ -102,21 +103,21 @@ class SchemaStructureValidator
                 // the moment it was created".
                 $sla = (float) $stage['sla_hours'];
                 if ($sla < 1) {
-                    $this->errors[$prefix . '.sla_hours'] = "المرحلة [{$i}]: sla_hours يجب أن يكون ساعة واحدة على الأقل.";
+                    $this->errors[$prefix.'.sla_hours'] = "المرحلة [{$i}]: sla_hours يجب أن يكون ساعة واحدة على الأقل.";
                 } elseif ($sla > 24 * 365) {
-                    $this->errors[$prefix . '.sla_hours'] = "المرحلة [{$i}]: sla_hours لا يمكن أن يتجاوز " . (24 * 365) . " ساعة (سنة واحدة).";
+                    $this->errors[$prefix.'.sla_hours'] = "المرحلة [{$i}]: sla_hours لا يمكن أن يتجاوز ".(24 * 365).' ساعة (سنة واحدة).';
                 }
             }
 
             // actions is optional but if present must be non-empty array of valid actions
             if (isset($stage['actions'])) {
                 if (! is_array($stage['actions']) || count($stage['actions']) === 0) {
-                    $this->errors[$prefix . '.actions'] = "المرحلة [{$i}]: actions يجب أن تكون مصفوفة غير فارغة.";
+                    $this->errors[$prefix.'.actions'] = "المرحلة [{$i}]: actions يجب أن تكون مصفوفة غير فارغة.";
                 } else {
                     $invalid = array_diff($stage['actions'], $validActions);
                     if (! empty($invalid)) {
-                        $this->errors[$prefix . '.actions'] = "المرحلة [{$i}]: قيم actions غير مسموح بها: " . implode('، ', $invalid)
-                            . '. القيم المسموح بها: ' . implode('، ', $validActions) . '.';
+                        $this->errors[$prefix.'.actions'] = "المرحلة [{$i}]: قيم actions غير مسموح بها: ".implode('، ', $invalid)
+                            .'. القيم المسموح بها: '.implode('، ', $validActions).'.';
                     }
                 }
             }
@@ -125,6 +126,7 @@ class SchemaStructureValidator
 
     // ── Fields ───────────────────────────────────────────────────────────
 
+    /** @param array<string, mixed> $schema */
     private function checkFields(array $schema): void
     {
         if (! isset($schema['fields'])) {
@@ -134,6 +136,7 @@ class SchemaStructureValidator
 
         if (! is_array($schema['fields'])) {
             $this->errors['schema.fields'] = 'schema.fields يجب أن تكون مصفوفة.';
+
             return;
         }
 
@@ -153,20 +156,20 @@ class SchemaStructureValidator
             $prefix = "schema.fields[$i]";
 
             if (empty($field['id'])) {
-                $this->errors[$prefix . '.id'] = "الحقل [{$i}] يجب أن يحتوي على id.";
+                $this->errors[$prefix.'.id'] = "الحقل [{$i}] يجب أن يحتوي على id.";
             } else {
                 if (in_array($field['id'], $seenIds)) {
-                    $this->errors[$prefix . '.id'] = "معرف الحقل '{$field['id']}' مكرر.";
+                    $this->errors[$prefix.'.id'] = "معرف الحقل '{$field['id']}' مكرر.";
                 }
                 $seenIds[] = $field['id'];
             }
 
             if (empty($field['label_ar'])) {
-                $this->errors[$prefix . '.label_ar'] = "الحقل [{$i}] يجب أن يحتوي على label_ar.";
+                $this->errors[$prefix.'.label_ar'] = "الحقل [{$i}] يجب أن يحتوي على label_ar.";
             }
 
             if (empty($field['type']) || ! in_array($field['type'], $validTypes)) {
-                $this->errors[$prefix . '.type'] = "الحقل [{$i}]: type غير مدعوم. القيم المدعومة: " . implode('، ', $validTypes) . '.';
+                $this->errors[$prefix.'.type'] = "الحقل [{$i}]: type غير مدعوم. القيم المدعومة: ".implode('، ', $validTypes).'.';
             }
 
             // select/radio/multiselect/checkbox_group must have options
@@ -174,10 +177,10 @@ class SchemaStructureValidator
             // time (JORD-69). Either satisfies the "there must be
             // choices" contract; both empty simultaneously is invalid.
             if (in_array($field['type'] ?? '', ['select', 'radio', 'multiselect', 'checkbox_group'])) {
-                $hasStaticOptions   = isset($field['options']) && is_array($field['options']) && count($field['options']) > 0;
-                $hasDynamicEndpoint = !empty($field['options_endpoint']) && is_string($field['options_endpoint']);
-                if (!$hasStaticOptions && !$hasDynamicEndpoint) {
-                    $this->errors[$prefix . '.options'] = "الحقل [{$i}] من نوع {$field['type']} يجب أن يحتوي على قائمة options أو options_endpoint.";
+                $hasStaticOptions = isset($field['options']) && is_array($field['options']) && count($field['options']) > 0;
+                $hasDynamicEndpoint = ! empty($field['options_endpoint']) && is_string($field['options_endpoint']);
+                if (! $hasStaticOptions && ! $hasDynamicEndpoint) {
+                    $this->errors[$prefix.'.options'] = "الحقل [{$i}] من نوع {$field['type']} يجب أن يحتوي على قائمة options أو options_endpoint.";
                 }
             }
 
@@ -192,17 +195,17 @@ class SchemaStructureValidator
             if (isset($field['conditional']) && is_array($field['conditional'])) {
                 $target = $field['conditional']['field'] ?? null;
                 if (! is_string($target) || $target === '') {
-                    $this->errors[$prefix . '.conditional.field'] =
+                    $this->errors[$prefix.'.conditional.field'] =
                         "الحقل [{$i}]: conditional.field يجب أن يكون معرّف حقل نصياً.";
                 } elseif (! in_array($target, $fieldIds, true)) {
-                    $this->errors[$prefix . '.conditional.field'] =
+                    $this->errors[$prefix.'.conditional.field'] =
                         "الحقل [{$i}]: conditional.field يشير إلى '{$target}' وهو غير معرّف في المخطط.";
                 } elseif (isset($field['id']) && $target === $field['id']) {
-                    $this->errors[$prefix . '.conditional.field'] =
+                    $this->errors[$prefix.'.conditional.field'] =
                         "الحقل [{$i}]: لا يمكن للحقل أن يعتمد على نفسه.";
                 }
                 if (! array_key_exists('value', $field['conditional'])) {
-                    $this->errors[$prefix . '.conditional.value'] =
+                    $this->errors[$prefix.'.conditional.value'] =
                         "الحقل [{$i}]: conditional.value مطلوب.";
                 }
             }
@@ -211,6 +214,7 @@ class SchemaStructureValidator
 
     // ── Documents ────────────────────────────────────────────────────────
 
+    /** @param array<string, mixed> $schema */
     private function checkDocuments(array $schema): void
     {
         if (! isset($schema['documents'])) {
@@ -219,6 +223,7 @@ class SchemaStructureValidator
 
         if (! is_array($schema['documents'])) {
             $this->errors['schema.documents'] = 'schema.documents يجب أن تكون مصفوفة.';
+
             return;
         }
 
@@ -228,22 +233,23 @@ class SchemaStructureValidator
             $prefix = "schema.documents[$i]";
 
             if (empty($doc['id'])) {
-                $this->errors[$prefix . '.id'] = "المستند [{$i}] يجب أن يحتوي على id.";
+                $this->errors[$prefix.'.id'] = "المستند [{$i}] يجب أن يحتوي على id.";
             } else {
                 if (in_array($doc['id'], $docIds)) {
-                    $this->errors[$prefix . '.id'] = "معرف المستند '{$doc['id']}' مكرر.";
+                    $this->errors[$prefix.'.id'] = "معرف المستند '{$doc['id']}' مكرر.";
                 }
                 $docIds[] = $doc['id'];
             }
 
             if (empty($doc['label_ar'])) {
-                $this->errors[$prefix . '.label_ar'] = "المستند [{$i}] يجب أن يحتوي على label_ar.";
+                $this->errors[$prefix.'.label_ar'] = "المستند [{$i}] يجب أن يحتوي على label_ar.";
             }
         }
     }
 
     // ── Fee ──────────────────────────────────────────────────────────────
 
+    /** @param array<string, mixed> $schema */
     private function checkFee(array $schema): void
     {
         if (! isset($schema['fee'])) {
@@ -252,6 +258,7 @@ class SchemaStructureValidator
 
         if (! is_array($schema['fee'])) {
             $this->errors['schema.fee'] = 'schema.fee يجب أن يكون كائناً.';
+
             return;
         }
 
@@ -259,7 +266,7 @@ class SchemaStructureValidator
         $feeType = $schema['fee']['type'] ?? null;
 
         if ($feeType && ! in_array($feeType, $validTypes)) {
-            $this->errors['schema.fee.type'] = 'نوع الرسوم غير مدعوم. القيم المدعومة: ' . implode('، ', $validTypes) . '.';
+            $this->errors['schema.fee.type'] = 'نوع الرسوم غير مدعوم. القيم المدعومة: '.implode('، ', $validTypes).'.';
         }
 
         if ($feeType === 'fixed' && ! isset($schema['fee']['amount'])) {
@@ -269,7 +276,7 @@ class SchemaStructureValidator
         // JORD-63: matrix — validate the four required shape fields so a
         // typo doesn't silently collapse every lookup to the default.
         if ($feeType === 'matrix') {
-            if (!isset($schema['fee']['keys']) || !is_array($schema['fee']['keys']) || $schema['fee']['keys'] === []) {
+            if (! isset($schema['fee']['keys']) || ! is_array($schema['fee']['keys']) || $schema['fee']['keys'] === []) {
                 $this->errors['schema.fee.keys'] = 'مصفوفة الرسوم (matrix) تتطلب قائمة keys غير فارغة.';
             } else {
                 // Every key must be a form field id declared elsewhere in
@@ -278,21 +285,23 @@ class SchemaStructureValidator
                 $fieldIds = [];
                 if (isset($schema['fields']) && is_array($schema['fields'])) {
                     foreach ($schema['fields'] as $f) {
-                        if (isset($f['id']) && is_string($f['id'])) $fieldIds[] = $f['id'];
+                        if (isset($f['id']) && is_string($f['id'])) {
+                            $fieldIds[] = $f['id'];
+                        }
                     }
                 }
                 foreach ($schema['fee']['keys'] as $i => $k) {
-                    if (!is_string($k) || $k === '') {
+                    if (! is_string($k) || $k === '') {
                         $this->errors["schema.fee.keys[$i]"] = 'كل عنصر في keys يجب أن يكون معرف حقل نصياً.';
-                    } elseif (!in_array($k, $fieldIds, true)) {
+                    } elseif (! in_array($k, $fieldIds, true)) {
                         $this->errors["schema.fee.keys[$i]"] = "keys[$i]='{$k}' يشير إلى حقل غير معرف في fields.";
                     }
                 }
             }
-            if (!isset($schema['fee']['rates']) || !is_array($schema['fee']['rates']) || $schema['fee']['rates'] === []) {
+            if (! isset($schema['fee']['rates']) || ! is_array($schema['fee']['rates']) || $schema['fee']['rates'] === []) {
                 $this->errors['schema.fee.rates'] = 'مصفوفة الرسوم (matrix) تتطلب جدول rates غير فارغ.';
             }
-            if (isset($schema['fee']['basis']) && !is_string($schema['fee']['basis'])) {
+            if (isset($schema['fee']['basis']) && ! is_string($schema['fee']['basis'])) {
                 $this->errors['schema.fee.basis'] = 'حقل basis يجب أن يكون معرف حقل نصياً.';
             }
         }
@@ -301,33 +310,36 @@ class SchemaStructureValidator
         // array of well-formed entries. Malformed surcharge shapes
         // silently omit the line item — worse UX than a hard 422.
         if (isset($schema['fee']['surcharges'])) {
-            if (!is_array($schema['fee']['surcharges'])) {
+            if (! is_array($schema['fee']['surcharges'])) {
                 $this->errors['schema.fee.surcharges'] = 'حقل surcharges يجب أن يكون قائمة.';
             } else {
                 $fieldIds = [];
                 if (isset($schema['fields']) && is_array($schema['fields'])) {
                     foreach ($schema['fields'] as $f) {
-                        if (isset($f['id']) && is_string($f['id'])) $fieldIds[] = $f['id'];
+                        if (isset($f['id']) && is_string($f['id'])) {
+                            $fieldIds[] = $f['id'];
+                        }
                     }
                 }
                 foreach ($schema['fee']['surcharges'] as $i => $s) {
                     $prefix = "schema.fee.surcharges[$i]";
-                    if (!is_array($s)) {
+                    if (! is_array($s)) {
                         $this->errors[$prefix] = "surcharges[$i] يجب أن يكون كائناً.";
+
                         continue;
                     }
                     $kind = $s['kind'] ?? null;
-                    if (!in_array($kind, ['percent_of_base', 'per_unit'], true)) {
-                        $this->errors[$prefix . '.kind'] = "surcharges[$i].kind يجب أن يكون percent_of_base أو per_unit.";
+                    if (! in_array($kind, ['percent_of_base', 'per_unit'], true)) {
+                        $this->errors[$prefix.'.kind'] = "surcharges[$i].kind يجب أن يكون percent_of_base أو per_unit.";
                     }
-                    if (!isset($s['rate']) || !is_numeric($s['rate'])) {
-                        $this->errors[$prefix . '.rate'] = "surcharges[$i].rate رقم مطلوب.";
+                    if (! isset($s['rate']) || ! is_numeric($s['rate'])) {
+                        $this->errors[$prefix.'.rate'] = "surcharges[$i].rate رقم مطلوب.";
                     }
                     if ($kind === 'per_unit') {
-                        if (empty($s['basis']) || !is_string($s['basis'])) {
-                            $this->errors[$prefix . '.basis'] = "surcharges[$i].basis معرف حقل نصي مطلوب لسورشارج per_unit.";
-                        } elseif (!in_array($s['basis'], $fieldIds, true)) {
-                            $this->errors[$prefix . '.basis'] = "surcharges[$i].basis='{$s['basis']}' يشير إلى حقل غير معرف في fields.";
+                        if (empty($s['basis']) || ! is_string($s['basis'])) {
+                            $this->errors[$prefix.'.basis'] = "surcharges[$i].basis معرف حقل نصي مطلوب لسورشارج per_unit.";
+                        } elseif (! in_array($s['basis'], $fieldIds, true)) {
+                            $this->errors[$prefix.'.basis'] = "surcharges[$i].basis='{$s['basis']}' يشير إلى حقل غير معرف في fields.";
                         }
                     }
                 }
@@ -337,21 +349,23 @@ class SchemaStructureValidator
         // JORD-64: per_unit — must declare basis (form field) + rate.
         // Missing either produces silent zero fees, so require both.
         if ($feeType === 'per_unit') {
-            if (empty($schema['fee']['basis']) || !is_string($schema['fee']['basis'])) {
+            if (empty($schema['fee']['basis']) || ! is_string($schema['fee']['basis'])) {
                 $this->errors['schema.fee.basis'] = 'رسوم per_unit تتطلب basis كمعرف حقل نصي.';
             } else {
                 // basis must reference a real form field.
                 $fieldIds = [];
                 if (isset($schema['fields']) && is_array($schema['fields'])) {
                     foreach ($schema['fields'] as $f) {
-                        if (isset($f['id']) && is_string($f['id'])) $fieldIds[] = $f['id'];
+                        if (isset($f['id']) && is_string($f['id'])) {
+                            $fieldIds[] = $f['id'];
+                        }
                     }
                 }
-                if (!in_array($schema['fee']['basis'], $fieldIds, true)) {
+                if (! in_array($schema['fee']['basis'], $fieldIds, true)) {
                     $this->errors['schema.fee.basis'] = "basis='{$schema['fee']['basis']}' يشير إلى حقل غير معرف في fields.";
                 }
             }
-            if (!isset($schema['fee']['rate']) || !is_numeric($schema['fee']['rate'])) {
+            if (! isset($schema['fee']['rate']) || ! is_numeric($schema['fee']['rate'])) {
                 $this->errors['schema.fee.rate'] = 'رسوم per_unit تتطلب rate رقمياً.';
             }
         }

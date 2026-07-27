@@ -4,23 +4,27 @@ declare(strict_types=1);
 
 namespace Modules\JeaServices\Http\Controllers;
 
+use App\Http\Controllers\Controller;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+use Modules\JeaDiscipline\Engine\SanctionGuard;
+use Modules\JeaProjects\Engine\CapacityGuard;
+use Modules\JeaProjects\Engine\QuotaLedger;
+use Modules\JeaProjects\Models\Project;
 use Modules\JeaServices\Engine\CrossCuttingSubmissionPipeline;
 use Modules\JeaServices\Engine\FeeCalculator;
 use Modules\JeaServices\Engine\SchemaValidator;
 use Modules\JeaServices\Engine\ServiceSubmissionGuardRegistry;
+use Modules\JeaServices\Engine\StageActions;
 use Modules\JeaServices\Engine\WorkflowEngine;
-use App\Http\Controllers\Controller;
-use Modules\JeaServices\Http\Requests\ConfirmPaymentRequest;
-use Modules\JeaServices\Http\Requests\DecideApplicationRequest;
 use Modules\JeaServices\Http\Requests\StoreApplicationRequest;
+use Modules\JeaServices\Http\Requests\UpdateApplicationRequest;
+use Modules\JeaServices\Http\Requests\UploadDocumentRequest;
 use Modules\JeaServices\Models\Application;
 use Modules\JeaServices\Models\ApplicationDocument;
-use Modules\JeaServices\Models\ApplicationReview;
 use Modules\JeaServices\Models\Certificate;
 use Modules\JeaServices\Models\ServiceDefinition;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 
 /**
  * ApplicationController
@@ -72,6 +76,7 @@ class ApplicationController extends Controller
             $arr['certificate_pdf_url'] = $app->certificate
                 ? url("/api/v1/certificates/{$app->certificate->certificate_number}/pdf?token={$app->certificate->qr_token}")
                 : null;
+
             return $arr;
         });
 
@@ -89,8 +94,8 @@ class ApplicationController extends Controller
         // application's current stage. The frontend renders one button per
         // available action; unknown ids from a drifted schema are skipped.
         $service = $app->serviceDefinition;
-        $available = $service instanceof \Modules\JeaServices\Models\ServiceDefinition
-            ? \Modules\JeaServices\Engine\StageActions::forApplication($app, $service, $request->user()?->role)
+        $available = $service instanceof ServiceDefinition
+            ? StageActions::forApplication($app, $service, $request->user()?->role)
             : [];
 
         // Attach a signed PDF download URL when the certificate exists.
@@ -112,9 +117,9 @@ class ApplicationController extends Controller
         // 500 the whole show response — the applicant needs to see
         // documents / status even if the fee is misauthored).
         $feeBreakdown = null;
-        if ($service instanceof \Modules\JeaServices\Models\ServiceDefinition) {
+        if ($service instanceof ServiceDefinition) {
             try {
-                $feeBreakdown = (new \Modules\JeaServices\Engine\FeeCalculator($service))
+                $feeBreakdown = (new FeeCalculator($service))
                     ->calculateBreakdown(is_array($app->data) ? $app->data : []);
 
                 // JORD-72: overflow surcharge for per-project-cap breach.
@@ -123,7 +128,7 @@ class ApplicationController extends Controller
                 // the applicant's office+discipline, not the service.
                 // Appended AFTER the schema surcharges so it renders
                 // last in the itemized preview.
-                $overflow = app(\Modules\JeaProjects\Engine\QuotaLedger::class)->overflowSurchargeFor($app);
+                $overflow = app(QuotaLedger::class)->overflowSurchargeFor($app);
                 if ($overflow !== null) {
                     $feeBreakdown['surcharges'][] = $overflow;
                     $feeBreakdown['total'] = round(
@@ -137,10 +142,10 @@ class ApplicationController extends Controller
         }
 
         return response()->json([
-            'application'         => $app,
-            'available_actions'   => $available,
+            'application' => $app,
+            'available_actions' => $available,
             'certificate_pdf_url' => $certificatePdfUrl,
-            'fee_breakdown'       => $feeBreakdown,
+            'fee_breakdown' => $feeBreakdown,
         ]);
     }
 
@@ -164,40 +169,40 @@ class ApplicationController extends Controller
         // vector we close at the controller boundary — the FormRequest's
         // `exists:` rule only proves the row exists globally, not that this
         // user may read it.
-        $projectId  = null;
+        $projectId = null;
         // JORD-14: applications inherit the project's contract_no at
         // create time. Prior to this, contract_no lived only on the
         // Project row and the applicant couldn't see it on their
         // application detail without cross-referencing.
         $contractNo = null;
         if ($request->filled('project_id')) {
-            $project = \Modules\JeaProjects\Models\Project::where('id', (int) $request->project_id)
+            $project = Project::where('id', (int) $request->project_id)
                 ->where('organization_id', $request->user()->organization_id)
                 ->where('owner_user_id', $request->user()->id)
                 ->first();
             if (! $project) {
                 return response()->json([
                     'message' => 'المشروع غير مرتبط بحسابك.',
-                    'errors'  => ['project_id' => ['المشروع غير موجود أو لا يخصك.']],
+                    'errors' => ['project_id' => ['المشروع غير موجود أو لا يخصك.']],
                 ], 422);
             }
-            $projectId  = $project->id;
+            $projectId = $project->id;
             $contractNo = $project->contract_no;
         }
 
         $fee = (new FeeCalculator($service))->calculate($request->data);
 
         $app = Application::create([
-            'reference_number'      => Application::generateReference($service),
-            'contract_no'           => $contractNo,
-            'organization_id'       => $request->user()->organization_id,
+            'reference_number' => Application::generateReference($service),
+            'contract_no' => $contractNo,
+            'organization_id' => $request->user()->organization_id,
             'service_definition_id' => $service->id,
-            'project_id'            => $projectId,
-            'applicant_id'          => $request->user()->id,
-            'status'                => Application::STATUS_DRAFT,
-            'data'                  => $request->data,
-            'fee_amount'            => $fee,
-            'payment_status'        => $fee > 0 ? 'pending' : 'waived',
+            'project_id' => $projectId,
+            'applicant_id' => $request->user()->id,
+            'status' => Application::STATUS_DRAFT,
+            'data' => $request->data,
+            'fee_amount' => $fee,
+            'payment_status' => $fee > 0 ? 'pending' : 'waived',
         ]);
 
         return response()->json(['application' => $app], 201);
@@ -205,7 +210,7 @@ class ApplicationController extends Controller
 
     // ── Update draft ──────────────────────────────────────────────────
 
-    public function update(Request $request, int $id): JsonResponse
+    public function update(UpdateApplicationRequest $request, int $id): JsonResponse
     {
         $app = $this->findAccessible($request, $id);
 
@@ -213,18 +218,8 @@ class ApplicationController extends Controller
             return response()->json(['message' => 'يمكن تعديل الطلبات في مرحلة المسودة أو طلب التعديل فقط.'], 422);
         }
 
-        // `present`, not `required` — same reasoning as StoreApplicationRequest:
-        // an empty {} is a legitimate draft state, per-field enforcement runs
-        // in SchemaValidator on POST /submit. Explicit Arabic message so the
-        // Apply banner isn't in English on the frontend.
-        $data = $request->validate(
-            ['data' => ['present', 'array']],
-            [
-                'data.present' => 'حقل بيانات الطلب مفقود من الطلب.',
-                'data.array'   => 'بيانات الطلب يجب أن تكون كائناً.',
-            ]
-        );
-        $fee  = (new FeeCalculator($app->serviceDefinition))->calculate($data['data']);
+        $data = $request->validated();
+        $fee = (new FeeCalculator($app->serviceDefinition))->calculate($data['data']);
 
         $app->update(['data' => $data['data'], 'fee_amount' => $fee]);
 
@@ -242,7 +237,7 @@ class ApplicationController extends Controller
      */
     public function submit(Request $request, int $id): JsonResponse
     {
-        $app     = $this->findAccessible($request, $id);
+        $app = $this->findAccessible($request, $id);
         $service = $app->serviceDefinition;
 
         // EDA B-4 / WF-005: validate schema fields
@@ -251,17 +246,17 @@ class ApplicationController extends Controller
             // EDA-10: Correctable Defect — return field errors, application stays in draft
             return response()->json([
                 'message' => 'يوجد أخطاء في البيانات. يرجى مراجعة الحقول المحددة.',
-                'errors'  => $dataErrors,
+                'errors' => $dataErrors,
             ], 422);
         }
 
         // WF-006: validate required documents
         $uploadedIds = $app->documents->pluck('document_id')->toArray();
-        $docErrors   = (new SchemaValidator($service))->validateDocuments($uploadedIds, $app->data ?? []);
+        $docErrors = (new SchemaValidator($service))->validateDocuments($uploadedIds, $app->data ?? []);
         if ($docErrors) {
             return response()->json([
                 'message' => 'يوجد مستندات مطلوبة غير مرفوعة.',
-                'errors'  => $docErrors,
+                'errors' => $docErrors,
             ], 422);
         }
 
@@ -276,7 +271,7 @@ class ApplicationController extends Controller
         if ($crossCuttingErrors) {
             return response()->json([
                 'message' => 'لا يمكن تقديم الطلب. تحقق من الشروط العامة للتقديم.',
-                'errors'  => $crossCuttingErrors,
+                'errors' => $crossCuttingErrors,
             ], 422);
         }
 
@@ -290,7 +285,7 @@ class ApplicationController extends Controller
         if ($guardErrors) {
             return response()->json([
                 'message' => 'لا يمكن تقديم الطلب. راجع الحقول المحددة.',
-                'errors'  => $guardErrors,
+                'errors' => $guardErrors,
             ], 422);
         }
 
@@ -298,11 +293,11 @@ class ApplicationController extends Controller
         // the office's yearly ceiling must have room for this submission's
         // area_m2. Only fires on services that declare an area_m2 field;
         // returns [] (pass-through) for everything else.
-        $capacityErrors = app(\Modules\JeaProjects\Engine\CapacityGuard::class)->validate($app);
+        $capacityErrors = app(CapacityGuard::class)->validate($app);
         if ($capacityErrors) {
             return response()->json([
                 'message' => 'الرصيد الهندسي غير كافٍ. يرجى مراجعة الحصة والسقف السنوي.',
-                'errors'  => $capacityErrors,
+                'errors' => $capacityErrors,
             ], 422);
         }
 
@@ -311,24 +306,24 @@ class ApplicationController extends Controller
         // cannot submit ANY application until the sanction lapses.
         // Fires last so field / doc / capacity issues surface first
         // (fixable in-place), and the sanction message is a hard stop.
-        $sanctionErrors = app(\Modules\JeaDiscipline\Engine\SanctionGuard::class)->validate($app);
+        $sanctionErrors = app(SanctionGuard::class)->validate($app);
         if ($sanctionErrors) {
             return response()->json([
                 'message' => 'لا يمكن تقديم الطلب بسبب عقوبة تأديبية نافذة على المكتب.',
-                'errors'  => $sanctionErrors,
+                'errors' => $sanctionErrors,
             ], 422);
         }
 
         // WF-001: delegate to WorkflowEngine (EDA B-5, B-9)
         $engine = new WorkflowEngine($service);
-        $app    = $engine->submit($app, $request->user());
+        $app = $engine->submit($app, $request->user());
 
         return response()->json(['application' => $app]);
     }
 
     // ── Upload document ───────────────────────────────────────────────
 
-    public function uploadDocument(Request $request, int $id): JsonResponse
+    public function uploadDocument(UploadDocumentRequest $request, int $id): JsonResponse
     {
         $app = $this->findAccessible($request, $id);
 
@@ -336,25 +331,15 @@ class ApplicationController extends Controller
             return response()->json(['message' => 'المستندات تُرفع فقط للطلبات في مرحلة المسودة.'], 422);
         }
 
-        $request->validate([
-            'document_id' => ['required', 'string'],
-            // SEC-008 hardened: only PDF drawings and DWG source files are
-            // accepted as application attachments. The PdfOrDwgFile rule
-            // inspects the leading bytes (not just the extension) to reject
-            // renamed executables. 50 MB outer cap matches the schema-level
-            // per-slot cap enforced downstream by SchemaValidator.
-            'file'        => ['required', 'file', 'max:51200', new \App\Rules\PdfOrDwgFile()],
-        ]);
-
         $file = $request->file('file');
         // NFR-010: store on the configured default disk. Production must set
         // FILESYSTEM_DISK=s3 (or another object-storage driver); dev may fall
         // back to 'local' via .env. StorageServiceProvider fails fast at boot
         // in production if the disk is not object storage.
-        $disk   = config('filesystems.default');
+        $disk = config('filesystems.default');
         $stored = $file->storeAs(
             "uploads/applications/{$app->id}",
-            \Illuminate\Support\Str::uuid() . '.' . $file->getClientOriginalExtension(),
+            Str::uuid().'.'.$file->getClientOriginalExtension(),
             ['disk' => $disk]
         );
 
@@ -364,15 +349,15 @@ class ApplicationController extends Controller
             ->delete();
 
         $doc = ApplicationDocument::create([
-            'application_id'    => $app->id,
-            'document_id'       => $request->document_id,
+            'application_id' => $app->id,
+            'document_id' => $request->document_id,
             'original_filename' => $file->getClientOriginalName(),
-            'stored_filename'   => basename($stored),
-            'disk'              => $disk,
-            'path'              => $stored,
-            'mime_type'         => $file->getMimeType(),
-            'size_bytes'        => $file->getSize(),
-            'uploaded_by'       => $request->user()->id,
+            'stored_filename' => basename($stored),
+            'disk' => $disk,
+            'path' => $stored,
+            'mime_type' => $file->getMimeType(),
+            'size_bytes' => $file->getSize(),
+            'uploaded_by' => $request->user()->id,
         ]);
 
         return response()->json(['document' => $doc], 201);

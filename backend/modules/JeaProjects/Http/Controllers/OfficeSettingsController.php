@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace Modules\JeaProjects\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use Modules\JeaProjects\Models\Engineer;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Modules\JeaProjects\Http\Requests\UpdateOfficeEngineerRequest;
+use Modules\JeaProjects\Http\Requests\UpdateOfficeSettingsRequest;
+use Modules\JeaProjects\Models\Engineer;
 
 /**
  * OfficeSettingsController — JORD-77
@@ -34,9 +36,10 @@ class OfficeSettingsController extends Controller
             ->where('role', 'applicant')
             ->orderBy('name')
             ->get(['id', 'name', 'email', 'is_active',
-                   'has_excellence_award', 'is_bit_khibra', 'has_iso_cert'])
+                'has_excellence_award', 'is_bit_khibra', 'has_iso_cert'])
             ->map(function ($u) {
                 $u->engineer_count = Engineer::where('office_user_id', $u->id)->count();
+
                 return $u;
             });
 
@@ -50,38 +53,34 @@ class OfficeSettingsController extends Controller
         $engineers = Engineer::where('office_user_id', $office->id)
             ->orderBy('name_ar')
             ->get(['id', 'name_ar', 'name_en', 'membership_number',
-                   'specialization', 'is_specialization_head']);
+                'specialization', 'is_specialization_head']);
 
         return response()->json([
             'office' => [
-                'id'                   => $office->id,
-                'name'                 => $office->name,
-                'email'                => $office->email,
+                'id' => $office->id,
+                'name' => $office->name,
+                'email' => $office->email,
                 'has_excellence_award' => (bool) $office->has_excellence_award,
-                'is_bit_khibra'        => (bool) $office->is_bit_khibra,
-                'has_iso_cert'         => (bool) $office->has_iso_cert,
+                'is_bit_khibra' => (bool) $office->is_bit_khibra,
+                'has_iso_cert' => (bool) $office->has_iso_cert,
             ],
             'engineers' => $engineers,
         ]);
     }
 
     /** PATCH /admin/offices/{id} → update any subset of the 3 flags. */
-    public function update(Request $request, int $id): JsonResponse
+    public function update(UpdateOfficeSettingsRequest $request, int $id): JsonResponse
     {
         $office = $this->findOffice($request, $id);
-        $data = $request->validate([
-            'has_excellence_award' => ['sometimes', 'boolean'],
-            'is_bit_khibra'        => ['sometimes', 'boolean'],
-            'has_iso_cert'         => ['sometimes', 'boolean'],
-        ]);
+        $data = $request->validated();
         $office->update($data);
 
         return response()->json([
-            'office'  => [
-                'id'                   => $office->id,
+            'office' => [
+                'id' => $office->id,
                 'has_excellence_award' => (bool) $office->has_excellence_award,
-                'is_bit_khibra'        => (bool) $office->is_bit_khibra,
-                'has_iso_cert'         => (bool) $office->has_iso_cert,
+                'is_bit_khibra' => (bool) $office->is_bit_khibra,
+                'has_iso_cert' => (bool) $office->has_iso_cert,
             ],
             'message' => 'تم تحديث إعدادات المكتب.',
         ]);
@@ -92,12 +91,10 @@ class OfficeSettingsController extends Controller
      * → toggle is_specialization_head on an engineer that belongs to
      * the given office.
      */
-    public function updateEngineer(Request $request, int $officeId, int $engineerId): JsonResponse
+    public function updateEngineer(UpdateOfficeEngineerRequest $request, int $officeId, int $engineerId): JsonResponse
     {
         $office = $this->findOffice($request, $officeId);
-        $data = $request->validate([
-            'is_specialization_head' => ['required', 'boolean'],
-        ]);
+        $data = $request->validated();
 
         // Engineer must belong to THIS office. Cross-office attempt 404s.
         $engineer = Engineer::where('office_user_id', $office->id)
@@ -106,7 +103,7 @@ class OfficeSettingsController extends Controller
 
         return response()->json([
             'engineer' => $engineer->fresh(),
-            'message'  => 'تم تحديث إعدادات المهندس.',
+            'message' => 'تم تحديث إعدادات المهندس.',
         ]);
     }
 

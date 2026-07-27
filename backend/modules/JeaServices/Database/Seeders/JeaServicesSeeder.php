@@ -3,10 +3,10 @@
 namespace Modules\JeaServices\Database\Seeders;
 
 use App\Models\Organization;
-use Modules\JeaServices\Models\ServiceDefinition;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Modules\JeaServices\Models\ServiceDefinition;
 
 /**
  * JeaServicesSeeder
@@ -25,8 +25,8 @@ class JeaServicesSeeder extends Seeder
         $org = Organization::firstOrCreate(
             ['slug' => 'jea'],
             [
-                'name_ar'   => 'نقابة المهندسين الأردنيين',
-                'name_en'   => 'Jordan Engineers Association',
+                'name_ar' => 'نقابة المهندسين الأردنيين',
+                'name_en' => 'Jordan Engineers Association',
                 'is_active' => true,
             ]
         );
@@ -44,10 +44,10 @@ class JeaServicesSeeder extends Seeder
                 ['email' => $u['email']],
                 [
                     ...$u,
-                    'organization_id'    => $org->id,
-                    'password'           => Hash::make('Jea1234!'),
+                    'organization_id' => $org->id,
+                    'password' => Hash::make('Jea1234!'),
                     'password_changed_at' => now(),
-                    'is_active'          => true,
+                    'is_active' => true,
                 ]
             );
         }
@@ -63,13 +63,14 @@ class JeaServicesSeeder extends Seeder
         $this->command->info('✓ JEA organization: jea');
         $this->command->info('✓ Users: admin@jea.dev / staff@jea.dev / auditor@jea.dev / eng@jea.dev');
         $this->command->info('✓ Password: Jea1234!');
-        $this->command->info('✓ Services seeded: ' . count($this->services($org->id)));
+        $this->command->info('✓ Services seeded: '.count($this->services($org->id)));
     }
 
     // ─────────────────────────────────────────────────────────────────────
     // Service definitions
     // ─────────────────────────────────────────────────────────────────────
 
+    /** @return list<array<string, mixed>> */
     private function services(int $orgId): array
     {
         return [
@@ -77,26 +78,26 @@ class JeaServicesSeeder extends Seeder
             // ── 1. طلب انتساب مهندس جديد ─────────────────────────────
             [
                 'organization_id' => $orgId,
-                'code'            => 'JEA-MEM-001',
-                'name_ar'         => 'طلب انتساب مهندس جديد',
-                'name_en'         => 'New Engineer Membership',
-                'description_ar'  => 'تسجيل المهندس الجديد والحصول على عضوية نقابة المهندسين الأردنيين',
-                'description_en'  => 'Register as a new engineer member of the Jordan Engineers Association',
-                'currency'        => 'JOD',
-                'status'          => 'active',
-                'schema'          => [
+                'code' => 'JEA-MEM-001',
+                'name_ar' => 'طلب انتساب مهندس جديد',
+                'name_en' => 'New Engineer Membership',
+                'description_ar' => 'تسجيل المهندس الجديد والحصول على عضوية نقابة المهندسين الأردنيين',
+                'description_en' => 'Register as a new engineer member of the Jordan Engineers Association',
+                'currency' => 'JOD',
+                'status' => 'active',
+                'schema' => [
                     'service_code' => 'JEA-MEM-001',
-                    'name_ar'      => 'طلب انتساب مهندس جديد',
-                    'name_en'      => 'New Engineer Membership',
-                    'version'      => '1.0',
-                    'workflow'     => [
+                    'name_ar' => 'طلب انتساب مهندس جديد',
+                    'name_en' => 'New Engineer Membership',
+                    'version' => '1.0',
+                    'workflow' => [
                         'stages' => [
                             ['id' => 'docs_review',  'label_ar' => 'مراجعة الوثائق',    'label_en' => 'Documents Review',  'role' => 'staff',   'sla_hours' => 48, 'actions' => ['approve', 'reject', 'request_modifications']],
                             ['id' => 'fee_payment',  'label_ar' => 'سداد الرسوم',        'label_en' => 'Fee Payment',       'role' => 'staff',   'sla_hours' => 72, 'actions' => ['approve', 'reject']],
                             ['id' => 'final_review', 'label_ar' => 'المراجعة النهائية',  'label_en' => 'Final Approval',    'role' => 'auditor', 'sla_hours' => 24, 'actions' => ['approve', 'reject']],
                         ],
                     ],
-                    'fee'      => ['type' => 'fixed', 'amount' => 50, 'currency' => 'JOD'],
+                    'fee' => ['type' => 'fixed', 'amount' => 50, 'currency' => 'JOD'],
                     'sections' => [
                         ['id' => 'personal',     'label_ar' => 'المعلومات الشخصية',     'label_en' => 'Personal Information'],
                         ['id' => 'academic',     'label_ar' => 'المؤهل العلمي',          'label_en' => 'Academic Qualification'],
@@ -146,9 +147,9 @@ class JeaServicesSeeder extends Seeder
                     ],
                     'certificate' => [
                         'validity_months' => 0,
-                        'title_ar'        => 'بطاقة عضوية نقابة المهندسين الأردنيين',
-                        'title_en'        => 'JEA Membership Card',
-                        'fields_on_cert'  => ['full_name_ar', 'full_name_en', 'national_id', 'specialization'],
+                        'title_ar' => 'بطاقة عضوية نقابة المهندسين الأردنيين',
+                        'title_en' => 'JEA Membership Card',
+                        'fields_on_cert' => ['full_name_ar', 'full_name_en', 'national_id', 'specialization'],
                     ],
                 ],
             ],
@@ -156,24 +157,24 @@ class JeaServicesSeeder extends Seeder
             // ── 2. تجديد الاشتراك السنوي ──────────────────────────────
             [
                 'organization_id' => $orgId,
-                'code'            => 'JEA-MEM-002',
-                'name_ar'         => 'تجديد الاشتراك السنوي',
-                'name_en'         => 'Annual Subscription Renewal',
-                'description_ar'  => 'تجديد اشتراك العضوية السنوية في نقابة المهندسين الأردنيين',
-                'description_en'  => 'Renew annual membership subscription in the Jordan Engineers Association',
-                'currency'        => 'JOD',
-                'status'          => 'active',
-                'schema'          => [
+                'code' => 'JEA-MEM-002',
+                'name_ar' => 'تجديد الاشتراك السنوي',
+                'name_en' => 'Annual Subscription Renewal',
+                'description_ar' => 'تجديد اشتراك العضوية السنوية في نقابة المهندسين الأردنيين',
+                'description_en' => 'Renew annual membership subscription in the Jordan Engineers Association',
+                'currency' => 'JOD',
+                'status' => 'active',
+                'schema' => [
                     'service_code' => 'JEA-MEM-002',
-                    'name_ar'      => 'تجديد الاشتراك السنوي',
-                    'name_en'      => 'Annual Subscription Renewal',
-                    'version'      => '1.0',
-                    'workflow'     => [
+                    'name_ar' => 'تجديد الاشتراك السنوي',
+                    'name_en' => 'Annual Subscription Renewal',
+                    'version' => '1.0',
+                    'workflow' => [
                         'stages' => [
                             ['id' => 'payment_verification', 'label_ar' => 'التحقق من الدفع', 'label_en' => 'Payment Verification', 'role' => 'staff', 'sla_hours' => 24, 'actions' => ['approve', 'reject']],
                         ],
                     ],
-                    'fee'      => ['type' => 'fixed', 'amount' => 30, 'currency' => 'JOD'],
+                    'fee' => ['type' => 'fixed', 'amount' => 30, 'currency' => 'JOD'],
                     'sections' => [
                         ['id' => 'member_info', 'label_ar' => 'بيانات العضو', 'label_en' => 'Member Information'],
                     ],
@@ -189,9 +190,9 @@ class JeaServicesSeeder extends Seeder
                     ],
                     'certificate' => [
                         'validity_months' => 12,
-                        'title_ar'        => 'شهادة تجديد اشتراك سنوي',
-                        'title_en'        => 'Annual Renewal Certificate',
-                        'fields_on_cert'  => ['membership_number', 'full_name_ar', 'renewal_year'],
+                        'title_ar' => 'شهادة تجديد اشتراك سنوي',
+                        'title_en' => 'Annual Renewal Certificate',
+                        'fields_on_cert' => ['membership_number', 'full_name_ar', 'renewal_year'],
                     ],
                 ],
             ],
@@ -199,26 +200,26 @@ class JeaServicesSeeder extends Seeder
             // ── 3. تسجيل مكتب هندسي ──────────────────────────────────
             [
                 'organization_id' => $orgId,
-                'code'            => 'JEA-OFF-001',
-                'name_ar'         => 'تسجيل مكتب هندسي',
-                'name_en'         => 'Engineering Office Registration',
-                'description_ar'  => 'تسجيل مكتب هندسي استشاري لدى نقابة المهندسين الأردنيين والحصول على الترخيص',
-                'description_en'  => 'Register an engineering consulting office with JEA and obtain the license',
-                'currency'        => 'JOD',
-                'status'          => 'active',
-                'schema'          => [
+                'code' => 'JEA-OFF-001',
+                'name_ar' => 'تسجيل مكتب هندسي',
+                'name_en' => 'Engineering Office Registration',
+                'description_ar' => 'تسجيل مكتب هندسي استشاري لدى نقابة المهندسين الأردنيين والحصول على الترخيص',
+                'description_en' => 'Register an engineering consulting office with JEA and obtain the license',
+                'currency' => 'JOD',
+                'status' => 'active',
+                'schema' => [
                     'service_code' => 'JEA-OFF-001',
-                    'name_ar'      => 'تسجيل مكتب هندسي',
-                    'name_en'      => 'Engineering Office Registration',
-                    'version'      => '1.0',
-                    'workflow'     => [
+                    'name_ar' => 'تسجيل مكتب هندسي',
+                    'name_en' => 'Engineering Office Registration',
+                    'version' => '1.0',
+                    'workflow' => [
                         'stages' => [
                             ['id' => 'docs_review',    'label_ar' => 'مراجعة الوثائق',      'label_en' => 'Documents Review',    'role' => 'staff',   'sla_hours' => 48,  'actions' => ['approve', 'reject', 'request_modifications']],
-                            ['id' => 'site_inspection','label_ar' => 'فحص الموقع',           'label_en' => 'Site Inspection',     'role' => 'staff',   'sla_hours' => 72,  'actions' => ['approve', 'reject', 'request_modifications']],
+                            ['id' => 'site_inspection', 'label_ar' => 'فحص الموقع',           'label_en' => 'Site Inspection',     'role' => 'staff',   'sla_hours' => 72,  'actions' => ['approve', 'reject', 'request_modifications']],
                             ['id' => 'final_approval', 'label_ar' => 'الموافقة النهائية',   'label_en' => 'Final Approval',      'role' => 'auditor', 'sla_hours' => 24,  'actions' => ['approve', 'reject']],
                         ],
                     ],
-                    'fee'      => ['type' => 'fixed', 'amount' => 150, 'currency' => 'JOD'],
+                    'fee' => ['type' => 'fixed', 'amount' => 150, 'currency' => 'JOD'],
                     'sections' => [
                         ['id' => 'office_info',   'label_ar' => 'بيانات المكتب',         'label_en' => 'Office Information'],
                         ['id' => 'owner_info',    'label_ar' => 'بيانات المالك / الشريك المسؤول', 'label_en' => 'Owner / Responsible Partner'],
@@ -227,7 +228,7 @@ class JeaServicesSeeder extends Seeder
                     'fields' => [
                         ['id' => 'office_name_ar',    'label_ar' => 'اسم المكتب بالعربية',       'label_en' => 'Office Name (Arabic)',    'type' => 'text',   'required' => true,  'section' => 'office_info'],
                         ['id' => 'office_name_en',    'label_ar' => 'اسم المكتب بالإنجليزية',    'label_en' => 'Office Name (English)',   'type' => 'text',   'required' => false, 'section' => 'office_info'],
-                        ['id' => 'office_address',    'label_ar' => 'عنوان المكتب',               'label_en' => 'Office Address',          'type' => 'textarea','required' => true, 'section' => 'office_info'],
+                        ['id' => 'office_address',    'label_ar' => 'عنوان المكتب',               'label_en' => 'Office Address',          'type' => 'textarea', 'required' => true, 'section' => 'office_info'],
                         ['id' => 'office_phone',      'label_ar' => 'هاتف المكتب',               'label_en' => 'Office Phone',            'type' => 'text',   'required' => true,  'section' => 'office_info'],
                         ['id' => 'office_email',      'label_ar' => 'البريد الإلكتروني للمكتب', 'label_en' => 'Office Email',            'type' => 'email',  'required' => false, 'section' => 'office_info'],
                         ['id' => 'owner_name_ar',     'label_ar' => 'اسم المالك / الشريك المسؤول', 'label_en' => 'Owner Name',           'type' => 'text',   'required' => true,  'section' => 'owner_info'],
@@ -255,15 +256,15 @@ class JeaServicesSeeder extends Seeder
                     'documents' => [
                         ['id' => 'trade_registration',  'label_ar' => 'صورة السجل التجاري',         'label_en' => 'Trade Registration Copy',     'required' => true,  'accept' => ['pdf', 'jpg', 'png'], 'max_size_mb' => 5],
                         ['id' => 'owner_id',             'label_ar' => 'صورة هوية المالك',           'label_en' => 'Owner ID Copy',                'required' => true,  'accept' => ['pdf', 'jpg', 'png'], 'max_size_mb' => 3],
-                        ['id' => 'owner_membership_card','label_ar' => 'بطاقة عضوية المالك في النقابة', 'label_en' => 'Owner JEA Membership Card', 'required' => true,  'accept' => ['pdf', 'jpg', 'png'], 'max_size_mb' => 3],
+                        ['id' => 'owner_membership_card', 'label_ar' => 'بطاقة عضوية المالك في النقابة', 'label_en' => 'Owner JEA Membership Card', 'required' => true,  'accept' => ['pdf', 'jpg', 'png'], 'max_size_mb' => 3],
                         ['id' => 'office_lease',         'label_ar' => 'عقد إيجار / ملكية المكتب', 'label_en' => 'Office Lease / Ownership',     'required' => true,  'accept' => ['pdf', 'jpg'],         'max_size_mb' => 5],
-                        ['id' => 'partnership_contract', 'label_ar' => 'عقد الشراكة (إن وجد)',       'label_en' => 'Partnership Contract (if any)','required' => false, 'accept' => ['pdf'],                'max_size_mb' => 5],
+                        ['id' => 'partnership_contract', 'label_ar' => 'عقد الشراكة (إن وجد)',       'label_en' => 'Partnership Contract (if any)', 'required' => false, 'accept' => ['pdf'],                'max_size_mb' => 5],
                     ],
                     'certificate' => [
                         'validity_months' => 12,
-                        'title_ar'        => 'ترخيص مكتب هندسي',
-                        'title_en'        => 'Engineering Office License',
-                        'fields_on_cert'  => ['office_name_ar', 'owner_name_ar', 'owner_specialization'],
+                        'title_ar' => 'ترخيص مكتب هندسي',
+                        'title_en' => 'Engineering Office License',
+                        'fields_on_cert' => ['office_name_ar', 'owner_name_ar', 'owner_specialization'],
                     ],
                 ],
             ],
@@ -271,25 +272,25 @@ class JeaServicesSeeder extends Seeder
             // ── 4. تجديد ترخيص مكتب هندسي ───────────────────────────
             [
                 'organization_id' => $orgId,
-                'code'            => 'JEA-OFF-002',
-                'name_ar'         => 'تجديد ترخيص مكتب هندسي',
-                'name_en'         => 'Engineering Office License Renewal',
-                'description_ar'  => 'تجديد ترخيص مزاولة المهنة للمكتب الهندسي الاستشاري',
-                'description_en'  => 'Renew the professional practice license for an engineering consulting office',
-                'currency'        => 'JOD',
-                'status'          => 'active',
-                'schema'          => [
+                'code' => 'JEA-OFF-002',
+                'name_ar' => 'تجديد ترخيص مكتب هندسي',
+                'name_en' => 'Engineering Office License Renewal',
+                'description_ar' => 'تجديد ترخيص مزاولة المهنة للمكتب الهندسي الاستشاري',
+                'description_en' => 'Renew the professional practice license for an engineering consulting office',
+                'currency' => 'JOD',
+                'status' => 'active',
+                'schema' => [
                     'service_code' => 'JEA-OFF-002',
-                    'name_ar'      => 'تجديد ترخيص مكتب هندسي',
-                    'name_en'      => 'Engineering Office License Renewal',
-                    'version'      => '1.0',
-                    'workflow'     => [
+                    'name_ar' => 'تجديد ترخيص مكتب هندسي',
+                    'name_en' => 'Engineering Office License Renewal',
+                    'version' => '1.0',
+                    'workflow' => [
                         'stages' => [
                             ['id' => 'docs_check',    'label_ar' => 'فحص الوثائق والمستحقات', 'label_en' => 'Documents & Dues Check', 'role' => 'staff',   'sla_hours' => 24, 'actions' => ['approve', 'reject', 'request_modifications']],
-                            ['id' => 'final_approval','label_ar' => 'إصدار الترخيص المجدد',   'label_en' => 'Renewed License Issuance','role' => 'auditor', 'sla_hours' => 24, 'actions' => ['approve', 'reject']],
+                            ['id' => 'final_approval', 'label_ar' => 'إصدار الترخيص المجدد',   'label_en' => 'Renewed License Issuance', 'role' => 'auditor', 'sla_hours' => 24, 'actions' => ['approve', 'reject']],
                         ],
                     ],
-                    'fee'      => ['type' => 'fixed', 'amount' => 80, 'currency' => 'JOD'],
+                    'fee' => ['type' => 'fixed', 'amount' => 80, 'currency' => 'JOD'],
                     'sections' => [
                         ['id' => 'office_info',  'label_ar' => 'بيانات المكتب',         'label_en' => 'Office Information'],
                         ['id' => 'renewal_info', 'label_ar' => 'بيانات التجديد',        'label_en' => 'Renewal Details'],
@@ -308,9 +309,9 @@ class JeaServicesSeeder extends Seeder
                     ],
                     'certificate' => [
                         'validity_months' => 12,
-                        'title_ar'        => 'تجديد ترخيص مكتب هندسي',
-                        'title_en'        => 'Engineering Office License Renewal',
-                        'fields_on_cert'  => ['office_license_number', 'office_name_ar', 'renewal_year'],
+                        'title_ar' => 'تجديد ترخيص مكتب هندسي',
+                        'title_en' => 'Engineering Office License Renewal',
+                        'fields_on_cert' => ['office_license_number', 'office_name_ar', 'renewal_year'],
                     ],
                 ],
             ],
@@ -318,26 +319,26 @@ class JeaServicesSeeder extends Seeder
             // ── 5. طلب تصريح بناء ────────────────────────────────────
             [
                 'organization_id' => $orgId,
-                'code'            => 'JEA-BP-001',
-                'name_ar'         => 'طلب الموافقة على مخططات البناء',
-                'name_en'         => 'Building Plans Approval',
-                'description_ar'  => 'تقديم مخططات البناء للمراجعة الهندسية والحصول على موافقة النقابة',
-                'description_en'  => 'Submit building plans for engineering review and JEA approval',
-                'currency'        => 'JOD',
-                'status'          => 'active',
-                'schema'          => [
+                'code' => 'JEA-BP-001',
+                'name_ar' => 'طلب الموافقة على مخططات البناء',
+                'name_en' => 'Building Plans Approval',
+                'description_ar' => 'تقديم مخططات البناء للمراجعة الهندسية والحصول على موافقة النقابة',
+                'description_en' => 'Submit building plans for engineering review and JEA approval',
+                'currency' => 'JOD',
+                'status' => 'active',
+                'schema' => [
                     'service_code' => 'JEA-BP-001',
-                    'name_ar'      => 'طلب الموافقة على مخططات البناء',
-                    'name_en'      => 'Building Plans Approval',
-                    'version'      => '1.0',
-                    'workflow'     => [
+                    'name_ar' => 'طلب الموافقة على مخططات البناء',
+                    'name_en' => 'Building Plans Approval',
+                    'version' => '1.0',
+                    'workflow' => [
                         'stages' => [
                             ['id' => 'initial_check',    'label_ar' => 'الفحص الأولي للمخططات',   'label_en' => 'Initial Plans Check',    'role' => 'staff',   'sla_hours' => 48,  'actions' => ['approve', 'reject', 'request_modifications']],
                             ['id' => 'technical_review', 'label_ar' => 'المراجعة التقنية',         'label_en' => 'Technical Review',        'role' => 'auditor', 'sla_hours' => 72,  'actions' => ['approve', 'reject', 'request_modifications']],
                             ['id' => 'final_stamp',      'label_ar' => 'ختم وإصدار الموافقة',     'label_en' => 'Stamp & Issue Approval',  'role' => 'staff',   'sla_hours' => 24,  'actions' => ['approve', 'reject']],
                         ],
                     ],
-                    'fee'      => ['type' => 'tiered', 'currency' => 'JOD'],
+                    'fee' => ['type' => 'tiered', 'currency' => 'JOD'],
                     'sections' => [
                         ['id' => 'project_info',     'label_ar' => 'معلومات المشروع',    'label_en' => 'Project Information'],
                         ['id' => 'owner_info',       'label_ar' => 'معلومات المالك',     'label_en' => 'Owner Information'],
@@ -346,7 +347,7 @@ class JeaServicesSeeder extends Seeder
                     ],
                     'fields' => [
                         ['id' => 'project_name',       'label_ar' => 'اسم المشروع',                 'label_en' => 'Project Name',         'type' => 'text',    'required' => true,  'section' => 'project_info'],
-                        ['id' => 'project_location',   'label_ar' => 'موقع المشروع / العنوان',      'label_en' => 'Project Location',     'type' => 'textarea','required' => true,  'section' => 'project_info'],
+                        ['id' => 'project_location',   'label_ar' => 'موقع المشروع / العنوان',      'label_en' => 'Project Location',     'type' => 'textarea', 'required' => true,  'section' => 'project_info'],
                         ['id' => 'land_parcel',        'label_ar' => 'رقم القطعة والحوض',           'label_en' => 'Land Parcel & Basin',  'type' => 'text',    'required' => true,  'section' => 'project_info'],
                         ['id' => 'project_type',       'label_ar' => 'نوع المشروع',                 'label_en' => 'Project Type',         'type' => 'select',  'required' => true,  'section' => 'project_info',
                             'options' => [
@@ -370,21 +371,21 @@ class JeaServicesSeeder extends Seeder
                         ['id' => 'owner_id_number',    'label_ar' => 'رقم هوية المالك',          'label_en' => 'Owner ID Number',       'type' => 'text',    'required' => true,  'section' => 'owner_info'],
                         ['id' => 'owner_phone',        'label_ar' => 'هاتف المالك',              'label_en' => 'Owner Phone',           'type' => 'text',    'required' => true,  'section' => 'owner_info'],
                         ['id' => 'designer_name',      'label_ar' => 'اسم المهندس المصمم',      'label_en' => 'Designer Engineer',     'type' => 'text',    'required' => true,  'section' => 'designer_info'],
-                        ['id' => 'designer_membership','label_ar' => 'رقم عضوية المصمم في النقابة', 'label_en' => 'Designer JEA Number', 'type' => 'text',   'required' => true,  'section' => 'designer_info'],
+                        ['id' => 'designer_membership', 'label_ar' => 'رقم عضوية المصمم في النقابة', 'label_en' => 'Designer JEA Number', 'type' => 'text',   'required' => true,  'section' => 'designer_info'],
                     ],
                     'documents' => [
                         ['id' => 'architectural_plans', 'label_ar' => 'المخططات المعمارية',          'label_en' => 'Architectural Plans',    'required' => true,  'accept' => ['pdf', 'dwg'],  'max_size_mb' => 50],
                         ['id' => 'structural_plans',    'label_ar' => 'المخططات الإنشائية',          'label_en' => 'Structural Plans',       'required' => true,  'accept' => ['pdf', 'dwg'],  'max_size_mb' => 50],
                         ['id' => 'electrical_plans',    'label_ar' => 'المخططات الكهربائية',         'label_en' => 'Electrical Plans',       'required' => true,  'accept' => ['pdf', 'dwg'],  'max_size_mb' => 30],
-                        ['id' => 'plumbing_plans',      'label_ar' => 'مخططات الصرف الصحي والسباكة','label_en' => 'Plumbing & Sanitary',    'required' => true,  'accept' => ['pdf', 'dwg'],  'max_size_mb' => 30],
+                        ['id' => 'plumbing_plans',      'label_ar' => 'مخططات الصرف الصحي والسباكة', 'label_en' => 'Plumbing & Sanitary',    'required' => true,  'accept' => ['pdf', 'dwg'],  'max_size_mb' => 30],
                         ['id' => 'land_deed',           'label_ar' => 'سند الملكية / وكالة',        'label_en' => 'Land Deed / Power of Attorney', 'required' => true, 'accept' => ['pdf', 'jpg', 'png'], 'max_size_mb' => 5],
                         ['id' => 'soil_report',         'label_ar' => 'تقرير تحسسات التربة',        'label_en' => 'Soil Investigation Report', 'required' => false, 'accept' => ['pdf'],         'max_size_mb' => 10],
                     ],
                     'certificate' => [
                         'validity_months' => 12,
-                        'title_ar'        => 'موافقة على مخططات البناء',
-                        'title_en'        => 'Building Plans Approval',
-                        'fields_on_cert'  => ['project_name', 'owner_name_ar', 'project_location', 'project_type'],
+                        'title_ar' => 'موافقة على مخططات البناء',
+                        'title_en' => 'Building Plans Approval',
+                        'fields_on_cert' => ['project_name', 'owner_name_ar', 'project_location', 'project_type'],
                     ],
                 ],
             ],
@@ -392,26 +393,26 @@ class JeaServicesSeeder extends Seeder
             // ── 6. الكشف الميداني على الموقع ─────────────────────────
             [
                 'organization_id' => $orgId,
-                'code'            => 'JEA-SURV-001',
-                'name_ar'         => 'الكشف الميداني على الموقع',
-                'name_en'         => 'Site Field Inspection',
-                'description_ar'  => 'طلب إجراء كشف هندسي ميداني على الموقع من قبل مهندسي النقابة',
-                'description_en'  => 'Request an engineering field inspection of the site by JEA engineers',
-                'currency'        => 'JOD',
-                'status'          => 'active',
-                'schema'          => [
+                'code' => 'JEA-SURV-001',
+                'name_ar' => 'الكشف الميداني على الموقع',
+                'name_en' => 'Site Field Inspection',
+                'description_ar' => 'طلب إجراء كشف هندسي ميداني على الموقع من قبل مهندسي النقابة',
+                'description_en' => 'Request an engineering field inspection of the site by JEA engineers',
+                'currency' => 'JOD',
+                'status' => 'active',
+                'schema' => [
                     'service_code' => 'JEA-SURV-001',
-                    'name_ar'      => 'الكشف الميداني على الموقع',
-                    'name_en'      => 'Site Field Inspection',
-                    'version'      => '1.0',
-                    'workflow'     => [
+                    'name_ar' => 'الكشف الميداني على الموقع',
+                    'name_en' => 'Site Field Inspection',
+                    'version' => '1.0',
+                    'workflow' => [
                         'stages' => [
                             ['id' => 'scheduling',    'label_ar' => 'جدولة موعد الكشف',   'label_en' => 'Schedule Inspection',    'role' => 'staff',   'sla_hours' => 24, 'actions' => ['approve', 'reject', 'request_modifications']],
-                            ['id' => 'inspection',    'label_ar' => 'إجراء الكشف الميداني','label_en' => 'Conduct Inspection',     'role' => 'staff',   'sla_hours' => 72, 'actions' => ['approve', 'request_modifications']],
-                            ['id' => 'report_review', 'label_ar' => 'مراجعة تقرير الكشف', 'label_en' => 'Review Inspection Report','role' => 'auditor', 'sla_hours' => 48, 'actions' => ['approve', 'reject']],
+                            ['id' => 'inspection',    'label_ar' => 'إجراء الكشف الميداني', 'label_en' => 'Conduct Inspection',     'role' => 'staff',   'sla_hours' => 72, 'actions' => ['approve', 'request_modifications']],
+                            ['id' => 'report_review', 'label_ar' => 'مراجعة تقرير الكشف', 'label_en' => 'Review Inspection Report', 'role' => 'auditor', 'sla_hours' => 48, 'actions' => ['approve', 'reject']],
                         ],
                     ],
-                    'fee'      => ['type' => 'fixed', 'amount' => 75, 'currency' => 'JOD'],
+                    'fee' => ['type' => 'fixed', 'amount' => 75, 'currency' => 'JOD'],
                     'sections' => [
                         ['id' => 'request_info', 'label_ar' => 'بيانات الطلب',   'label_en' => 'Request Details'],
                         ['id' => 'site_info',    'label_ar' => 'بيانات الموقع',  'label_en' => 'Site Information'],
@@ -467,9 +468,9 @@ class JeaServicesSeeder extends Seeder
                     ],
                     'certificate' => [
                         'validity_months' => 6,
-                        'title_ar'        => 'تقرير الكشف الميداني',
-                        'title_en'        => 'Field Inspection Report',
-                        'fields_on_cert'  => ['site_address', 'inspection_purpose', 'applicant_name'],
+                        'title_ar' => 'تقرير الكشف الميداني',
+                        'title_en' => 'Field Inspection Report',
+                        'fields_on_cert' => ['site_address', 'inspection_purpose', 'applicant_name'],
                     ],
                 ],
             ],
@@ -477,25 +478,25 @@ class JeaServicesSeeder extends Seeder
             // ── 7. طلب شهادة خبرة ────────────────────────────────────
             [
                 'organization_id' => $orgId,
-                'code'            => 'JEA-CERT-001',
-                'name_ar'         => 'طلب شهادة خبرة هندسية',
-                'name_en'         => 'Engineering Experience Certificate',
-                'description_ar'  => 'طلب إصدار شهادة خبرة هندسية مصدقة من نقابة المهندسين الأردنيين',
-                'description_en'  => 'Request an engineering experience certificate certified by JEA',
-                'currency'        => 'JOD',
-                'status'          => 'active',
-                'schema'          => [
+                'code' => 'JEA-CERT-001',
+                'name_ar' => 'طلب شهادة خبرة هندسية',
+                'name_en' => 'Engineering Experience Certificate',
+                'description_ar' => 'طلب إصدار شهادة خبرة هندسية مصدقة من نقابة المهندسين الأردنيين',
+                'description_en' => 'Request an engineering experience certificate certified by JEA',
+                'currency' => 'JOD',
+                'status' => 'active',
+                'schema' => [
                     'service_code' => 'JEA-CERT-001',
-                    'name_ar'      => 'طلب شهادة خبرة هندسية',
-                    'name_en'      => 'Engineering Experience Certificate',
-                    'version'      => '1.0',
-                    'workflow'     => [
+                    'name_ar' => 'طلب شهادة خبرة هندسية',
+                    'name_en' => 'Engineering Experience Certificate',
+                    'version' => '1.0',
+                    'workflow' => [
                         'stages' => [
                             ['id' => 'verification', 'label_ar' => 'التحقق من بيانات المهندس', 'label_en' => 'Engineer Data Verification', 'role' => 'staff',   'sla_hours' => 24, 'actions' => ['approve', 'reject', 'request_modifications']],
                             ['id' => 'issuance',     'label_ar' => 'إصدار الشهادة',            'label_en' => 'Certificate Issuance',       'role' => 'auditor', 'sla_hours' => 24, 'actions' => ['approve', 'reject']],
                         ],
                     ],
-                    'fee'      => ['type' => 'fixed', 'amount' => 20, 'currency' => 'JOD'],
+                    'fee' => ['type' => 'fixed', 'amount' => 20, 'currency' => 'JOD'],
                     'sections' => [
                         ['id' => 'engineer_info',    'label_ar' => 'بيانات المهندس',       'label_en' => 'Engineer Information'],
                         ['id' => 'experience_info',  'label_ar' => 'بيانات الخبرة',        'label_en' => 'Experience Details'],
@@ -511,14 +512,14 @@ class JeaServicesSeeder extends Seeder
                         ['id' => 'employment_start',   'label_ar' => 'تاريخ بداية العمل',     'label_en' => 'Employment Start Date', 'type' => 'date',   'required' => true,  'section' => 'experience_info'],
                         ['id' => 'employment_end',     'label_ar' => 'تاريخ نهاية العمل (أو حتى الآن)', 'label_en' => 'Employment End Date', 'type' => 'date', 'required' => false, 'section' => 'experience_info'],
                         ['id' => 'job_title',          'label_ar' => 'المسمى الوظيفي',        'label_en' => 'Job Title',             'type' => 'text',   'required' => true,  'section' => 'experience_info'],
-                        ['id' => 'certificate_language','label_ar' => 'لغة الشهادة',          'label_en' => 'Certificate Language',  'type' => 'radio',  'required' => true,  'section' => 'purpose_info',
+                        ['id' => 'certificate_language', 'label_ar' => 'لغة الشهادة',          'label_en' => 'Certificate Language',  'type' => 'radio',  'required' => true,  'section' => 'purpose_info',
                             'options' => [
                                 ['value' => 'arabic',   'label_ar' => 'عربي فقط',     'label_en' => 'Arabic Only'],
                                 ['value' => 'english',  'label_ar' => 'إنجليزي فقط',  'label_en' => 'English Only'],
                                 ['value' => 'both',     'label_ar' => 'عربي وإنجليزي', 'label_en' => 'Arabic & English'],
                             ],
                         ],
-                        ['id' => 'certificate_purpose','label_ar' => 'الغرض من الشهادة',      'label_en' => 'Certificate Purpose',   'type' => 'select', 'required' => true,  'section' => 'purpose_info',
+                        ['id' => 'certificate_purpose', 'label_ar' => 'الغرض من الشهادة',      'label_en' => 'Certificate Purpose',   'type' => 'select', 'required' => true,  'section' => 'purpose_info',
                             'options' => [
                                 ['value' => 'employment',    'label_ar' => 'تقديم لوظيفة',    'label_en' => 'Job Application'],
                                 ['value' => 'visa',          'label_ar' => 'طلب تأشيرة',      'label_en' => 'Visa Application'],
@@ -535,9 +536,9 @@ class JeaServicesSeeder extends Seeder
                     ],
                     'certificate' => [
                         'validity_months' => 6,
-                        'title_ar'        => 'شهادة خبرة هندسية',
-                        'title_en'        => 'Engineering Experience Certificate',
-                        'fields_on_cert'  => ['full_name_ar', 'full_name_en', 'membership_number', 'specialization', 'employer_name', 'job_title', 'employment_start'],
+                        'title_ar' => 'شهادة خبرة هندسية',
+                        'title_en' => 'Engineering Experience Certificate',
+                        'fields_on_cert' => ['full_name_ar', 'full_name_en', 'membership_number', 'specialization', 'employer_name', 'job_title', 'employment_start'],
                     ],
                 ],
             ],
@@ -545,24 +546,24 @@ class JeaServicesSeeder extends Seeder
             // ── 8. طلب خطاب رسمي ─────────────────────────────────────
             [
                 'organization_id' => $orgId,
-                'code'            => 'JEA-LTR-001',
-                'name_ar'         => 'طلب خطاب رسمي من النقابة',
-                'name_en'         => 'Official Letter Request',
-                'description_ar'  => 'طلب إصدار خطاب رسمي موقع وممهور من نقابة المهندسين الأردنيين',
-                'description_en'  => 'Request an official signed and stamped letter from JEA',
-                'currency'        => 'JOD',
-                'status'          => 'active',
-                'schema'          => [
+                'code' => 'JEA-LTR-001',
+                'name_ar' => 'طلب خطاب رسمي من النقابة',
+                'name_en' => 'Official Letter Request',
+                'description_ar' => 'طلب إصدار خطاب رسمي موقع وممهور من نقابة المهندسين الأردنيين',
+                'description_en' => 'Request an official signed and stamped letter from JEA',
+                'currency' => 'JOD',
+                'status' => 'active',
+                'schema' => [
                     'service_code' => 'JEA-LTR-001',
-                    'name_ar'      => 'طلب خطاب رسمي من النقابة',
-                    'name_en'      => 'Official Letter Request',
-                    'version'      => '1.0',
-                    'workflow'     => [
+                    'name_ar' => 'طلب خطاب رسمي من النقابة',
+                    'name_en' => 'Official Letter Request',
+                    'version' => '1.0',
+                    'workflow' => [
                         'stages' => [
                             ['id' => 'review', 'label_ar' => 'مراجعة الطلب وإعداد الخطاب', 'label_en' => 'Review & Prepare Letter', 'role' => 'staff', 'sla_hours' => 24, 'actions' => ['approve', 'reject', 'request_modifications']],
                         ],
                     ],
-                    'fee'      => ['type' => 'fixed', 'amount' => 10, 'currency' => 'JOD'],
+                    'fee' => ['type' => 'fixed', 'amount' => 10, 'currency' => 'JOD'],
                     'sections' => [
                         ['id' => 'applicant_info', 'label_ar' => 'بيانات مقدم الطلب', 'label_en' => 'Applicant Information'],
                         ['id' => 'letter_info',    'label_ar' => 'بيانات الخطاب',     'label_en' => 'Letter Details'],
@@ -597,9 +598,9 @@ class JeaServicesSeeder extends Seeder
                     ],
                     'certificate' => [
                         'validity_months' => 3,
-                        'title_ar'        => 'خطاب رسمي',
-                        'title_en'        => 'Official Letter',
-                        'fields_on_cert'  => ['full_name_ar', 'membership_number', 'letter_type', 'addressee'],
+                        'title_ar' => 'خطاب رسمي',
+                        'title_en' => 'Official Letter',
+                        'fields_on_cert' => ['full_name_ar', 'membership_number', 'letter_type', 'addressee'],
                     ],
                 ],
             ],
@@ -607,25 +608,25 @@ class JeaServicesSeeder extends Seeder
             // ── 9. الانتساب لصندوق التكافل الاجتماعي ─────────────────
             [
                 'organization_id' => $orgId,
-                'code'            => 'JEA-SOC-001',
-                'name_ar'         => 'الانتساب لصندوق التكافل الاجتماعي',
-                'name_en'         => 'Social Solidarity Fund Registration',
-                'description_ar'  => 'التسجيل في صندوق التكافل الاجتماعي لنقابة المهندسين للحصول على تغطية العجز والوفاة',
-                'description_en'  => 'Register in JEA Social Solidarity Fund for disability and death coverage',
-                'currency'        => 'JOD',
-                'status'          => 'active',
-                'schema'          => [
+                'code' => 'JEA-SOC-001',
+                'name_ar' => 'الانتساب لصندوق التكافل الاجتماعي',
+                'name_en' => 'Social Solidarity Fund Registration',
+                'description_ar' => 'التسجيل في صندوق التكافل الاجتماعي لنقابة المهندسين للحصول على تغطية العجز والوفاة',
+                'description_en' => 'Register in JEA Social Solidarity Fund for disability and death coverage',
+                'currency' => 'JOD',
+                'status' => 'active',
+                'schema' => [
                     'service_code' => 'JEA-SOC-001',
-                    'name_ar'      => 'الانتساب لصندوق التكافل الاجتماعي',
-                    'name_en'      => 'Social Solidarity Fund Registration',
-                    'version'      => '1.0',
-                    'workflow'     => [
+                    'name_ar' => 'الانتساب لصندوق التكافل الاجتماعي',
+                    'name_en' => 'Social Solidarity Fund Registration',
+                    'version' => '1.0',
+                    'workflow' => [
                         'stages' => [
                             ['id' => 'eligibility_check', 'label_ar' => 'التحقق من الأهلية',   'label_en' => 'Eligibility Check',    'role' => 'staff',   'sla_hours' => 48, 'actions' => ['approve', 'reject', 'request_modifications']],
                             ['id' => 'final_enrollment',  'label_ar' => 'التسجيل النهائي',      'label_en' => 'Final Enrollment',     'role' => 'auditor', 'sla_hours' => 24, 'actions' => ['approve', 'reject']],
                         ],
                     ],
-                    'fee'      => ['type' => 'fixed', 'amount' => 25, 'currency' => 'JOD'],
+                    'fee' => ['type' => 'fixed', 'amount' => 25, 'currency' => 'JOD'],
                     'sections' => [
                         ['id' => 'member_info',      'label_ar' => 'بيانات المهندس',           'label_en' => 'Engineer Information'],
                         ['id' => 'beneficiary_info', 'label_ar' => 'بيانات المستفيد / الورثة', 'label_en' => 'Beneficiary Information'],
@@ -655,7 +656,7 @@ class JeaServicesSeeder extends Seeder
                             ],
                         ],
                         ['id' => 'beneficiary_id',        'label_ar' => 'رقم هوية المستفيد',    'label_en' => 'Beneficiary ID',         'type' => 'text',   'required' => true,  'section' => 'beneficiary_info'],
-                        ['id' => 'pre_existing_conditions','label_ar' => 'هل تعاني من أمراض مزمنة؟', 'label_en' => 'Pre-existing Conditions?', 'type' => 'radio', 'required' => true, 'section' => 'health_info',
+                        ['id' => 'pre_existing_conditions', 'label_ar' => 'هل تعاني من أمراض مزمنة؟', 'label_en' => 'Pre-existing Conditions?', 'type' => 'radio', 'required' => true, 'section' => 'health_info',
                             'options' => [
                                 ['value' => 'no',  'label_ar' => 'لا', 'label_en' => 'No'],
                                 ['value' => 'yes', 'label_ar' => 'نعم', 'label_en' => 'Yes'],
@@ -675,9 +676,9 @@ class JeaServicesSeeder extends Seeder
                     ],
                     'certificate' => [
                         'validity_months' => 0,
-                        'title_ar'        => 'شهادة الانتساب لصندوق التكافل الاجتماعي',
-                        'title_en'        => 'Social Solidarity Fund Enrollment Certificate',
-                        'fields_on_cert'  => ['full_name_ar', 'membership_number', 'national_id'],
+                        'title_ar' => 'شهادة الانتساب لصندوق التكافل الاجتماعي',
+                        'title_en' => 'Social Solidarity Fund Enrollment Certificate',
+                        'fields_on_cert' => ['full_name_ar', 'membership_number', 'national_id'],
                     ],
                 ],
             ],
@@ -685,26 +686,26 @@ class JeaServicesSeeder extends Seeder
             // ── 10. تسجيل شركة هندسية ────────────────────────────────
             [
                 'organization_id' => $orgId,
-                'code'            => 'JEA-COMP-001',
-                'name_ar'         => 'تسجيل شركة هندسية استشارية',
-                'name_en'         => 'Engineering Consulting Company Registration',
-                'description_ar'  => 'تسجيل شركة هندسية استشارية لدى نقابة المهندسين الأردنيين وإدراجها في السجل الرسمي',
-                'description_en'  => 'Register an engineering consulting company with JEA and include it in the official registry',
-                'currency'        => 'JOD',
-                'status'          => 'active',
-                'schema'          => [
+                'code' => 'JEA-COMP-001',
+                'name_ar' => 'تسجيل شركة هندسية استشارية',
+                'name_en' => 'Engineering Consulting Company Registration',
+                'description_ar' => 'تسجيل شركة هندسية استشارية لدى نقابة المهندسين الأردنيين وإدراجها في السجل الرسمي',
+                'description_en' => 'Register an engineering consulting company with JEA and include it in the official registry',
+                'currency' => 'JOD',
+                'status' => 'active',
+                'schema' => [
                     'service_code' => 'JEA-COMP-001',
-                    'name_ar'      => 'تسجيل شركة هندسية استشارية',
-                    'name_en'      => 'Engineering Consulting Company Registration',
-                    'version'      => '1.0',
-                    'workflow'     => [
+                    'name_ar' => 'تسجيل شركة هندسية استشارية',
+                    'name_en' => 'Engineering Consulting Company Registration',
+                    'version' => '1.0',
+                    'workflow' => [
                         'stages' => [
                             ['id' => 'docs_review',     'label_ar' => 'مراجعة وثائق الشركة',   'label_en' => 'Company Documents Review', 'role' => 'staff',   'sla_hours' => 72, 'actions' => ['approve', 'reject', 'request_modifications']],
                             ['id' => 'partners_verify', 'label_ar' => 'التحقق من الشركاء',      'label_en' => 'Partners Verification',    'role' => 'staff',   'sla_hours' => 48, 'actions' => ['approve', 'reject', 'request_modifications']],
                             ['id' => 'final_approval',  'label_ar' => 'الموافقة النهائية',      'label_en' => 'Final Approval',           'role' => 'auditor', 'sla_hours' => 24, 'actions' => ['approve', 'reject']],
                         ],
                     ],
-                    'fee'      => ['type' => 'fixed', 'amount' => 300, 'currency' => 'JOD'],
+                    'fee' => ['type' => 'fixed', 'amount' => 300, 'currency' => 'JOD'],
                     'sections' => [
                         ['id' => 'company_info',    'label_ar' => 'بيانات الشركة',           'label_en' => 'Company Information'],
                         ['id' => 'partners_info',   'label_ar' => 'بيانات الشركاء المهندسين', 'label_en' => 'Engineer Partners'],
@@ -720,14 +721,14 @@ class JeaServicesSeeder extends Seeder
                                 ['value' => 'joint_stock', 'label_ar' => 'شركة مساهمة خاصة',       'label_en' => 'Private Shareholding'],
                             ],
                         ],
-                        ['id' => 'registration_number','label_ar' => 'رقم التسجيل في وزارة الصناعة والتجارة', 'label_en' => 'MoIT Registration Number', 'type' => 'text', 'required' => true, 'section' => 'company_info'],
+                        ['id' => 'registration_number', 'label_ar' => 'رقم التسجيل في وزارة الصناعة والتجارة', 'label_en' => 'MoIT Registration Number', 'type' => 'text', 'required' => true, 'section' => 'company_info'],
                         ['id' => 'company_address',   'label_ar' => 'عنوان الشركة',             'label_en' => 'Company Address',         'type' => 'textarea',       'required' => true,  'section' => 'company_info'],
                         ['id' => 'company_phone',     'label_ar' => 'هاتف الشركة',              'label_en' => 'Company Phone',           'type' => 'text',           'required' => true,  'section' => 'company_info'],
                         ['id' => 'company_email',     'label_ar' => 'البريد الإلكتروني للشركة', 'label_en' => 'Company Email',           'type' => 'email',          'required' => false, 'section' => 'company_info'],
                         ['id' => 'num_engineers',     'label_ar' => 'عدد المهندسين في الشركة',  'label_en' => 'Number of Engineers',     'type' => 'number',         'required' => true,  'section' => 'partners_info'],
                         ['id' => 'managing_partner',  'label_ar' => 'اسم الشريك المدير',        'label_en' => 'Managing Partner Name',   'type' => 'text',           'required' => true,  'section' => 'partners_info'],
                         ['id' => 'managing_partner_membership', 'label_ar' => 'رقم عضوية الشريك المدير', 'label_en' => 'Managing Partner JEA #', 'type' => 'text', 'required' => true, 'section' => 'partners_info'],
-                        ['id' => 'company_activities','label_ar' => 'أنشطة الشركة',             'label_en' => 'Company Activities',      'type' => 'checkbox_group', 'required' => true,  'section' => 'activity_info',
+                        ['id' => 'company_activities', 'label_ar' => 'أنشطة الشركة',             'label_en' => 'Company Activities',      'type' => 'checkbox_group', 'required' => true,  'section' => 'activity_info',
                             'options' => [
                                 ['value' => 'design',       'label_ar' => 'التصميم الهندسي',          'label_en' => 'Engineering Design'],
                                 ['value' => 'supervision',  'label_ar' => 'الإشراف وإدارة المشاريع', 'label_en' => 'Project Supervision'],
@@ -750,9 +751,9 @@ class JeaServicesSeeder extends Seeder
                     ],
                     'certificate' => [
                         'validity_months' => 12,
-                        'title_ar'        => 'شهادة تسجيل شركة هندسية استشارية',
-                        'title_en'        => 'Engineering Consulting Company Registration Certificate',
-                        'fields_on_cert'  => ['company_name_ar', 'company_name_en', 'managing_partner', 'registration_number'],
+                        'title_ar' => 'شهادة تسجيل شركة هندسية استشارية',
+                        'title_en' => 'Engineering Consulting Company Registration Certificate',
+                        'fields_on_cert' => ['company_name_ar', 'company_name_en', 'managing_partner', 'registration_number'],
                     ],
                 ],
             ],

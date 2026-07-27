@@ -636,3 +636,17 @@ parameters:
 			identifier: nullCoalesce.offset
 			count: 1
 			path: app/Services/Notifications/NotificationService.php
+
+		# Confirmed false positive, not suppressed convenience: Laravel's
+		# Illuminate\Database\Seeder::$command is an UNTYPED property, and
+		# Seeder's own source guards every read with isset($this->command)
+		# — it is genuinely unset until setCommand() runs, which the
+		# artisan db:seed pipeline does but a test instantiating the
+		# seeder directly does not (confirmed by ServiceFeeDefaultsSeederTest
+		# failing when the nullsafe operator here was removed). Larastan's
+		# stub for this property is simply wrong; ?-> stays.
+		-
+			message: '#^Using nullsafe method call on non\-nullable type Illuminate\\Console\\Command\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 2
+			path: modules/JeaServices/Database/Seeders/ServiceFeeDefaultsSeeder.php

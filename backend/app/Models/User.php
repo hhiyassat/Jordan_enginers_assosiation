@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Carbon;
 use Laravel\Sanctum\HasApiTokens;
 use Modules\JeaProjects\Models\OfficeCoalition;
 use Modules\JeaProjects\Models\OfficeCoalitionMember;
@@ -17,6 +18,29 @@ use Modules\JeaProjects\Models\OfficeCoalitionMember;
  * SEC-005: Role-based access. CheckRole middleware reads $user->role.
  * SEC-004: must_change_password + password_changed_at drive EnforcePasswordPolicy.
  * DATA-004: SoftDeletes — user records are never hard-deleted.
+ *
+ * @property int $id
+ * @property int $organization_id
+ * @property string $name
+ * @property string $email
+ * @property string $password
+ * @property string $role
+ * @property string|null $phone
+ * @property bool $is_active
+ * @property bool $must_change_password
+ * @property Carbon|null $password_changed_at
+ * @property Carbon|null $email_verified_at
+ * @property string|null $remember_token
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property Carbon|null $deleted_at
+ * @property int|null $annual_quota_m2
+ * @property Carbon|null $last_seen_at
+ * @property bool $has_excellence_award
+ * @property bool $is_bit_khibra
+ * @property bool $has_iso_cert
+ * @property string|null $office_classification
+ * @property int|null $engineer_count JORD-24/77: assigned ad hoc onto office rows by OfficeSettingsController::index() — not a DB column.
  */
 class User extends Authenticatable
 {
@@ -40,15 +64,15 @@ class User extends Authenticatable
     protected $hidden = ['password', 'remember_token'];
 
     protected $casts = [
-        'email_verified_at'   => 'datetime',
+        'email_verified_at' => 'datetime',
         'password_changed_at' => 'datetime',
-        'last_seen_at'        => 'datetime',
-        'is_active'           => 'boolean',
+        'last_seen_at' => 'datetime',
+        'is_active' => 'boolean',
         'must_change_password' => 'boolean',
-        'annual_quota_m2'     => 'integer',
+        'annual_quota_m2' => 'integer',
         'has_excellence_award' => 'boolean',
-        'is_bit_khibra'        => 'boolean',
-        'has_iso_cert'         => 'boolean',
+        'is_bit_khibra' => 'boolean',
+        'has_iso_cert' => 'boolean',
     ];
 
     // ── Relationships ─────────────────────────────────────────────────
@@ -70,8 +94,11 @@ class User extends Authenticatable
             ->whereNull('left_at')
             ->latest()
             ->first();
-        if (!$member) return null;
+        if (! $member) {
+            return null;
+        }
         $coalition = $member->coalition;
+
         return ($coalition && $coalition->isActive()) ? $coalition : null;
     }
 
@@ -82,11 +109,30 @@ class User extends Authenticatable
         return in_array($this->role, $roles);
     }
 
-    public function isSuperuser(): bool { return $this->role === 'superuser'; }
-    public function isAdmin(): bool     { return $this->role === 'admin'; }
-    public function isStaff(): bool     { return $this->role === 'staff'; }
-    public function isAuditor(): bool   { return $this->role === 'auditor'; }
-    public function isApplicant(): bool { return $this->role === 'applicant'; }
+    public function isSuperuser(): bool
+    {
+        return $this->role === 'superuser';
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
+    }
+
+    public function isStaff(): bool
+    {
+        return $this->role === 'staff';
+    }
+
+    public function isAuditor(): bool
+    {
+        return $this->role === 'auditor';
+    }
+
+    public function isApplicant(): bool
+    {
+        return $this->role === 'applicant';
+    }
 
     /** Staff, auditors, admins, and superusers can all review applications */
     public function isReviewer(): bool
@@ -114,10 +160,13 @@ class User extends Authenticatable
      */
     public function canManageRole(string $targetRole): bool
     {
-        if ($this->isSuperuser()) return true;
+        if ($this->isSuperuser()) {
+            return true;
+        }
         if ($this->isAdmin()) {
             return in_array($targetRole, ['applicant', 'staff', 'auditor'], true);
         }
+
         return false;
     }
 

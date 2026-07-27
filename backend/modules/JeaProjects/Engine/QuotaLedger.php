@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace Modules\JeaProjects\Engine;
 
-use Modules\JeaServices\Models\Application;
+use App\Models\User;
+use Illuminate\Support\Facades\Log;
 use Modules\JeaProjects\Models\Engineer;
 use Modules\JeaProjects\Models\EngineerDisciplineQuota;
 use Modules\JeaProjects\Models\OfficeCeiling;
 use Modules\JeaProjects\Models\OfficeCoalition;
 use Modules\JeaProjects\Models\QuotaConsumption;
-use App\Models\User;
-use Illuminate\Support\Facades\Log;
+use Modules\JeaServices\Models\Application;
 
 /**
  * QuotaLedger — JORD-68 + JORD-77 (per-office refactor)
@@ -35,30 +35,33 @@ class QuotaLedger
     public function recordApproval(Application $app): void
     {
         $data = is_array($app->data) ? $app->data : [];
-        $svc  = $app->serviceDefinition;
+        $svc = $app->serviceDefinition;
 
         $basisField = $svc ? data_get($svc->schema, 'quota_basis_field', 'area_m2') : 'area_m2';
-        if (!is_string($basisField) || $basisField === '') {
+        if (! is_string($basisField) || $basisField === '') {
             $basisField = 'area_m2';
         }
 
-        $engineerId = $data['engineer_id']  ?? null;
-        $quantity   = $data[$basisField]    ?? null;
+        $engineerId = $data['engineer_id'] ?? null;
+        $quantity = $data[$basisField] ?? null;
 
-        if (!is_int($engineerId) && !(is_numeric($engineerId) && (int) $engineerId > 0)) {
+        if (! is_int($engineerId) && ! (is_numeric($engineerId) && (int) $engineerId > 0)) {
             $this->debug($app, 'no engineer_id in form data — skipping consumption');
+
             return;
         }
-        if (!is_numeric($quantity) || (int) $quantity <= 0) {
+        if (! is_numeric($quantity) || (int) $quantity <= 0) {
             $this->debug($app, "no {$basisField} in form data — skipping consumption");
+
             return;
         }
 
         $engineer = Engineer::find((int) $engineerId);
-        if (!$engineer) {
+        if (! $engineer) {
             Log::warning('QuotaLedger: engineer not found on approved application', [
                 'application_id' => $app->id, 'engineer_id' => $engineerId,
             ]);
+
             return;
         }
 
@@ -70,6 +73,7 @@ class QuotaLedger
             Log::warning('QuotaLedger: engineer has no specialization', [
                 'application_id' => $app->id, 'engineer_id' => $engineer->id,
             ]);
+
             return;
         }
 
@@ -81,15 +85,15 @@ class QuotaLedger
         QuotaConsumption::updateOrCreate(
             [
                 'application_id' => $app->id,
-                'engineer_id'    => $engineer->id,
-                'discipline'     => $discipline,
+                'engineer_id' => $engineer->id,
+                'discipline' => $discipline,
             ],
             [
                 'organization_id' => $app->organization_id,
-                'office_user_id'  => $officeUserId,
-                'year'            => (int) now()->year,
-                'm2'              => (int) $quantity,
-                'governorate'     => is_string($data['governorate'] ?? null)
+                'office_user_id' => $officeUserId,
+                'year' => (int) now()->year,
+                'm2' => (int) $quantity,
+                'governorate' => is_string($data['governorate'] ?? null)
                     ? $data['governorate']
                     : null,
             ],
@@ -117,7 +121,9 @@ class QuotaLedger
             ->where('discipline', $discipline)
             ->where('year', $year)
             ->first();
-        if (!$quota) return null;
+        if (! $quota) {
+            return null;
+        }
 
         $boostMultiplier = 1.0 + ($engineer->is_specialization_head ? 0.20 : 0.0);
         $effective = (int) floor($quota->m2_allowed * $boostMultiplier);
@@ -156,7 +162,7 @@ class QuotaLedger
         // Coalition-aware branch — coalitions are keyed on office_user_id
         // post-JORD-77 too (see OfficeCoalitionMember + User::activeCoalition).
         $officeUser = User::find($officeUserId);
-        $coalition  = $officeUser?->activeCoalition();
+        $coalition = $officeUser?->activeCoalition();
         if ($coalition !== null) {
             return $this->remainingCoalitionCeiling($coalition, $discipline, $year, $governorate);
         }
@@ -165,12 +171,14 @@ class QuotaLedger
             ->where('discipline', $discipline)
             ->where('year', $year)
             ->first();
-        if (!$ceiling) return null;
+        if (! $ceiling) {
+            return null;
+        }
 
         $boostMultiplier = 1.0
             + ($officeUser && $officeUser->has_excellence_award ? 0.05 : 0.0)
-            + ($officeUser && $officeUser->is_bit_khibra        ? 0.05 : 0.0)
-            + ($officeUser && $officeUser->has_iso_cert         ? 0.05 : 0.0);
+            + ($officeUser && $officeUser->is_bit_khibra ? 0.05 : 0.0)
+            + ($officeUser && $officeUser->has_iso_cert ? 0.05 : 0.0);
 
         // JORD-71: governorate-scoped 90% → +10% overflow.
         if ($governorate !== null) {
@@ -210,16 +218,20 @@ class QuotaLedger
         ?string $governorate,
     ): ?int {
         $memberOfficeIds = $coalition->activeMembers()->pluck('office_user_id')->filter()->all();
-        if (empty($memberOfficeIds)) return null;
+        if (empty($memberOfficeIds)) {
+            return null;
+        }
 
         $memberCeilings = OfficeCeiling::whereIn('office_user_id', $memberOfficeIds)
             ->where('discipline', $discipline)
             ->where('year', $year)
             ->pluck('m2_allowed')
             ->all();
-        if (empty($memberCeilings)) return null;
+        if (empty($memberCeilings)) {
+            return null;
+        }
 
-        $n   = count($memberOfficeIds);
+        $n = count($memberOfficeIds);
         $sum = array_sum($memberCeilings);
         $effective = (int) floor((($n - 0.5) / $n) * $sum);
 
@@ -240,29 +252,40 @@ class QuotaLedger
     public function overflowSurchargeFor(Application $app): ?array
     {
         $svc = $app->serviceDefinition;
-        if (!$svc) return null;
+        if (! $svc) {
+            return null;
+        }
 
         $fields = data_get($svc->schema, 'fields', []);
-        $hasArea = collect($fields)->contains(fn ($f) => ($f['id'] ?? null) === 'area_m2');
-        if (!$hasArea) return null;
+        $fields = is_array($fields) ? $fields : [];
+        $hasArea = collect($fields)->contains(fn ($f) => is_array($f) && ($f['id'] ?? null) === 'area_m2');
+        if (! $hasArea) {
+            return null;
+        }
 
         $data = is_array($app->data) ? $app->data : [];
         $engineerId = $data['engineer_id'] ?? null;
-        $area       = $data['area_m2']     ?? null;
-        if (!is_numeric($engineerId) || !is_numeric($area)) return null;
+        $area = $data['area_m2'] ?? null;
+        if (! is_numeric($engineerId) || ! is_numeric($area)) {
+            return null;
+        }
 
         $engineer = Engineer::find((int) $engineerId);
-        if (!$engineer) return null;
+        if (! $engineer) {
+            return null;
+        }
 
         $discipline = Disciplines::normalize((string) ($engineer->specialization ?? ''));
-        if ($discipline === '') return null;
+        if ($discipline === '') {
+            return null;
+        }
 
         $year = (int) now()->year;
         $officeUserId = $app->applicant_id;
 
         // JORD-73 + JORD-77: coalition aggregation keyed on office_user_id.
         $officeUser = User::find($officeUserId);
-        $coalition  = $officeUser?->activeCoalition();
+        $coalition = $officeUser?->activeCoalition();
         if ($coalition !== null) {
             $memberOfficeIds = $coalition->activeMembers()->pluck('office_user_id')->filter()->all();
             $caps = OfficeCeiling::whereIn('office_user_id', $memberOfficeIds)
@@ -271,38 +294,50 @@ class QuotaLedger
                 ->whereNotNull('per_project_cap_m2')
                 ->pluck('per_project_cap_m2')
                 ->all();
-            if (empty($caps)) return null;
+            if (empty($caps)) {
+                return null;
+            }
             $perProjectCap = (int) floor(1.5 * (array_sum($caps) / count($caps)));
         } else {
             $ceiling = OfficeCeiling::where('office_user_id', $officeUserId)
                 ->where('discipline', $discipline)
                 ->where('year', $year)
                 ->first();
-            if (!$ceiling || $ceiling->per_project_cap_m2 === null) return null;
+            if (! $ceiling || $ceiling->per_project_cap_m2 === null) {
+                return null;
+            }
             $perProjectCap = (int) $ceiling->per_project_cap_m2;
         }
 
         $areaI = (int) $area;
-        if ($areaI <= $perProjectCap) return null;
+        if ($areaI <= $perProjectCap) {
+            return null;
+        }
 
         $excess = $areaI - $perProjectCap;
 
         $fee = data_get($svc->schema, 'fee', []);
         $baseRate = $this->resolveBaseRatePerM2($fee, $data);
-        if ($baseRate === null || $baseRate <= 0) return null;
+        if ($baseRate === null || $baseRate <= 0) {
+            return null;
+        }
 
         $amount = round(0.25 * $excess * $baseRate, 2);
 
         return [
-            'code'     => 'per_project_cap_overflow_25pct',
-            'kind'     => 'percent_of_excess',
+            'code' => 'per_project_cap_overflow_25pct',
+            'kind' => 'percent_of_excess',
             'label_ar' => sprintf('رسم تجاوز سقف المشروع الواحد (25%% × %d م² زائدة)', $excess),
             'label_en' => sprintf('Per-project cap overflow (25%% × %d m² excess)', $excess),
-            'amount'   => (float) $amount,
-            'source'   => 'كتاب التعليمات الفنية 2025 ص 129',
+            'amount' => (float) $amount,
+            'source' => 'كتاب التعليمات الفنية 2025 ص 129',
         ];
     }
 
+    /**
+     * @param  array<string, mixed>  $fee
+     * @param  array<string, mixed>  $formData
+     */
     private function resolveBaseRatePerM2(array $fee, array $formData): ?float
     {
         $type = $fee['type'] ?? null;
@@ -312,14 +347,18 @@ class QuotaLedger
         }
 
         if ($type === 'matrix' && ($fee['basis'] ?? null) === 'area_m2') {
-            $keys    = is_array($fee['keys'] ?? null)    ? $fee['keys']    : [];
-            $rates   = is_array($fee['rates'] ?? null)   ? $fee['rates']   : [];
+            $keys = is_array($fee['keys'] ?? null) ? $fee['keys'] : [];
+            $rates = is_array($fee['rates'] ?? null) ? $fee['rates'] : [];
             $buckets = is_array($fee['buckets'] ?? null) ? $fee['buckets'] : [];
             $parts = [];
             foreach ($keys as $key) {
-                if (!is_string($key)) return null;
+                if (! is_string($key)) {
+                    return null;
+                }
                 $raw = $formData[$key] ?? null;
-                if (!is_string($raw) && !is_int($raw)) return null;
+                if (! is_string($raw) && ! is_int($raw)) {
+                    return null;
+                }
                 $bucketMap = is_array($buckets[$key] ?? null) ? $buckets[$key] : [];
                 $parts[] = (string) ($bucketMap[$raw] ?? $raw);
             }
@@ -334,7 +373,7 @@ class QuotaLedger
 
     private function debug(Application $app, string $reason): void
     {
-        Log::debug('QuotaLedger: ' . $reason, [
+        Log::debug('QuotaLedger: '.$reason, [
             'application_id' => $app->id,
         ]);
     }

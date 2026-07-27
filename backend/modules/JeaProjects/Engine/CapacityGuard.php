@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\JeaProjects\Engine;
 
-use Modules\JeaServices\Models\Application;
 use Modules\JeaProjects\Models\Engineer;
+use Modules\JeaServices\Models\Application;
 
 /**
  * CapacityGuard — JORD-69
@@ -35,25 +35,28 @@ class CapacityGuard
     public function __construct(private readonly QuotaLedger $ledger) {}
 
     /**
-     * @return array<string, string>  Empty array = OK.
+     * @return array<string, string> Empty array = OK.
      */
     public function validate(Application $app): array
     {
         $service = $app->serviceDefinition;
-        if (!$service) return [];
+        if (! $service) {
+            return [];
+        }
 
         // JORD-75: schema-declared basis field. Default 'area_m2' for
         // backwards compat (DRW-P-*, SRV-008/009). Services with a
         // different quantity concept (SRV-006 government surveys →
         // 'length_lm') set schema.quota_basis_field to override.
         $basisField = data_get($service->schema, 'quota_basis_field', 'area_m2');
-        if (!is_string($basisField) || $basisField === '') {
+        if (! is_string($basisField) || $basisField === '') {
             $basisField = 'area_m2';
         }
 
         $fields = data_get($service->schema, 'fields', []);
-        $hasBasis = collect($fields)->contains(fn ($f) => ($f['id'] ?? null) === $basisField);
-        if (!$hasBasis) {
+        $fields = is_array($fields) ? $fields : [];
+        $hasBasis = collect($fields)->contains(fn ($f) => is_array($f) && ($f['id'] ?? null) === $basisField);
+        if (! $hasBasis) {
             // Service isn't quota-tracked — no basis field declared.
             return [];
         }
@@ -61,15 +64,16 @@ class CapacityGuard
         $data = is_array($app->data) ? $app->data : [];
         $errors = [];
 
-        $engineerId = $data['engineer_id']    ?? null;
-        $quantity   = $data[$basisField]      ?? null;
+        $engineerId = $data['engineer_id'] ?? null;
+        $quantity = $data[$basisField] ?? null;
 
-        if (!is_numeric($engineerId) || (int) $engineerId <= 0) {
+        if (! is_numeric($engineerId) || (int) $engineerId <= 0) {
             $errors['engineer_id'] = 'يجب اختيار المهندس المسؤول لهذه الخدمة.';
+
             // No point checking capacity if we don't know the engineer.
             return $errors;
         }
-        if (!is_numeric($quantity) || (int) $quantity <= 0) {
+        if (! is_numeric($quantity) || (int) $quantity <= 0) {
             $unitLabel = $basisField === 'length_lm' ? 'م.ط' : 'م²';
             $errors[$basisField] = "الكمية ({$unitLabel}) مطلوبة وأكبر من صفر.";
         }
@@ -77,14 +81,17 @@ class CapacityGuard
         $engineer = Engineer::where('organization_id', $app->organization_id)
             ->where('id', (int) $engineerId)
             ->first();
-        if (!$engineer) {
+        if (! $engineer) {
             $errors['engineer_id'] = 'المهندس المحدد غير مسجل تحت هذا المكتب.';
+
             return $errors;
         }
 
         // If quantity was invalid we've already recorded that error; skip
         // the quota math so the applicant sees BOTH problems at once.
-        if (isset($errors[$basisField])) return $errors;
+        if (isset($errors[$basisField])) {
+            return $errors;
+        }
 
         // JORD-74: schema.quota_discipline_override redirects the
         // capacity check to a service-wide bucket (e.g. 'materials_testing'
@@ -98,13 +105,14 @@ class CapacityGuard
             $discipline = Disciplines::normalize((string) ($engineer->specialization ?? ''));
             if ($discipline === '') {
                 $errors['engineer_id'] = 'المهندس المحدد بدون اختصاص هندسي — يجب تحديث بياناته.';
+
                 return $errors;
             }
         }
 
-        $year      = (int) now()->year;
+        $year = (int) now()->year;
         $quantityI = (int) $quantity;
-        $unit      = $basisField === 'length_lm' ? 'م.ط' : 'م²';
+        $unit = $basisField === 'length_lm' ? 'م.ط' : 'م²';
 
         $engineerRem = $this->ledger->remainingEngineerQuota($engineer, $discipline, $year);
         if ($engineerRem !== null && $engineerRem < $quantityI) {

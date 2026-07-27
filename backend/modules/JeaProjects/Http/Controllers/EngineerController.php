@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace Modules\JeaProjects\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use Modules\JeaProjects\Models\Engineer;
-use Modules\JeaProjects\Models\Project;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Modules\JeaProjects\Http\Requests\StoreEngineerRequest;
+use Modules\JeaProjects\Models\Engineer;
+use Modules\JeaProjects\Models\Project;
 
 /**
  * EngineerController
@@ -28,17 +29,9 @@ class EngineerController extends Controller
         return response()->json(['engineers' => $engineers]);
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(StoreEngineerRequest $request): JsonResponse
     {
-        $data = $request->validate([
-            'name_ar'           => ['required', 'string', 'max:255'],
-            'name_en'           => ['nullable', 'string', 'max:255'],
-            'membership_number' => ['required', 'string', 'max:50'],
-            'specialization'    => ['nullable', 'string', 'max:50'],
-            'phone'             => ['nullable', 'string', 'max:30'],
-            'email'             => ['nullable', 'email', 'max:255'],
-            'annual_quota_m2'   => ['nullable', 'integer', 'min:0'],
-        ]);
+        $data = $request->validated();
 
         // Membership number is unique per office (composite unique).
         $existing = Engineer::withTrashed()
@@ -48,15 +41,15 @@ class EngineerController extends Controller
         if ($existing) {
             return response()->json([
                 'message' => 'رقم العضوية مستخدم بالفعل ضمن هذا المكتب.',
-                'errors'  => ['membership_number' => ['هذا الرقم مسجل مسبقاً.']],
+                'errors' => ['membership_number' => ['هذا الرقم مسجل مسبقاً.']],
             ], 422);
         }
 
         $engineer = Engineer::create([
             ...$data,
             'organization_id' => $request->user()->organization_id,
-            'office_user_id'  => $request->user()->id,
-            'is_active'       => true,
+            'office_user_id' => $request->user()->id,
+            'is_active' => true,
         ]);
 
         return response()->json(['engineer' => $engineer], 201);
@@ -74,8 +67,8 @@ class EngineerController extends Controller
      * GET /api/v1/engineers/{id}/quota — per-engineer quota status.
      *
      * @return JsonResponse with { year, engineer_id, quota_m2, used_m2,
-     *                             remaining_m2, percent_used, projects_count,
-     *                             unlimited }
+     *                      remaining_m2, percent_used, projects_count,
+     *                      unlimited }
      */
     public function quota(Request $request, int $id): JsonResponse
     {
@@ -105,31 +98,31 @@ class EngineerController extends Controller
         $quota = $engineer->annual_quota_m2;
         if ($quota === null) {
             return [
-                'engineer_id'      => $engineer->id,
+                'engineer_id' => $engineer->id,
                 'engineer_name_ar' => $engineer->name_ar,
-                'year'             => (int) now()->year,
-                'quota_m2'         => null,
-                'used_m2'          => $used,
-                'remaining_m2'     => null,
-                'percent_used'     => null,
-                'projects_count'   => $projectsCount,
-                'unlimited'        => true,
+                'year' => (int) now()->year,
+                'quota_m2' => null,
+                'used_m2' => $used,
+                'remaining_m2' => null,
+                'percent_used' => null,
+                'projects_count' => $projectsCount,
+                'unlimited' => true,
             ];
         }
 
         $remaining = max(0, $quota - $used);
-        $percent   = $quota > 0 ? min(100, (int) round(($used / $quota) * 100)) : 0;
+        $percent = $quota > 0 ? min(100, (int) round(($used / $quota) * 100)) : 0;
 
         return [
-            'engineer_id'      => $engineer->id,
+            'engineer_id' => $engineer->id,
             'engineer_name_ar' => $engineer->name_ar,
-            'year'             => (int) now()->year,
-            'quota_m2'         => $quota,
-            'used_m2'          => $used,
-            'remaining_m2'     => $remaining,
-            'percent_used'     => $percent,
-            'projects_count'   => $projectsCount,
-            'unlimited'        => false,
+            'year' => (int) now()->year,
+            'quota_m2' => $quota,
+            'used_m2' => $used,
+            'remaining_m2' => $remaining,
+            'percent_used' => $percent,
+            'projects_count' => $projectsCount,
+            'unlimited' => false,
         ];
     }
 }

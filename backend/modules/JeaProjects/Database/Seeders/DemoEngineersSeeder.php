@@ -2,10 +2,10 @@
 
 namespace Modules\JeaProjects\Database\Seeders;
 
-use Modules\JeaProjects\Models\Engineer;
-use Modules\JeaProjects\Models\Project;
 use App\Models\User;
 use Illuminate\Database\Seeder;
+use Modules\JeaProjects\Models\Engineer;
+use Modules\JeaProjects\Models\Project;
 
 /**
  * Seeds 3 demo engineers under the demo applicant office
@@ -19,32 +19,33 @@ class DemoEngineersSeeder extends Seeder
     public function run(): void
     {
         $office = User::where('email', 'ahmed@demo.esp')->first();
-        if (!$office) {
+        if (! $office) {
             $this->command->error('Demo office user (ahmed@demo.esp) not found. Run DemoSeeder first.');
+
             return;
         }
 
         $engineers = [
             [
-                'name_ar'           => 'م. أحمد الزعبي',
-                'name_en'           => 'Eng. Ahmed Al-Zoubi',
+                'name_ar' => 'م. أحمد الزعبي',
+                'name_en' => 'Eng. Ahmed Al-Zoubi',
                 'membership_number' => '2870',
-                'specialization'    => 'civil',
-                'annual_quota_m2'   => 2500,
+                'specialization' => 'civil',
+                'annual_quota_m2' => 2500,
             ],
             [
-                'name_ar'           => 'م. سارة عبد الله',
-                'name_en'           => 'Eng. Sara Abdullah',
+                'name_ar' => 'م. سارة عبد الله',
+                'name_en' => 'Eng. Sara Abdullah',
                 'membership_number' => '3145',
-                'specialization'    => 'architectural',
-                'annual_quota_m2'   => 1500,
+                'specialization' => 'architectural',
+                'annual_quota_m2' => 1500,
             ],
             [
-                'name_ar'           => 'م. عمر الشريف',
-                'name_en'           => 'Eng. Omar Al-Sharif',
+                'name_ar' => 'م. عمر الشريف',
+                'name_en' => 'Eng. Omar Al-Sharif',
                 'membership_number' => '4028',
-                'specialization'    => 'electrical',
-                'annual_quota_m2'   => 1200,
+                'specialization' => 'electrical',
+                'annual_quota_m2' => 1200,
             ],
         ];
 
@@ -55,8 +56,8 @@ class DemoEngineersSeeder extends Seeder
                 [
                     ...$data,
                     'organization_id' => $office->organization_id,
-                    'office_user_id'  => $office->id,
-                    'is_active'       => true,
+                    'office_user_id' => $office->id,
+                    'is_active' => true,
                 ]
             );
         }
@@ -65,9 +66,9 @@ class DemoEngineersSeeder extends Seeder
         // إسكان حسين → Ahmed (2870), عمارة البنك الإسلامي → Sara (3145),
         // مدرسة الأمة → Omar (4028).
         $assignments = [
-            'إسكان حسين'            => '2870',
-            'عمارة البنك الإسلامي'   => '3145',
-            'مدرسة الأمة'            => '4028',
+            'إسكان حسين' => '2870',
+            'عمارة البنك الإسلامي' => '3145',
+            'مدرسة الأمة' => '4028',
         ];
 
         $backfilled = 0;
@@ -75,14 +76,16 @@ class DemoEngineersSeeder extends Seeder
             $project = Project::where('owner_user_id', $office->id)
                 ->where('name_ar', $nameAr)
                 ->first();
-            if ($project && !$project->engineer_id && isset($created[$memberNo])) {
+            // $created is guaranteed to have all 3 membership numbers keyed
+            // above (firstOrCreate always returns a row) — no isset() needed.
+            if ($project && ! $project->engineer_id) {
                 $project->engineer_id = $created[$memberNo]->id;
                 $project->save();
                 $backfilled++;
             }
         }
 
-        $this->command->info('✓ Seeded ' . count($engineers) . ' engineers under office ' . $office->email);
+        $this->command->info('✓ Seeded '.count($engineers).' engineers under office '.$office->email);
         $this->command->info("✓ Backfilled {$backfilled} existing projects to engineers.");
     }
 }

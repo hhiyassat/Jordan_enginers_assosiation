@@ -6,28 +6,42 @@ namespace Modules\JeaProjects\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
 /**
  * JORD-73: a coalition of engineering offices pooling their quotas.
  * See migrations/2026_07_21_000008 and _000009 for shape, and
  * Modules\JeaProjects\Engine\QuotaLedger::remainingOfficeCeiling for the aggregated
  * ceiling math.
+ *
+ * @property int $id
+ * @property string|null $name_ar
+ * @property string|null $name_en
+ * @property Carbon|null $formed_at
+ * @property Carbon|null $dissolved_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  */
 class OfficeCoalition extends Model
 {
     protected $fillable = ['name_ar', 'name_en', 'formed_at', 'dissolved_at'];
 
     protected $casts = [
-        'formed_at'    => 'datetime',
+        'formed_at' => 'datetime',
         'dissolved_at' => 'datetime',
     ];
 
+    /** @return HasMany<OfficeCoalitionMember, $this> */
     public function members(): HasMany
     {
         return $this->hasMany(OfficeCoalitionMember::class);
     }
 
-    /** Members with an active membership (not yet left). */
+    /**
+     * Members with an active membership (not yet left).
+     *
+     * @return HasMany<OfficeCoalitionMember, $this>
+     */
     public function activeMembers(): HasMany
     {
         return $this->members()->whereNull('left_at');

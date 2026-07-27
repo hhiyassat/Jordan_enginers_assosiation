@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Modules\JeaDues\Http\Requests\PayRecurringDuesRequest;
 use Modules\JeaDues\Models\RecurringObligation;
 use Modules\JeaDues\Services\RecurringDuesService;
 
@@ -46,13 +47,13 @@ class RecurringDuesController extends Controller
             ->get();
 
         return response()->json([
-            'office'      => [
-                'id'                    => $office->id,
-                'name'                  => $office->name,
+            'office' => [
+                'id' => $office->id,
+                'name' => $office->name,
                 'office_classification' => $office->office_classification,
             ],
             'obligations' => $obligations,
-            'rate_table'  => RecurringDuesService::RATES,
+            'rate_table' => RecurringDuesService::RATES,
         ]);
     }
 
@@ -60,11 +61,9 @@ class RecurringDuesController extends Controller
      * POST /admin/dues/{obligationId}/pay
      * Body: { payment_reference: string }
      */
-    public function pay(Request $request, int $obligationId): JsonResponse
+    public function pay(PayRecurringDuesRequest $request, int $obligationId): JsonResponse
     {
-        $data = $request->validate([
-            'payment_reference' => ['required', 'string', 'max:128'],
-        ]);
+        $data = $request->validated();
 
         $obligation = RecurringObligation::findOrFail($obligationId);
         // Cross-org guard: obligation must belong to an office in
@@ -82,7 +81,7 @@ class RecurringDuesController extends Controller
 
         return response()->json([
             'obligation' => $obligation,
-            'message'    => 'تم تسجيل الدفع.',
+            'message' => 'تم تسجيل الدفع.',
         ]);
     }
 
@@ -95,9 +94,10 @@ class RecurringDuesController extends Controller
     {
         $office = $this->findOffice($request, $officeId);
         $obligation = $this->svc->ensureRegistrationFee($office);
+
         return response()->json([
             'obligation' => $obligation,
-            'message'    => $obligation->wasRecentlyCreated
+            'message' => $obligation->wasRecentlyCreated
                 ? 'تم إنشاء رسوم التسجيل.'
                 : 'رسوم التسجيل موجودة بالفعل لهذه السنة.',
         ]);

@@ -1,0 +1,40 @@
+# Normalize line endings for all text files so tooling that assumes LF
+# (Laravel Pint / PHP-CS-Fixer, ESLint, diff/blame) behaves the same on
+# every OS. Without this, a Windows checkout with core.autocrlf=true
+# converts every text file to CRLF, and Pint reports a "line_ending"
+# violation on the entire tree even when nothing else changed.
+* text=auto eol=lf
+
+# Explicit text types (redundant with `text=auto` for most, but keeps
+# the intent explicit for the files this project actually has).
+*.php     text eol=lf
+*.ts      text eol=lf
+*.tsx     text eol=lf
+*.js      text eol=lf
+*.jsx     text eol=lf
+*.json    text eol=lf
+*.md      text eol=lf
+*.yml     text eol=lf
+*.yaml    text eol=lf
+*.css     text eol=lf
+*.html    text eol=lf
+*.sh      text eol=lf
+*.neon    text eol=lf
+*.xml     text eol=lf
+
+# Windows batch files genuinely need CRLF.
+*.bat     text eol=crlf
+*.cmd     text eol=crlf
+
+# Binary files — never touch line endings.
+*.png     binary
+*.jpg     binary
+*.jpeg    binary
+*.gif     binary
+*.ico     binary
+*.pdf     binary
+*.ttf     binary
+*.woff    binary
+*.woff2   binary
+*.zip     binary
+*.sqlite  binary

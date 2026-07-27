@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace Modules\JeaDiscipline\Models;
 
-use Modules\JeaServices\Models\Application;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
+use Modules\JeaServices\Models\Application;
 
 /**
  * JORD-82: legal fine issued against a project owner per JEA
@@ -20,25 +21,42 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  *
  * Bounds live on the model (not the DB) so the controller can
  * validate range without a schema change if the manual is amended.
+ *
+ * @property int $id
+ * @property int $organization_id
+ * @property int|null $application_id
+ * @property string $target_display
+ * @property string $kind
+ * @property int|null $project_area_m2
+ * @property string $amount_jod
+ * @property string $reason
+ * @property int $issued_by_user_id
+ * @property Carbon $issued_at
+ * @property Carbon|null $paid_at
+ * @property string|null $payment_reference
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property Carbon|null $deleted_at
  */
 class LegalFine extends Model
 {
     use SoftDeletes;
 
     public const KIND_UNLICENSED_SMALL = 'unlicensed_contractor_small';
+
     public const KIND_UNLICENSED_LARGE = 'unlicensed_contractor_large';
 
     /** @var array<string, array{min: int, max: int, area_threshold_m2: int|null}> */
     public const BOUNDS = [
         self::KIND_UNLICENSED_SMALL => [
-            'min'                => 1000,
-            'max'                => 5000,
-            'area_threshold_m2'  => 250,   // small kind is valid iff area ≤ this
+            'min' => 1000,
+            'max' => 5000,
+            'area_threshold_m2' => 250,   // small kind is valid iff area ≤ this
         ],
         self::KIND_UNLICENSED_LARGE => [
-            'min'                => 5000,
-            'max'                => 50000,
-            'area_threshold_m2'  => 250,   // large kind is valid iff area > this
+            'min' => 5000,
+            'max' => 50000,
+            'area_threshold_m2' => 250,   // large kind is valid iff area > this
         ],
     ];
 
@@ -50,16 +68,18 @@ class LegalFine extends Model
 
     protected $casts = [
         'project_area_m2' => 'integer',
-        'amount_jod'      => 'decimal:2',
-        'issued_at'       => 'datetime',
-        'paid_at'         => 'datetime',
+        'amount_jod' => 'decimal:2',
+        'issued_at' => 'datetime',
+        'paid_at' => 'datetime',
     ];
 
+    /** @return BelongsTo<Application, $this> */
     public function application(): BelongsTo
     {
         return $this->belongsTo(Application::class);
     }
 
+    /** @return BelongsTo<User, $this> */
     public function issuedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'issued_by_user_id');

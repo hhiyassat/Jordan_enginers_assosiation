@@ -29,10 +29,11 @@ class ServiceSubmissionGuardRegistry
 {
     /**
      * @param  array<string, ServiceSubmissionGuard>  $guards
-     *         Keyed by ServiceDefinition::code.
+     *                                                         Keyed by ServiceDefinition::code.
      */
     public function __construct(private readonly array $guards = []) {}
 
+    /** @return array<string, string>  field-id keyed error messages, [] on pass */
     public function validate(Application $app): array
     {
         $code = $app->serviceDefinition?->code;
@@ -40,6 +41,7 @@ class ServiceSubmissionGuardRegistry
             return []; // orphan application — nothing to guard.
         }
         $guard = $this->guards[$code] ?? null;
+
         return $guard?->validate($app) ?? [];
     }
 

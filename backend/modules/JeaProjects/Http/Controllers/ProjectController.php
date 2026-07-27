@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace Modules\JeaProjects\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use Modules\JeaProjects\Models\Engineer;
-use Modules\JeaProjects\Models\Project;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Modules\JeaProjects\Http\Requests\StoreProjectRequest;
+use Modules\JeaProjects\Models\Engineer;
+use Modules\JeaProjects\Models\Project;
 
 /**
  * ProjectController
@@ -39,26 +40,18 @@ class ProjectController extends Controller
         return response()->json(['projects' => $projects]);
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(StoreProjectRequest $request): JsonResponse
     {
-        $data = $request->validate([
-            'engineer_id' => ['required', 'integer', 'exists:engineers,id'],
-            'name_ar'     => ['required', 'string', 'max:255'],
-            'name_en'     => ['nullable', 'string', 'max:255'],
-            'type'        => ['nullable', 'string', 'max:50'],
-            'area_m2'     => ['nullable', 'integer', 'min:1'],
-            'city'        => ['nullable', 'string', 'max:100'],
-            'contract_no' => ['nullable', 'string', 'max:50'],
-        ]);
+        $data = $request->validated();
 
         // Ownership check: engineer must belong to the current office.
         $engineer = Engineer::where('id', $data['engineer_id'])
             ->where('office_user_id', $request->user()->id)
             ->first();
-        if (!$engineer) {
+        if (! $engineer) {
             return response()->json([
                 'message' => 'المهندس المحدد غير مسجل ضمن هذا المكتب.',
-                'errors'  => ['engineer_id' => ['المهندس غير موجود ضمن مكتبك.']],
+                'errors' => ['engineer_id' => ['المهندس غير موجود ضمن مكتبك.']],
             ], 422);
         }
 
@@ -73,9 +66,10 @@ class ProjectController extends Controller
                 ->sum('area_m2');
             if ($usedM2 + $newArea > $office->annual_quota_m2) {
                 $remaining = max(0, $office->annual_quota_m2 - $usedM2);
+
                 return response()->json([
                     'message' => "المشروع يتجاوز رصيد المكتب. الرصيد المتبقي {$remaining} م² من أصل {$office->annual_quota_m2} م² للسنة الحالية.",
-                    'errors'  => ['area_m2' => [
+                    'errors' => ['area_m2' => [
                         "الرصيد المتبقي للمكتب {$remaining} م² فقط للسنة الحالية.",
                     ]],
                     'quota_exceeded' => true,
@@ -83,12 +77,12 @@ class ProjectController extends Controller
                     // reads these on the 422 payload; engineer_id + name
                     // now identify the engineer that TRIED to spend the
                     // quota, not the one that owns it.
-                    'engineer_id'    => $engineer->id,
-                    'engineer_name'  => $engineer->name_ar,
-                    'quota'          => $office->annual_quota_m2,
-                    'used'           => $usedM2,
-                    'remaining'      => $remaining,
-                    'attempted'      => $newArea,
+                    'engineer_id' => $engineer->id,
+                    'engineer_name' => $engineer->name_ar,
+                    'quota' => $office->annual_quota_m2,
+                    'used' => $usedM2,
+                    'remaining' => $remaining,
+                    'attempted' => $newArea,
                 ], 422);
             }
         }
@@ -96,8 +90,8 @@ class ProjectController extends Controller
         $project = Project::create([
             ...$data,
             'organization_id' => $request->user()->organization_id,
-            'owner_user_id'   => $request->user()->id,
-            'status'          => 'pending',
+            'owner_user_id' => $request->user()->id,
+            'status' => 'pending',
         ]);
 
         return response()->json(['project' => $project->fresh('engineer')], 201);
@@ -134,7 +128,7 @@ class ProjectController extends Controller
             ->get();
 
         $breakdown = $engineers
-            ->map(fn(Engineer $e) => EngineerController::buildQuota($e))
+            ->map(fn (Engineer $e) => EngineerController::buildQuota($e))
             ->values();
 
         // JORD-12: office pool = user.annual_quota_m2 + SUM(all projects).
@@ -142,7 +136,7 @@ class ProjectController extends Controller
         // an artificially high total when engineers had their own
         // legacy per-engineer quotas set).
         $officeQuota = $office->annual_quota_m2;
-        $officeUsed  = (int) Project::where('owner_user_id', $office->id)
+        $officeUsed = (int) Project::where('owner_user_id', $office->id)
             ->where('created_at', '>=', now()->startOfYear())
             ->sum('area_m2');
         $officeProjects = (int) Project::where('owner_user_id', $office->id)
@@ -150,19 +144,19 @@ class ProjectController extends Controller
             ->count();
         $hasUnlim = $officeQuota === null;
         $officeRemaining = $hasUnlim ? null : max(0, $officeQuota - $officeUsed);
-        $officePercent   = $hasUnlim
+        $officePercent = $hasUnlim
             ? null
             : ($officeQuota > 0 ? min(100, (int) round(($officeUsed / $officeQuota) * 100)) : 0);
 
         return response()->json([
-            'year'      => (int) now()->year,
-            'totals'    => [
-                'quota_m2'       => $officeQuota,
-                'used_m2'        => $officeUsed,
-                'remaining_m2'   => $officeRemaining,
-                'percent_used'   => $officePercent,
+            'year' => (int) now()->year,
+            'totals' => [
+                'quota_m2' => $officeQuota,
+                'used_m2' => $officeUsed,
+                'remaining_m2' => $officeRemaining,
+                'percent_used' => $officePercent,
                 'projects_count' => $officeProjects,
-                'unlimited'      => $hasUnlim,
+                'unlimited' => $hasUnlim,
                 'engineers_count' => $breakdown->count(),
             ],
             'engineers' => $breakdown,

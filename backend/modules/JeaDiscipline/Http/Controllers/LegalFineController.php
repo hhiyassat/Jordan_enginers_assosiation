@@ -5,10 +5,14 @@ declare(strict_types=1);
 namespace Modules\JeaDiscipline\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use Modules\JeaServices\Models\Application;
-use Modules\JeaDiscipline\Models\LegalFine;
+use App\Models\AuditLog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Modules\JeaDiscipline\Http\Requests\PayLegalFineRequest;
+use Modules\JeaDiscipline\Http\Requests\StoreLegalFineRequest;
+use Modules\JeaDiscipline\Models\LegalFine;
+use Modules\JeaServices\Models\Application;
 
 /**
  * LegalFineController — JORD-82
@@ -34,7 +38,7 @@ class LegalFineController extends Controller
             ->get();
 
         return response()->json([
-            'fines'  => $fines,
+            'fines' => $fines,
             'bounds' => LegalFine::BOUNDS,
         ]);
     }
@@ -44,16 +48,9 @@ class LegalFineController extends Controller
      *   { kind, amount_jod, target_display, project_area_m2?,
      *     application_id?, reason }
      */
-    public function store(Request $request): JsonResponse
+    public function store(StoreLegalFineRequest $request): JsonResponse
     {
-        $data = $request->validate([
-            'kind'            => ['required', 'in:unlicensed_contractor_small,unlicensed_contractor_large'],
-            'amount_jod'      => ['required', 'numeric', 'min:0'],
-            'target_display'  => ['required', 'string', 'max:255'],
-            'project_area_m2' => ['nullable', 'integer', 'min:1'],
-            'application_id'  => ['nullable', 'integer', 'exists:applications,id'],
-            'reason'          => ['required', 'string', 'min:10', 'max:5000'],
-        ]);
+        $data = $request->validated();
 
         // Range check — amount must fall within the kind's bounds.
         $bounds = LegalFine::BOUNDS[$data['kind']];
@@ -63,7 +60,7 @@ class LegalFineController extends Controller
                     'قيمة الغرامة يجب أن تكون بين %d و %d دينار لهذا النوع.',
                     $bounds['min'], $bounds['max'],
                 ),
-                'errors'  => ['amount_jod' => sprintf(
+                'errors' => ['amount_jod' => sprintf(
                     'خارج النطاق %d–%d', $bounds['min'], $bounds['max'],
                 )],
             ], 422);
@@ -71,41 +68,61 @@ class LegalFineController extends Controller
 
         // Area consistency check — small kind should be ≤ threshold,
         // large kind should be >. Admin gets a nudge if they mis-select.
-        if (!empty($data['project_area_m2'])) {
+        if (! empty($data['project_area_m2'])) {
             $threshold = $bounds['area_threshold_m2'];
             $areaOk = $data['kind'] === LegalFine::KIND_UNLICENSED_SMALL
                 ? $data['project_area_m2'] <= $threshold
-                : $data['project_area_m2'] >  $threshold;
-            if (!$areaOk) {
+                : $data['project_area_m2'] > $threshold;
+            if (! $areaOk) {
                 return response()->json([
                     'message' => 'نوع الغرامة لا يتوافق مع مساحة المشروع (الحد 250 م²).',
-                    'errors'  => ['kind' => 'مساحة المشروع تشير إلى النوع الآخر.'],
+                    'errors' => ['kind' => 'مساحة المشروع تشير إلى النوع الآخر.'],
                 ], 422);
             }
         }
 
         // Cross-org guard on application_id if provided.
-        if (!empty($data['application_id'])) {
+        if (! empty($data['application_id'])) {
             $app = Application::where('organization_id', $request->user()->organization_id)
                 ->findOrFail($data['application_id']);
             $data['application_id'] = $app->id;
         }
 
-        $fine = LegalFine::create([
-            ...$data,
-            'organization_id'   => $request->user()->organization_id,
-            'issued_by_user_id' => $request->user()->id,
-            'issued_at'         => now(),
-        ]);
+        $fine = DB::transaction(function () use ($request, $data) {
+            $fine = LegalFine::create([
+                ...$data,
+                'organization_id' => $request->user()->organization_id,
+                'issued_by_user_id' => $request->user()->id,
+                'issued_at' => now(),
+            ]);
+
+            AuditLog::record(
+                user: $request->user(),
+                subject: $fine,
+                action: 'legal_fine.issued',
+                extra: [
+                    'rule_id' => 'ESP-DISC-003',
+                    'input_snapshot' => [
+                        'kind' => $data['kind'],
+                        'amount_jod' => $data['amount_jod'],
+                        'target_display' => $data['target_display'],
+                        'application_id' => $data['application_id'] ?? null,
+                        'reason' => $data['reason'],
+                    ],
+                ],
+            );
+
+            return $fine;
+        });
 
         return response()->json([
-            'fine'    => $fine,
+            'fine' => $fine,
             'message' => 'تم إصدار الغرامة.',
         ], 201);
     }
 
     /** POST /admin/legal-fines/{id}/pay  { payment_reference } */
-    public function pay(Request $request, int $id): JsonResponse
+    public function pay(PayLegalFineRequest $request, int $id): JsonResponse
     {
         $fine = LegalFine::where('organization_id', $request->user()->organization_id)
             ->findOrFail($id);
@@ -116,17 +133,29 @@ class LegalFineController extends Controller
             ], 422);
         }
 
-        $data = $request->validate([
-            'payment_reference' => ['required', 'string', 'max:128'],
-        ]);
+        $data = $request->validated();
 
-        $fine->update([
-            'paid_at'           => now(),
-            'payment_reference' => $data['payment_reference'],
-        ]);
+        DB::transaction(function () use ($request, $fine, $data) {
+            $fine->update([
+                'paid_at' => now(),
+                'payment_reference' => $data['payment_reference'],
+            ]);
+
+            AuditLog::record(
+                user: $request->user(),
+                subject: $fine,
+                action: 'legal_fine.paid',
+                extra: [
+                    'rule_id' => 'ESP-DISC-004',
+                    'input_snapshot' => [
+                        'payment_reference' => $data['payment_reference'],
+                    ],
+                ],
+            );
+        });
 
         return response()->json([
-            'fine'    => $fine->fresh(),
+            'fine' => $fine->fresh(),
             'message' => 'تم تسجيل الدفع.',
         ]);
     }

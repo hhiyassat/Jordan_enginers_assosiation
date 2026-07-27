@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Modules\JeaServices\Http\Requests\UpdateManualReferenceRequest;
 use Modules\JeaServices\Models\ManualReference;
 
 /**
@@ -29,6 +30,7 @@ class ManualReferenceController extends Controller
     public function show(int $id): JsonResponse
     {
         $ref = ManualReference::findOrFail($id);
+
         return response()->json(['reference' => $ref]);
     }
 
@@ -45,6 +47,7 @@ class ManualReferenceController extends Controller
             $refs = ManualReference::where('needs_reimplementation', true)
                 ->orderByDesc('edited_at')
                 ->get();
+
             return response()->json(['references' => $refs]);
         }
 
@@ -52,21 +55,15 @@ class ManualReferenceController extends Controller
         if ($request->filled('service')) {
             $q->where('target_service_code', $request->string('service'));
         }
+
         return response()->json(['references' => $q->orderBy('page')->get()]);
     }
 
     /** Admin edits the rule text — raises pending flag. */
-    public function update(Request $request, int $id): JsonResponse
+    public function update(UpdateManualReferenceRequest $request, int $id): JsonResponse
     {
         $user = $request->user();
-        if (! $user->isAdmin() && ! $user->isSuperuser()) {
-            abort(403, 'المسؤولون فقط يمكنهم تعديل النصوص النظامية.');
-        }
-
-        $data = $request->validate([
-            'text_ar'     => ['required', 'string', 'min:10'],
-            'edit_reason' => ['nullable', 'string', 'max:500'],
-        ]);
+        $data = $request->validated();
 
         $ref = ManualReference::findOrFail($id);
 
@@ -76,23 +73,23 @@ class ManualReferenceController extends Controller
         }
 
         $ref->update([
-            'text_ar'                => $data['text_ar'],
-            'edit_reason'            => $data['edit_reason'] ?? null,
-            'edited_by'              => $user->id,
-            'edited_at'              => now(),
+            'text_ar' => $data['text_ar'],
+            'edit_reason' => $data['edit_reason'] ?? null,
+            'edited_by' => $user->id,
+            'edited_at' => now(),
             'needs_reimplementation' => true,
         ]);
 
         AuditLog::record(
-            user:    $user,
+            user: $user,
             subject: $ref,
-            action:  'manual_reference.edited',
+            action: 'manual_reference.edited',
             extra: [
-                'rule_id'   => 'ESP-MANUAL-EDIT',
-                'ref_id'    => $ref->id,
-                'jord'      => $ref->jord_ticket,
-                'target'    => "{$ref->target_type}:{$ref->target_id}",
-                'reason'    => $data['edit_reason'] ?? null,
+                'rule_id' => 'ESP-MANUAL-EDIT',
+                'ref_id' => $ref->id,
+                'jord' => $ref->jord_ticket,
+                'target' => "{$ref->target_type}:{$ref->target_id}",
+                'reason' => $data['edit_reason'] ?? null,
             ],
         );
 
@@ -114,13 +111,13 @@ class ManualReferenceController extends Controller
         $ref = ManualReference::findOrFail($id);
         $ref->update([
             'needs_reimplementation' => false,
-            'text_ar_original'       => $ref->text_ar,
+            'text_ar_original' => $ref->text_ar,
         ]);
 
         AuditLog::record(
-            user:    $user,
+            user: $user,
             subject: $ref,
-            action:  'manual_reference.acknowledged',
+            action: 'manual_reference.acknowledged',
             extra: ['rule_id' => 'ESP-MANUAL-ACK', 'ref_id' => $ref->id],
         );
 
