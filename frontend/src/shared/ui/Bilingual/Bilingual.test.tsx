@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { Bilingual } from './Bilingual';
+import { Bilingual } from '.';
 
 describe('Bilingual', () => {
   it('renders both AR and EN spans with correct lang attrs (inline variant)', () => {

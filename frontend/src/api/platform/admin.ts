@@ -1,5 +1,5 @@
-import type { Application, DashboardStats, User } from '../../types';
-import { request } from '../http';
+import type { Application, DashboardStats, User } from '../../shared/types';
+import { request } from '../../shared/api/http';
 
 /**
  * Platform admin API (Workstream 6 split from api/admin.ts).

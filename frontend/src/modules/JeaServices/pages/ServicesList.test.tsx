@@ -3,7 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { ServicesList } from './ServicesList';
-import type { ServiceDefinition } from '../../../types';
+import type { ServiceDefinition } from '../../../shared/types';
 
 const mockList          = vi.fn();
 const mockLockService   = vi.fn();

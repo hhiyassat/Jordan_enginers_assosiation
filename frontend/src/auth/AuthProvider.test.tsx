@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, act } from '@testing-library/react';
 import { AuthProvider } from './AuthProvider';
 import { useAuth } from './AuthContext';
-import type { User } from '../types';
+import type { User } from '../shared/types';
 
 /**
  * JORD-50 regression: cross-tab session-swap guard.

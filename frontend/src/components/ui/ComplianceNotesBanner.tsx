@@ -1,7 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { AlertTriangle, Info, ShieldAlert } from 'lucide-react';
-import type { ComplianceNote } from '../../types';
+import type { ComplianceNote } from '../../shared/types';
 
 /**
  * ComplianceNotesBanner — JORD-61

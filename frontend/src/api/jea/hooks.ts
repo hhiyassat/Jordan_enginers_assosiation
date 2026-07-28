@@ -5,7 +5,7 @@ import { projectsApi } from '../projects';
 import { applicationsApi } from '../applications';
 import { jeaAdminApi } from './admin';
 import type { AllApplicationsFilters } from '../platform/admin';
-import type { ApiError } from '../http';
+import type { ApiError } from '../../shared/api/http';
 
 /**
  * JEA React Query hooks (Workstream 6 split from api/hooks.ts).

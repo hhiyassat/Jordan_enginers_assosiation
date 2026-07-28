@@ -1,7 +1,7 @@
 import React, { useEffect, useId, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
-import { Bilingual } from './Bilingual';
+import { Bilingual } from '../Bilingual';
 
 /**
  * Modal — NFR-004

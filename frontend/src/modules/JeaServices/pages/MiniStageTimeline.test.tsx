@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MiniStageTimeline } from './MiniStageTimeline';
-import type { SchemaWorkflowStage } from '../../../types';
+import type { SchemaWorkflowStage } from '../../../shared/types';
 
 function s(id: string, label_ar: string, role = 'staff'): SchemaWorkflowStage {
   return { id, role, label_ar, label_en: id, sla_hours: 24 } as SchemaWorkflowStage;

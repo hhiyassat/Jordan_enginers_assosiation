@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { request } from '../../api/http';
+import { request } from '../../shared/api/http';
 
 /**
  * PendingManualEditsTile

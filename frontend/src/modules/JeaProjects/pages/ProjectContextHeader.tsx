@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import type { Project } from '../../../types';
+import type { Project } from '../../../shared/types';
 
 /**
  * Rendered above the Apply schema form when the applicant reached the

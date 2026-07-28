@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import i18n from '../../../i18n';
+import i18n from '../../../shared/lib/i18n';
 import { Dashboard } from './Dashboard';
 import { makeQueryWrapper } from '../../../test/queryWrapper';
 import type { OfficeQuota } from '../../../api/projects';

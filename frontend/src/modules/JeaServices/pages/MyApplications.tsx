@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMyApplications } from '../../../api/hooks';
-import type { Application } from '../../../types';
+import type { Application } from '../../../shared/types';
 import { isOngoing, orderForApplicant } from './applicationStatus';
 import { MiniStageTimeline } from './MiniStageTimeline';
 import { ExpiryBadge } from '../../../components/ui/ExpiryBadge';

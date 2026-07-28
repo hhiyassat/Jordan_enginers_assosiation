@@ -1,4 +1,4 @@
-import type { Application, SchemaDocument } from '../../../types';
+import type { Application, SchemaDocument } from '../../../shared/types';
 
 /**
  * JORD-58: compute the set of REQUIRED documents that the applicant

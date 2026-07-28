@@ -3,13 +3,13 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, ArrowRight, Plus, Building2, MapPin } from 'lucide-react';
 import { engineersApi, projectsApi, type OfficeQuota } from '../../../api/client';
-import type { Engineer, Project } from '../../../types';
-import { PageHero } from '../../../platform/ui/PageHero';
-import { Button } from '../../../platform/ui/Button';
-import { Modal } from '../../../platform/ui/Modal';
-import { TextField, FormField } from '../../../platform/ui/FormField';
+import type { Engineer, Project } from '../../../shared/types';
+import { PageHero } from '../../../shared/ui';
+import { Button } from '../../../shared/ui';
+import { Modal } from '../../../shared/ui';
+import { TextField, FormField } from '../../../shared/ui';
 import { QuotaCard } from '../../../components/ui/QuotaCard';
-import { errorMessage } from '../../../platform/utils/errorMessage';
+import { errorMessage } from '../../../shared/utils';
 
 export function ProjectsList() {
   const { t, i18n } = useTranslation();

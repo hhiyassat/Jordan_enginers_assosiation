@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { ConfirmDialog } from './ConfirmDialog';
+import { ConfirmDialog } from '.';
 
 /**
  * JORD-70: the in-app replacement for window.confirm(). Pins:

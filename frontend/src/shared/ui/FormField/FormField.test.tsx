@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { TextField, FormField } from './FormField';
+import { TextField, FormField } from '.';
 
 describe('TextField', () => {
   it('associates the label with the input via htmlFor + id', () => {

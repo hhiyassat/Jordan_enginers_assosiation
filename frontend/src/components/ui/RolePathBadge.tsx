@@ -1,6 +1,6 @@
 import React from 'react';
 import { User as UserIcon, ShieldCheck } from 'lucide-react';
-import type { SchemaWorkflowStage } from '../../types';
+import type { SchemaWorkflowStage } from '../../shared/types';
 import { countByRole } from '../../engine/workflowRolePath';
 
 /**

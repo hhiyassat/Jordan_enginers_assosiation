@@ -1,4 +1,4 @@
-import type { Application } from '../../../types';
+import type { Application } from '../../../shared/types';
 
 /**
  * Terminal statuses — no further stage advance can happen. MyApplications

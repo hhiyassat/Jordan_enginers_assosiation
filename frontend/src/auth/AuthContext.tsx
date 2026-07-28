@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react';
-import type { User } from '../types';
+import type { User } from '../shared/types';
 
 /**
  * Auth context — split out of App.tsx (JORD-25).

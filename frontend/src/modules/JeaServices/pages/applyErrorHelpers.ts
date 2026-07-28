@@ -1,5 +1,5 @@
-import type { ServiceSchema } from '../../../types';
-import i18n from '../../../i18n';
+import type { ServiceSchema } from '../../../shared/types';
+import i18n from '../../../shared/lib/i18n';
 
 // The Apply page catches errors from three distinct backend paths:
 //

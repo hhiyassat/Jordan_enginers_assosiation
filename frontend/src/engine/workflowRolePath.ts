@@ -1,4 +1,4 @@
-import type { SchemaWorkflowStage } from '../types';
+import type { SchemaWorkflowStage } from '../shared/types';
 
 /**
  * The workflow schema tags every stage with a role (applicant, staff,

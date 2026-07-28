@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { ReviewQueue } from './ReviewQueue';
-import type { Application, ServiceDefinition } from '../../../../types';
+import type { Application, ServiceDefinition } from '../../../../shared/types';
 
 const mockQueue = vi.fn();
 vi.mock('../../../../api/client', () => ({

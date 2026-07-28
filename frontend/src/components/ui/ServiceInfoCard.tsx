@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { FileText, Clock, Coins, ListTree } from 'lucide-react';
-import type { ServiceDefinition } from '../../types';
+import type { ServiceDefinition } from '../../shared/types';
 
 /**
  * ServiceInfoCard — compact summary of a service (JORD-18).

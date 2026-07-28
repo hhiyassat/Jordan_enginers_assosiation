@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ArrowRight, Building2, Plus, Clock } from 'lucide-react';
 import { projectsApi, servicesApi } from '../../../api/client';
-import type { Project, ServiceDefinition } from '../../../types';
+import type { Project, ServiceDefinition } from '../../../shared/types';
 import { PhaseBadge } from '../../../components/ui/PhaseBadge';
 
 function formatSla(t: (key: string, opts?: Record<string, unknown>) => string, hours?: number | null): string {

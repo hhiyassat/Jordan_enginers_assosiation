@@ -3,7 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { MyApplications } from './MyApplications';
-import type { Application, ServiceDefinition } from '../../../types';
+import type { Application, ServiceDefinition } from '../../../shared/types';
 
 import { makeQueryWrapper } from '../../../test/queryWrapper';
 

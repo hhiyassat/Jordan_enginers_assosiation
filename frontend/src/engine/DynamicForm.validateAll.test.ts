@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { validateAll } from './DynamicForm';
-import type { ServiceSchema } from '../types';
+import type { ServiceSchema } from '../shared/types';
 
 /**
  * JORD-16: pin the pre-submit client validation surface.

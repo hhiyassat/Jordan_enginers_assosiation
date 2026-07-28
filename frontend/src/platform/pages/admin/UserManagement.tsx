@@ -2,9 +2,9 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Trash2, Edit3, UserPlus, X } from 'lucide-react';
 import { userManagementApi } from '../../../api/client';
-import type { User } from '../../../types';
-import { ConfirmDialog } from '../../../platform/ui/ConfirmDialog';
-import { errorMessage } from '../../../platform/utils/errorMessage';
+import type { User } from '../../../shared/types';
+import { ConfirmDialog } from '../../../shared/ui';
+import { errorMessage } from '../../../shared/utils';
 import { useAuth } from '../../../auth/AuthContext';
 
 /**

@@ -7,7 +7,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { useServices } from '../../../api/hooks';
-import type { ServiceDefinition } from '../../../types';
+import type { ServiceDefinition } from '../../../shared/types';
 
 // Icon selection by code prefix — matches the JEA portal design categories.
 const ICON_BY_PREFIX: Array<[string, LucideIcon]> = [

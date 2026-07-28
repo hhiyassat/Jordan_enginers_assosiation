@@ -5,8 +5,8 @@ import { Lock, Unlock } from 'lucide-react';
 import { adminApi } from '../../../api/client';
 import { DynamicForm } from '../../../engine/DynamicForm';
 import { DocumentPreviewCard } from '../../../engine/DocumentPreviewCard';
-import type { ServiceDefinition, ServiceSchema } from '../../../types';
-import { errorMessage } from '../../../platform/utils/errorMessage';
+import type { ServiceDefinition, ServiceSchema } from '../../../shared/types';
+import { errorMessage } from '../../../shared/utils';
 
 type Tab = 'schema' | 'preview' | 'ai';
 

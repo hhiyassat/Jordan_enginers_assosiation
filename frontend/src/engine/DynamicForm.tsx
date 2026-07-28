@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import i18n from '../i18n';
+import i18n from '../shared/lib/i18n';
 import { ManualReferenceIcon } from '../platform/ui/ManualReferenceIcon';
-import type { SchemaField, SchemaSection, ServiceSchema } from '../types';
+import type { SchemaField, SchemaSection, ServiceSchema } from '../shared/types';
 
 interface Props {
   schema: ServiceSchema;
@@ -472,7 +472,7 @@ function DynamicSelect({ field, cls, value, onChange, onBlur, disabled, locale }
     //  - label: engineer.name_ar (with (specialization) suffix)
     // Future endpoints will need their own mapper here; a generic
     // "list at .data[]" shape is the natural next extension.
-    import('../api/http').then(({ request }) => {
+    import('../shared/api/http').then(({ request }) => {
       return request<{ engineers?: Array<{ id: number; name_ar: string; name_en?: string; specialization?: string }> }>(
         'GET', field.options_endpoint!
       );

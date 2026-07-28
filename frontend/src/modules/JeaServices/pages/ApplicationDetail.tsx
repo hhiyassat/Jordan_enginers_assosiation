@@ -5,8 +5,8 @@ import {
   AlertCircle, ArrowLeft, ArrowRight, CheckCircle2, ClipboardList, Download, Edit3, FileText,
 } from 'lucide-react';
 import { applicationsApi } from '../../../api/client';
-import type { Application, ApplicationReview } from '../../../types';
-import { errorMessage } from '../../../platform/utils/errorMessage';
+import type { Application, ApplicationReview } from '../../../shared/types';
+import { errorMessage } from '../../../shared/utils';
 import { ReportsPanel } from '../../../platform/ui/ReportsPanel';
 
 /**

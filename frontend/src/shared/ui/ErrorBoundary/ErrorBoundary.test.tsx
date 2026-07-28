@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { ErrorBoundary } from './ErrorBoundary';
+import { ErrorBoundary } from '.';
 
 /**
  * JORD-27 regression: a render-time throw below the boundary must not

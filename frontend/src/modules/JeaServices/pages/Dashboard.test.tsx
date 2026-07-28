@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { Dashboard } from './Dashboard';
-import type { Application, Project, User } from '../../../types';
+import type { Application, Project, User } from '../../../shared/types';
 import type { OfficeQuota } from '../../../api/client';
 
 const mockList         = vi.fn();

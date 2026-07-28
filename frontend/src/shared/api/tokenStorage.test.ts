@@ -41,7 +41,7 @@ describe('api client — JORD-30 cookie-only auth', () => {
       return fetchMock();
     }) as unknown as typeof fetch;
 
-    const { servicesApi } = await import('./client');
+    const { servicesApi } = await import('../../api/client');
     await servicesApi.list();
 
     const headers = capturedHeaders.at(-1) as Record<string, string>;
@@ -55,7 +55,7 @@ describe('api client — JORD-30 cookie-only auth', () => {
       return fetchMock();
     }) as unknown as typeof fetch;
 
-    const { servicesApi } = await import('./client');
+    const { servicesApi } = await import('../../api/client');
     await servicesApi.list();
 
     const init = capturedInits.at(-1)!;

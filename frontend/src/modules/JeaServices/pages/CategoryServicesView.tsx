@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ArrowRight, Plus, Clock, Edit3 } from 'lucide-react';
 import { servicesApi } from '../../../api/client';
-import type { ServiceDefinition } from '../../../types';
+import type { ServiceDefinition } from '../../../shared/types';
 import { PhaseBadge } from '../../../components/ui/PhaseBadge';
 import { RolePathBadge } from '../../../components/ui/RolePathBadge';
 

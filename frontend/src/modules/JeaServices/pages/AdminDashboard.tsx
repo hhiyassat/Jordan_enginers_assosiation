@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useAdminDashboardStats } from '../../../api/hooks';
 import { useAuth } from '../../../auth/AuthContext';
 import { PendingManualEditsTile } from '../../../platform/ui/PendingManualEditsTile';
-import type { DashboardStats } from '../../../types';
+import type { DashboardStats } from '../../../shared/types';
 
 // Concrete row shape from /admin/dashboard. Fields the backend returns
 // are optional at the type level (DashboardStats) — narrow to non-null

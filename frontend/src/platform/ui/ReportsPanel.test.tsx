@@ -3,7 +3,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 import { ReportsPanel } from './ReportsPanel';
-import type { Application, SchemaDocument } from '../../types';
+import type { Application, SchemaDocument } from '../../shared/types';
 
 // Deterministic Arabic locale — the panel filters + labels off i18n.
 vi.mock('react-i18next', () => ({

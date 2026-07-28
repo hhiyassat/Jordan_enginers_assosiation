@@ -5,12 +5,12 @@ import '@testing-library/jest-dom/vitest';
 import { ManualReferenceIcon } from './ManualReferenceIcon';
 
 // Mock the request helper — the component uses it to load + save references.
-vi.mock('../../api/http', () => ({
+vi.mock('../../shared/api/http', () => ({
   request: vi.fn(),
 }));
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const { request } = await import('../../api/http') as any;
+const { request } = await import('../../shared/api/http') as any;
 
 // Mock react-i18next to a deterministic Arabic-locale variant.
 vi.mock('react-i18next', () => ({

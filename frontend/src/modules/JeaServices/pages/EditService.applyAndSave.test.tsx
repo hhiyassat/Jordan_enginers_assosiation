@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import type { ServiceDefinition } from '../../../types';
+import type { ServiceDefinition } from '../../../shared/types';
 
 // Mock the api client. chatUpdateSchema returns a schema that adds a
 // document; updateService is a spy we assert on to prove the two-in-one

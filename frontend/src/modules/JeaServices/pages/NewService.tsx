@@ -3,9 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { adminApi } from '../../../api/client';
 import { DynamicForm } from '../../../engine/DynamicForm';
-import { errorMessage } from '../../../platform/utils/errorMessage';
+import { errorMessage } from '../../../shared/utils';
 import { DocumentPreviewCard } from '../../../engine/DocumentPreviewCard';
-import type { ServiceSchema } from '../../../types';
+import type { ServiceSchema } from '../../../shared/types';
 import { normalizeSaveError, type ApiError } from './saveErrorHelpers';
 
 // ── Types ─────────────────────────────────────────────────────────────────────

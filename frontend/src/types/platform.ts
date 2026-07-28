@@ -6,7 +6,7 @@
 // inherit exactly this set.
 //
 // JEA-specific types live in `./jea`. The `./index.ts` barrel
-// re-exports both so `import { User } from '../../types'` keeps
+// re-exports both so `import { User } from '../../shared/types'` keeps
 // working unchanged for every consumer.
 
 /**

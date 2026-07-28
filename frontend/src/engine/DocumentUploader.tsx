@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { Application, SchemaDocument } from '../types';
+import type { Application, SchemaDocument } from '../shared/types';
 import { applicationsApi } from '../api/client';
 
 /**

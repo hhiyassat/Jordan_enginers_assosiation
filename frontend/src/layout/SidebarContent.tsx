@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { LogOut } from 'lucide-react';
-import { JEALogo } from '../components/JEALogo';
+import { JEALogo } from '../shared/ui';
 import { isActivePath, type NavItem } from './navItems';
 
 /**

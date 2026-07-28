@@ -2,10 +2,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AlertCircle, CheckCircle2, DollarSign, Download, Lock, Search } from 'lucide-react';
 import { adminApi } from '../../../api/client';
-import { useSortableRows } from '../../../platform/utils/useSortableRows';
-import { downloadCsv } from '../../../platform/utils/csv';
-import { SortHeader } from '../../../platform/utils/SortHeader';
-import { errorMessage } from '../../../platform/utils/errorMessage';
+import { useSortableRows } from '../../../shared/utils';
+import { downloadCsv } from '../../../shared/utils';
+import { SortHeader } from '../../../shared/utils';
+import { errorMessage } from '../../../shared/utils';
 
 /**
  * ServiceFeesAdmin — JORD-85

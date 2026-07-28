@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { DocumentPreviewCard } from './DocumentPreviewCard';
-import type { SchemaDocument } from '../types';
+import type { SchemaDocument } from '../shared/types';
 
 function doc(overrides: Partial<SchemaDocument> = {}): SchemaDocument {
   return {

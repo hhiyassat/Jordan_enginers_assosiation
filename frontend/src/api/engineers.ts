@@ -1,5 +1,5 @@
-import type { Engineer } from '../types';
-import { request } from './http';
+import type { Engineer } from '../shared/types';
+import { request } from '../shared/api/http';
 import type { EngineerQuota } from './projects';
 
 /**

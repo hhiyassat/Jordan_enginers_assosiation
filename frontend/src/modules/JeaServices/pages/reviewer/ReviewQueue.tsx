@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { reviewApi } from '../../../../api/client';
-import type { Application } from '../../../../types';
-import { errorMessage } from '../../../../platform/utils/errorMessage';
+import type { Application } from '../../../../shared/types';
+import { errorMessage } from '../../../../shared/utils';
 
 export function ReviewQueue() {
   const { t, i18n } = useTranslation();

@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { AuthContext } from './AuthContext';
 import { RequireGuest } from './guards';
-import type { User } from '../types';
+import type { User } from '../shared/types';
 
 /**
  * JORD-42 regression: an authenticated user hitting /login must be

@@ -4,7 +4,7 @@ import {
   DollarSign,
   type LucideIcon,
 } from 'lucide-react';
-import type { User } from '../types';
+import type { User } from '../shared/types';
 
 /**
  * Nav items per role — extracted from App.tsx (JORD-25).

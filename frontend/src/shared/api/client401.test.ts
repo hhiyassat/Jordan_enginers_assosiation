@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
-import { setUnauthorizedHandler } from './client';
+import { setUnauthorizedHandler } from '../../api/client';
 
 /**
  * JORD-29 regression: when the server hands back a 401, the client must
@@ -27,7 +27,7 @@ describe('api client — 401 central handler', () => {
     )));
 
     // Re-import inside the test so the stubbed fetch is picked up.
-    const { authApi } = await import('./client');
+    const { authApi } = await import('../../api/client');
     await expect(authApi.me()).rejects.toThrow();
     expect(invalidator).toHaveBeenCalledTimes(1);
   });
@@ -38,7 +38,7 @@ describe('api client — 401 central handler', () => {
       '',
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     )));
-    const { authApi } = await import('./client');
+    const { authApi } = await import('../../api/client');
     try {
       await authApi.me();
       expect.fail('should have thrown');
@@ -55,7 +55,7 @@ describe('api client — 401 central handler', () => {
       JSON.stringify({ message: 'nope' }),
       { status: 401, headers: { 'Content-Type': 'application/json' } }
     )));
-    const { authApi } = await import('./client');
+    const { authApi } = await import('../../api/client');
     await expect(authApi.me()).rejects.toThrow();
     // If it got here it didn't crash on the missing handler.
   });

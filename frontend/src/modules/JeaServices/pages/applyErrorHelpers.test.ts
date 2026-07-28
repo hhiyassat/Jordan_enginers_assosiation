@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { normalizeApplyError, labelForOtherKey, type ApiError } from './applyErrorHelpers';
-import type { ServiceSchema } from '../../../types';
+import type { ServiceSchema } from '../../../shared/types';
 
 function apiError(errors: Record<string, string | string[]> | undefined, message = ''): ApiError {
   const e = new Error(message) as ApiError;

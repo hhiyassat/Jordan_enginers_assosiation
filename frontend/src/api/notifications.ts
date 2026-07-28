@@ -1,4 +1,4 @@
-import { request } from './http';
+import { request } from '../shared/api/http';
 import type { Paginated } from './admin';
 
 /**

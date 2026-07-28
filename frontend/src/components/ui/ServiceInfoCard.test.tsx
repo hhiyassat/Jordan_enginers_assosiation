@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { ServiceInfoCard } from './ServiceInfoCard';
-import type { ServiceDefinition } from '../../types';
+import type { ServiceDefinition } from '../../shared/types';
 
 /**
  * JORD-18 pin: Apply page's service info card renders fee, SLA,

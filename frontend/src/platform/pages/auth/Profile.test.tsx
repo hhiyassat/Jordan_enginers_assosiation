@@ -3,7 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { Profile } from './Profile';
-import type { User } from '../../../types';
+import type { User } from '../../../shared/types';
 
 /**
  * JORD-10: pins the Profile page behaviour.

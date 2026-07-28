@@ -1,5 +1,5 @@
-import type { Project } from '../types';
-import { request } from './http';
+import type { Project } from '../shared/types';
+import { request } from '../shared/api/http';
 
 /**
  * Projects domain — office project registry + per-office / per-engineer

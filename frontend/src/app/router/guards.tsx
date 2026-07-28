@@ -1,5 +1,5 @@
 import React from 'react';
-import type { User } from '../../types';
+import type { User } from '../../shared/types';
 import { useAuth } from '../../auth/AuthContext';
 import { Navigate, useLocation } from 'react-router-dom';
 

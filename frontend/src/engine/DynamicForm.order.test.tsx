@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { DynamicForm } from './DynamicForm';
-import type { ServiceSchema } from '../types';
+import type { ServiceSchema } from '../shared/types';
 
 /**
  * JORD-48a: display_order controls the render position within a

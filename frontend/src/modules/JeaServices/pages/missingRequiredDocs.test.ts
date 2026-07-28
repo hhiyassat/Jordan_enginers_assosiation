@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import type { Application, SchemaDocument } from '../../../types';
+import type { Application, SchemaDocument } from '../../../shared/types';
 import { missingRequiredDocs, missingRequiredDocsFor } from './missingRequiredDocs';
 
 const doc = (o: Partial<SchemaDocument> = {}): SchemaDocument => ({

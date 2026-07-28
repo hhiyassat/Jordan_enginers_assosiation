@@ -5,7 +5,7 @@ import {
   Cog, GitBranch, RotateCw, CircleDot,
   type LucideIcon,
 } from 'lucide-react';
-import type { SchemaWorkflowStage } from '../../types';
+import type { SchemaWorkflowStage } from '../../shared/types';
 import { bucketOf, type PathRole } from '../../engine/workflowRolePath';
 
 /**

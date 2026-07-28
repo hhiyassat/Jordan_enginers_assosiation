@@ -1,5 +1,5 @@
-import type { ServiceDefinition, ServiceSchema } from '../../types';
-import { request } from '../http';
+import type { ServiceDefinition, ServiceSchema } from '../../shared/types';
+import { request } from '../../shared/api/http';
 
 /**
  * JEA admin API (Workstream 6 split from api/admin.ts).

@@ -3,8 +3,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { applicationsApi, reviewApi, type StageAction } from '../../../../api/client';
 import { DynamicForm } from '../../../../engine/DynamicForm';
-import { errorMessage } from '../../../../platform/utils/errorMessage';
-import type { Application } from '../../../../types';
+import { errorMessage } from '../../../../shared/utils';
+import type { Application } from '../../../../shared/types';
 
 /**
  * Per-variant button colour classes. The backend registry classifies

@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { applicationsApi } from '../../api/client';
 import { DynamicForm } from '../../engine/DynamicForm';
 import { DocumentUploader } from '../../engine/DocumentUploader';
-import type { Application } from '../../types';
+import type { Application } from '../../shared/types';
 
 const STATUS_LABELS: Record<string, { label: string; color: string; icon: string }> = {
   draft:                    { label: 'مسودة',          color: 'bg-gray-100 text-gray-600',    icon: '📝' },

@@ -1,5 +1,5 @@
 import { applicationsApi } from './applications';
-import { request } from './http';
+import { request } from '../shared/api/http';
 
 /**
  * Reviewer aliases — thin wrapper over applicationsApi so reviewer pages

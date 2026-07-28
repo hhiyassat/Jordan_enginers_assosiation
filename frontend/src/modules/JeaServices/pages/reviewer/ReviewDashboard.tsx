@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { reviewApi } from '../../../../api/client';
 import type { ReviewDashboardResponse } from '../../../../api/review';
-import { errorMessage } from '../../../../platform/utils/errorMessage';
+import { errorMessage } from '../../../../shared/utils';
 
 /**
  * ReviewDashboard — JORD-88 (PM)

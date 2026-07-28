@@ -3,7 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { UserManagement } from './UserManagement';
-import type { User } from '../../../types';
+import type { User } from '../../../shared/types';
 
 const mockList    = vi.fn();
 const mockDestroy = vi.fn();

@@ -10,7 +10,7 @@
 //   import { useMyApplications }       from '../../api/jea/hooks';
 //
 // Type re-exports (the pre-split file exported these for convenience):
-import type { Application, ServiceDefinition, User } from '../types';
+import type { Application, ServiceDefinition, User } from '../shared/types';
 
 export * from './platform/hooks';
 export * from './jea/hooks';

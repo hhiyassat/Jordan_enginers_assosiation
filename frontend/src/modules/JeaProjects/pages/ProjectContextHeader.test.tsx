@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { ProjectContextHeader } from './ProjectContextHeader';
-import type { Project } from '../../../types';
+import type { Project } from '../../../shared/types';
 
 function project(overrides: Partial<Project>): Project {
   return {

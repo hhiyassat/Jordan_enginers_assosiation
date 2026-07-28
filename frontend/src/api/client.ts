@@ -10,8 +10,8 @@
 // `import { servicesApi } from '../../api/services'`. React-Query hooks
 // live in `src/api/hooks.ts`.
 
-export { setUnauthorizedHandler } from './http';
-export type { ApiError } from './http';
+export { setUnauthorizedHandler } from '../shared/api/http';
+export type { ApiError } from '../shared/api/http';
 
 export { authApi } from './auth';
 export { userManagementApi } from './users';

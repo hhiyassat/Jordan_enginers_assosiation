@@ -1,5 +1,5 @@
-import type { User } from '../types';
-import { request } from './http';
+import type { User } from '../shared/types';
+import { request } from '../shared/api/http';
 
 /**
  * Auth domain — sign-in / who-am-I / sign-out / password change.

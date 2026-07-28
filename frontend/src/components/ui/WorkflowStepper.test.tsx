@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { WorkflowStepper } from './WorkflowStepper';
-import type { SchemaWorkflowStage } from '../../types';
+import type { SchemaWorkflowStage } from '../../shared/types';
 
 const STAGES: SchemaWorkflowStage[] = [
   { id: 'office_submission',      label_ar: 'تقديم الطلب',     label_en: 'Office Submission',      role: 'applicant', sla_hours: 24, actions: ['submit'] },

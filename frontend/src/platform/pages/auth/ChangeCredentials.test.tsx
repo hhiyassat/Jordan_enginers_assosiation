@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
-import type { User } from '../../../types';
+import type { User } from '../../../shared/types';
 
 // Mock BEFORE the ChangeCredentials import so useAuth resolves to the
 // mocked module. login()/logout() get spies we assert on.

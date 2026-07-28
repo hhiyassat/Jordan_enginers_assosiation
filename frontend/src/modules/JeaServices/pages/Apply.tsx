@@ -5,7 +5,7 @@ import { applicationsApi, projectsApi, servicesApi } from '../../../api/client';
 import type { FeeBreakdown } from '../../../api/applications';
 import { DynamicForm, validateAll } from '../../../engine/DynamicForm';
 import { DocumentUploader } from '../../../engine/DocumentUploader';
-import type { Application, Project, ServiceDefinition, SchemaDocument, SchemaWorkflowStage } from '../../../types';
+import type { Application, Project, ServiceDefinition, SchemaDocument, SchemaWorkflowStage } from '../../../shared/types';
 import { WorkflowStepper } from '../../../components/ui/WorkflowStepper';
 import { ReportsPanel } from '../../../platform/ui/ReportsPanel';
 import { ServiceInfoCard } from '../../../components/ui/ServiceInfoCard';

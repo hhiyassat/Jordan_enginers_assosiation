@@ -1,4 +1,4 @@
-import { request } from './http';
+import { request } from '../shared/api/http';
 
 /**
  * JORD-84: applicant self-service — office user's read-only view of

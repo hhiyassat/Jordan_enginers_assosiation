@@ -1,10 +1,10 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Menu } from 'lucide-react';
-import { JEALogo } from '../components/JEALogo';
+import { JEALogo } from '../shared/ui';
 import { LanguageSwitcher } from '../platform/components/LanguageSwitcher';
 import { NotificationBell } from '../platform/components/NotificationBell';
-import type { User } from '../types';
+import type { User } from '../shared/types';
 import { pageTitleKeyFor } from './pageTitle';
 
 /**

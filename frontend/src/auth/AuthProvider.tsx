@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { authApi, setUnauthorizedHandler } from '../api/client';
-import type { User } from '../types';
+import type { User } from '../shared/types';
 import { AuthContext } from './AuthContext';
 
 /**

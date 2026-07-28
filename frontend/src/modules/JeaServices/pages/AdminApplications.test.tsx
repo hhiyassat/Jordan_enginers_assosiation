@@ -5,7 +5,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { AdminApplications } from './AdminApplications';
 import { makeQueryWrapper } from '../../../test/queryWrapper';
 import type { Paginated } from '../../../api/admin';
-import type { Application } from '../../../types';
+import type { Application } from '../../../shared/types';
 
 /**
  * JORD-33 + JORD-35: pins the paginated + searchable admin listing.

@@ -2,8 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AlertCircle, ArrowRightLeft, Building2, CheckCircle2, Clock, Download, XCircle } from 'lucide-react';
 import { adminApi } from '../../../api/client';
-import { downloadCsv } from '../../../platform/utils/csv';
-import { errorMessage } from '../../../platform/utils/errorMessage';
+import { downloadCsv } from '../../../shared/utils';
+import { errorMessage } from '../../../shared/utils';
 
 /**
  * SupervisionTransfersAdmin — JORD-83 UI

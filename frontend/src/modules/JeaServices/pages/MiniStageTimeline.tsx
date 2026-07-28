@@ -1,5 +1,5 @@
 import React from 'react';
-import type { SchemaWorkflowStage } from '../../../types';
+import type { SchemaWorkflowStage } from '../../../shared/types';
 
 /**
  * A one-line horizontal stage strip for the MyApplications list. Each

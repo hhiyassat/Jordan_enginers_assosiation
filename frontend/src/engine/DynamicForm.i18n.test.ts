@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterAll } from 'vitest';
-import i18n from '../i18n';
+import i18n from '../shared/lib/i18n';
 import { validateAll } from './DynamicForm';
-import type { ServiceSchema } from '../types';
+import type { ServiceSchema } from '../shared/types';
 
 /**
  * JORD-93: validation messages must follow the current app language

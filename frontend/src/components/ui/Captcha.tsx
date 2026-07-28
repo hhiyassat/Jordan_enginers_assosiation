@@ -2,8 +2,8 @@ import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
 import DOMPurify from 'dompurify';
 import { RefreshCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { request } from '../../api/http';
-import { errorMessage } from '../../platform/utils/errorMessage';
+import { request } from '../../shared/api/http';
+import { errorMessage } from '../../shared/utils';
 
 /**
  * Captcha — text captcha wrapper for public forms
