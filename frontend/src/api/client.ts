@@ -14,11 +14,11 @@ export { setUnauthorizedHandler } from '../shared/api/http';
 export type { ApiError } from '../shared/api/http';
 
 export { authApi } from './auth';
-export { userManagementApi } from './users';
+export { userManagementApi } from '../entities/user/api';
 export { servicesApi } from '../entities/service/api';
 export { projectsApi } from './projects';
 export type { EngineerQuota, OfficeQuota } from './projects';
-export { engineersApi } from './engineers';
+export { engineersApi } from '../entities/engineer/api';
 export { applicationsApi } from '../entities/application/api';
 export type { StageAction } from '../entities/application/api';
 export { reviewApi } from './review';

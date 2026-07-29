@@ -1,7 +1,7 @@
 import React from 'react';
 import { User as UserIcon, ShieldCheck } from 'lucide-react';
-import type { SchemaWorkflowStage } from '../../shared/types';
-import { countByRole } from '../../entities/workflow';
+import type { SchemaWorkflowStage } from '../../../../shared/types';
+import { countByRole } from '../../../workflow';
 
 /**
  * Compact "N office · M reviewer" summary rendered on service cards

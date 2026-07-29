@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { RolePathBadge } from './RolePathBadge';
-import type { SchemaWorkflowStage } from '../../shared/types';
+import { RolePathBadge } from './index';
+import type { SchemaWorkflowStage } from '../../../../shared/types';
 
 function s(role: string): SchemaWorkflowStage {
   return { id: role + '-x', role, label_ar: role, sla_hours: 24 } as SchemaWorkflowStage;

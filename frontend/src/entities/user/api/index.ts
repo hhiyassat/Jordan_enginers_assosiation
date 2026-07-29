@@ -1,5 +1,5 @@
-import type { User } from '../shared/types';
-import { request } from '../shared/api/http';
+import type { User } from '../../../shared/types';
+import { request } from '../../../shared/api/http';
 
 /**
  * User-management domain — superuser CRUD over the organization's users.

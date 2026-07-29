@@ -5,7 +5,7 @@ import { ArrowRight, Plus, Clock, Edit3 } from 'lucide-react';
 import { servicesApi } from '../../../api/client';
 import type { ServiceDefinition } from '../../../shared/types';
 import { PhaseBadge } from '../../../entities/application';
-import { RolePathBadge } from '../../../components/ui/RolePathBadge';
+import { RolePathBadge } from '../../../entities/user';
 
 /**
  * Groups an array of services by subcategory_ar. Services with no

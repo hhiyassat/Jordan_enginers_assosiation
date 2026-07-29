@@ -10,9 +10,9 @@ import { request } from '../../shared/api/http';
  *   • allApplicationsPaginated — server-side pagination + search
  *   • auditLogs        — the platform audit trail
  *   • listUsers / createUser / updateUser — legacy user CRUD
- *     (real user management lives in api/users.ts;
+ *     (real user management lives in entities/user/api;
  *     these three still map to /admin/users routes for callers
- *     that predate api/users.ts.)
+ *     that predate it.)
  *
  * The legacy `adminApi` barrel in api/admin.ts re-exports `{ ...platformAdminApi,
  * ...jeaAdminApi }` so nothing importing `adminApi.foo` needs to move.
@@ -70,7 +70,7 @@ export const platformAdminApi = {
   }>('GET', '/admin/dashboard'),
 
   // Legacy user CRUD kept here for back-compat; new code should use
-  // `userManagementApi` from `api/users.ts`.
+  // `userManagementApi` from `entities/user`.
   listUsers:       () => request<{ users: User[] }>('GET', '/admin/users'),
   createUser:      (data: unknown) => request<{ user: User }>('POST', '/admin/users', data),
   updateUser:      (id: number, data: unknown) => request<{ user: User }>('PUT', `/admin/users/${id}`, data),

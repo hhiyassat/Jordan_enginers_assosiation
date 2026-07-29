@@ -1,6 +1,6 @@
-import type { Engineer } from '../shared/types';
-import { request } from '../shared/api/http';
-import type { EngineerQuota } from './projects';
+import type { Engineer } from '../../../shared/types';
+import { request } from '../../../shared/api/http';
+import type { EngineerQuota } from '../../../api/projects';
 
 /**
  * Engineers domain — office roster + per-engineer quota lookup.
