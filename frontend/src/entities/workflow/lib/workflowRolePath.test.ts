@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { bucketOf, partitionByRole, countByRole } from './workflowRolePath';
-import type { SchemaWorkflowStage } from '../shared/types';
+import type { SchemaWorkflowStage } from '../../../shared/types';
 
 function stage(id: string, role: string): SchemaWorkflowStage {
   return { id, role, label_ar: id, sla_hours: 24 } as SchemaWorkflowStage;

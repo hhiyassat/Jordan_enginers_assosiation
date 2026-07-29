@@ -5,8 +5,8 @@ import {
   Cog, GitBranch, RotateCw, CircleDot,
   type LucideIcon,
 } from 'lucide-react';
-import type { SchemaWorkflowStage } from '../../shared/types';
-import { bucketOf, type PathRole } from '../../engine/workflowRolePath';
+import type { SchemaWorkflowStage } from '../../../../shared/types';
+import { bucketOf, type PathRole } from '../../lib/workflowRolePath';
 
 /**
  * WorkflowStepper — read-only visualisation of an application's

@@ -6,7 +6,7 @@ import type { FeeBreakdown } from '../../../entities/application';
 import { DynamicForm, validateAll } from '../../../engine/DynamicForm';
 import { DocumentUploader } from '../../../engine/DocumentUploader';
 import type { Application, Project, ServiceDefinition, SchemaDocument, SchemaWorkflowStage } from '../../../shared/types';
-import { WorkflowStepper } from '../../../components/ui/WorkflowStepper';
+import { WorkflowStepper } from '../../../entities/workflow';
 import { ReportsPanel } from '../../../platform/ui/ReportsPanel';
 import { ServiceInfoCard } from '../../../entities/service';
 import { ComplianceNotesBanner } from '../../../components/ui/ComplianceNotesBanner';

@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useMyApplications } from '../../../api/hooks';
 import type { Application } from '../../../shared/types';
 import { isOngoing, orderForApplicant, ExpiryBadge } from '../../../entities/application';
-import { MiniStageTimeline } from './MiniStageTimeline';
+import { MiniStageTimeline } from '../../../entities/workflow';
 
 // Colour + emoji are language-agnostic; the label comes from i18n at
 // render time via t('status.<key>').
