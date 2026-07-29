@@ -9,7 +9,7 @@ import type { Application, Project, ServiceDefinition, SchemaDocument, SchemaWor
 import { WorkflowStepper } from '../../../entities/workflow';
 import { ReportsPanel } from '../../../platform/ui/ReportsPanel';
 import { ServiceInfoCard } from '../../../entities/service';
-import { ComplianceNotesBanner } from '../../../components/ui/ComplianceNotesBanner';
+import { ComplianceNotesBanner } from '../../../entities/quota';
 import { ProjectContextHeader } from '../../JeaProjects/pages/ProjectContextHeader';
 import { normalizeApplyError, labelForOtherKey, type ApiError } from './applyErrorHelpers';
 import { missingRequiredDocsFor } from './missingRequiredDocs';

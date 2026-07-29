@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { ComplianceNotesBanner } from './ComplianceNotesBanner';
-import type { ComplianceNote } from '../../shared/types';
+import { ComplianceNotesBanner } from './index';
+import type { ComplianceNote } from '../../../../shared/types';
 
 /**
  * JORD-61: renders schema.compliance_notes above the applicant form.

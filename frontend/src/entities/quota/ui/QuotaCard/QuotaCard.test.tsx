@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { QuotaCard, type QuotaFacet } from './QuotaCard';
+import { QuotaCard, type QuotaFacet } from './index';
 
 const OK_FACET: QuotaFacet = {
   quota_m2: 1000, used_m2: 200, remaining_m2: 800,

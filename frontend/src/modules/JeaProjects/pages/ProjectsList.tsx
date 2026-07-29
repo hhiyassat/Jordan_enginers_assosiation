@@ -8,7 +8,7 @@ import { PageHero } from '../../../shared/ui';
 import { Button } from '../../../shared/ui';
 import { Modal } from '../../../shared/ui';
 import { TextField, FormField } from '../../../shared/ui';
-import { QuotaCard } from '../../../components/ui/QuotaCard';
+import { QuotaCard } from '../../../entities/quota';
 import { errorMessage } from '../../../shared/utils';
 
 export function ProjectsList() {

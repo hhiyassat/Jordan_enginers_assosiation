@@ -9,7 +9,7 @@ import { applicationsApi, projectsApi, type OfficeQuota } from '../../../api/cli
 import type { Application, Project } from '../../../shared/types';
 import { useAuth } from '../../../auth/AuthContext';
 import { PageHero } from '../../../shared/ui';
-import { QuotaCard } from '../../../components/ui/QuotaCard';
+import { QuotaCard } from '../../../entities/quota';
 import { errorMessage } from '../../../shared/utils';
 
 /**
