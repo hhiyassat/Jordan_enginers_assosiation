@@ -8,7 +8,7 @@ import { DocumentUploader } from '../../../engine/DocumentUploader';
 import type { Application, Project, ServiceDefinition, SchemaDocument, SchemaWorkflowStage } from '../../../shared/types';
 import { WorkflowStepper } from '../../../components/ui/WorkflowStepper';
 import { ReportsPanel } from '../../../platform/ui/ReportsPanel';
-import { ServiceInfoCard } from '../../../components/ui/ServiceInfoCard';
+import { ServiceInfoCard } from '../../../entities/service';
 import { ComplianceNotesBanner } from '../../../components/ui/ComplianceNotesBanner';
 import { ProjectContextHeader } from '../../JeaProjects/pages/ProjectContextHeader';
 import { normalizeApplyError, labelForOtherKey, type ApiError } from './applyErrorHelpers';

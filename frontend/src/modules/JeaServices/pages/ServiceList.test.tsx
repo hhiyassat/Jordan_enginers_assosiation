@@ -8,7 +8,8 @@ import { makeQueryWrapper } from '../../../test/queryWrapper';
 const mockList = vi.fn();
 // After JORD-22, useServices() imports servicesApi from ./services
 // directly, not from the client barrel. Mock the domain module.
-vi.mock('../../../api/services', () => ({
+// (FSD Task 10: services API now lives in entities/service/api.)
+vi.mock('../../../entities/service/api', () => ({
   servicesApi: { list: (...a: unknown[]) => mockList(...a) },
 }));
 

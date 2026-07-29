@@ -1,5 +1,5 @@
-import type { ServiceDefinition } from '../shared/types';
-import { request } from '../shared/api/http';
+import type { ServiceDefinition } from '../../../shared/types';
+import { request } from '../../../shared/api/http';
 
 /**
  * Services domain (applicant-facing catalog list + detail).

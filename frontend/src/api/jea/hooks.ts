@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
 import type { UseQueryOptions } from '@tanstack/react-query';
-import { servicesApi } from '../services';
 import { projectsApi } from '../projects';
 import { jeaAdminApi } from './admin';
 import type { AllApplicationsFilters } from '../platform/admin';
@@ -18,6 +17,11 @@ export {
   useClaimApplication,
 } from '../../entities/application/model/hooks';
 
+// Service hooks moved to entities/service (FSD Task 10); re-exported here
+// so existing `import { useServices } from '../../api/jea/hooks'` (and the
+// api/hooks.ts barrel) keep working.
+export { useServices, useService } from '../../entities/service/model/hooks';
+
 /**
  * JEA React Query hooks (Workstream 6 split from api/hooks.ts).
  *
@@ -33,23 +37,6 @@ export {
  * api/platform/hooks so existing `import { useMyApplications } from '../api/hooks'`
  * calls keep working.
  */
-
-// ── Services ──────────────────────────────────────────────────────────
-
-export function useServices() {
-  return useQuery({
-    queryKey: ['services', 'list'],
-    queryFn:  async () => (await servicesApi.list()).services,
-  });
-}
-
-export function useService(code: string | undefined) {
-  return useQuery({
-    queryKey: ['services', 'detail', code],
-    queryFn:  async () => (await servicesApi.get(code!)).service,
-    enabled: !!code,
-  });
-}
 
 // ── Projects ──────────────────────────────────────────────────────────
 

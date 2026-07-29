@@ -6,16 +6,16 @@
 // resolve to this file and pick up the re-exports below, so no one
 // downstream has to change their import in the same PR.
 //
-// New code should import directly from the domain module, e.g.
-// `import { servicesApi } from '../../api/services'`. React-Query hooks
-// live in `src/api/hooks.ts`.
+// New code should import directly from the owning entity/feature, e.g.
+// `import { servicesApi } from '../../entities/service'`. React-Query
+// hooks live alongside each entity/feature's model.
 
 export { setUnauthorizedHandler } from '../shared/api/http';
 export type { ApiError } from '../shared/api/http';
 
 export { authApi } from './auth';
 export { userManagementApi } from './users';
-export { servicesApi } from './services';
+export { servicesApi } from '../entities/service/api';
 export { projectsApi } from './projects';
 export type { EngineerQuota, OfficeQuota } from './projects';
 export { engineersApi } from './engineers';
