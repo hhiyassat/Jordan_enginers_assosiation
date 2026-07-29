@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { ApplicationStatus } from '../../../shared/types';
-import { isTerminal, isOngoing, orderForApplicant, TERMINAL_STATUSES } from './applicationStatus';
+import { isTerminal, isOngoing, orderForApplicant, TERMINAL_STATUSES } from './model';
 
 describe('applicationStatus', () => {
   it('classifies approved / rejected / certificate_issued as terminal', () => {

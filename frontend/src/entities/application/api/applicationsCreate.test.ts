@@ -16,7 +16,7 @@ beforeEach(() => {
 });
 
 // Import AFTER stubbing so the client's internal fetch call uses ours.
-import { applicationsApi } from './client';
+import { applicationsApi } from './index';
 
 async function lastPostedBody(): Promise<Record<string, unknown>> {
   const call = fetchMock.mock.calls.at(-1)!;

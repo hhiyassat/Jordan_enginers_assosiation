@@ -1,5 +1,5 @@
-import type { Application, ApplicationDocument, Certificate } from '../shared/types';
-import { request } from '../shared/api/http';
+import type { Application, ApplicationDocument, Certificate } from '../../../shared/types';
+import { request } from '../../../shared/api/http';
 
 /**
  * Applications domain — draft / submit / claim / decide / pay / issue.

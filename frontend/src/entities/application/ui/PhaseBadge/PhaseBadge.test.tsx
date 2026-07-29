@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { PhaseBadge } from './PhaseBadge';
+import { PhaseBadge } from './index';
 
 describe('PhaseBadge', () => {
   it.each([

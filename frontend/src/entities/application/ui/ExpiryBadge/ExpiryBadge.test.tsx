@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { ExpiryBadge } from './ExpiryBadge';
+import { ExpiryBadge } from './index';
 
 /**
  * JORD-62: badge covers the two "when is this thing valid until" dates

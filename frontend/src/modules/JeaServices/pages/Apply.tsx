@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { applicationsApi, projectsApi, servicesApi } from '../../../api/client';
-import type { FeeBreakdown } from '../../../api/applications';
+import type { FeeBreakdown } from '../../../entities/application';
 import { DynamicForm, validateAll } from '../../../engine/DynamicForm';
 import { DocumentUploader } from '../../../engine/DocumentUploader';
 import type { Application, Project, ServiceDefinition, SchemaDocument, SchemaWorkflowStage } from '../../../shared/types';

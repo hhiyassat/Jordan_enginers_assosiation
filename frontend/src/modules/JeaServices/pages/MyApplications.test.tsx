@@ -10,8 +10,9 @@ import { makeQueryWrapper } from '../../../test/queryWrapper';
 const mockList = vi.fn();
 // JORD-22 + JORD-33: hooks import from the split domain modules, not
 // from the client barrel — so the mock has to point at the same path
-// the hook resolves.
-vi.mock('../../../api/applications', () => ({
+// the hook resolves. (FSD Task 9: applications API now lives in
+// entities/application/api.)
+vi.mock('../../../entities/application/api', () => ({
   applicationsApi: { list: () => mockList() },
 }));
 

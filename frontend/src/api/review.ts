@@ -1,4 +1,4 @@
-import { applicationsApi } from './applications';
+import { applicationsApi } from '../entities/application/api';
 import { request } from '../shared/api/http';
 
 /**

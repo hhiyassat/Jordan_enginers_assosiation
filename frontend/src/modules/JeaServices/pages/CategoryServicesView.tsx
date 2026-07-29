@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { ArrowRight, Plus, Clock, Edit3 } from 'lucide-react';
 import { servicesApi } from '../../../api/client';
 import type { ServiceDefinition } from '../../../shared/types';
-import { PhaseBadge } from '../../../components/ui/PhaseBadge';
+import { PhaseBadge } from '../../../entities/application';
 import { RolePathBadge } from '../../../components/ui/RolePathBadge';
 
 /**
