@@ -41,8 +41,16 @@ return new class extends Migration
 
     public function down(): void
     {
+        // Drop the compound index first, then the auto-named single-column
+        // indexes created by ->index() in up(), THEN drop the columns.
+        // SQLite auto-fails a dropColumn if any surviving index still
+        // references the column being dropped.
         Schema::table('applications', function (Blueprint $table) {
             $table->dropIndex('apps_cadastral_status_idx');
+            $table->dropIndex(['basin_number']);   // resolves to applications_basin_number_index
+            $table->dropIndex(['parcel_number']);  // resolves to applications_parcel_number_index
+        });
+        Schema::table('applications', function (Blueprint $table) {
             $table->dropColumn(['basin_number', 'parcel_number']);
         });
     }
