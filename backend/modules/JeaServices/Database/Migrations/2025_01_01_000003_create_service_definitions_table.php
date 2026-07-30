@@ -19,8 +19,8 @@ return new class extends Migration
             $table->string('code')->unique();          // e.g. BL-001
             $table->string('name_ar');
             $table->string('name_en');
-            $table->string('description_ar')->nullable();
-            $table->string('description_en')->nullable();
+            $table->text('description_ar')->nullable();
+            $table->text('description_en')->nullable();
             $table->string('currency', 3)->default('JOD');
             $table->json('schema');                    // source of truth: fields, workflow, fee, documents, certificate
             $table->enum('status', ['active', 'inactive', 'draft'])->default('draft');

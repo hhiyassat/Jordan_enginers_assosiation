@@ -93,7 +93,7 @@ final class ProductionSafety
             $this->violations[] = 'PaymentGateway is not bound; production requires a real gateway.';
             return;
         }
-        if ($gateway instanceof MockPaymentGateway) {
+        if (get_class($gateway) === MockPaymentGateway::class) {
             $this->violations[] = 'MockPaymentGateway is bound to PaymentGateway. Bind a real signed-callback gateway before deploying.';
         }
     }
@@ -115,7 +115,7 @@ final class ProductionSafety
             $this->violations[] = 'JeaMembershipVerifier is not bound; production requires a real HTTP verifier.';
             return;
         }
-        if (class_exists($fakeClass) && $verifier instanceof $fakeClass) {
+        if (class_exists($fakeClass) && get_class($verifier) === $fakeClass) {
             $this->violations[] = 'FakeJeaMembershipVerifier is bound to JeaMembershipVerifier. Bind HttpJeaMembershipVerifier before deploying.';
         }
     }

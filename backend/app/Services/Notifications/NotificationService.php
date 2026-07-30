@@ -24,6 +24,30 @@ use App\Models\User;
  */
 final class NotificationService
 {
+    public function sendToUser(
+        int $userId,
+        string $type,
+        string $titleAr,
+        string $titleEn,
+        string $bodyAr,
+        string $bodyEn,
+        ?string $actionUrl = null,
+    ): ?Notification {
+        $user = User::find($userId);
+        if (!$user) {
+            return null;
+        }
+
+        return $this->dispatch(
+            recipient: $user,
+            type:      $type,
+            title:     $titleAr,
+            body:      $bodyAr,
+            link:      $actionUrl,
+            payload:   ['title_en' => $titleEn, 'body_en' => $bodyEn],
+        );
+    }
+
     public function emitApplicationSubmitted(Application $app): Notification
     {
         return $this->dispatch(
