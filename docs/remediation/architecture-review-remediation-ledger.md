@@ -148,7 +148,15 @@
 - `EXTERNAL_DEPENDENCY`: None.
 
 - H-02 · Application reference-number race (`Application::generateReference` count()+1)
-- H-03 · First-per-year certificate serial race (firstOrCreate outside FOR UPDATE lock)
+
+#### H-03 · Certificate first-per-year serial race
+- `ORIGINAL_SEVERITY`: HIGH
+- `ORIGINAL_EVIDENCE`: `WorkflowEngine::allocateCertificateSerial` at line 693-714 called `firstOrCreate` OUTSIDE the `lockForUpdate` scope. The FIRST-ever allocation for a given (org, year) had a race window: two concurrent submits both hit `firstOrCreate`, the loser got a duplicate-key violation, and the outer `DB::transaction` had `attempts=1` (no retry).
+- `IMPLEMENTATION_STATUS`: FIXED
+- `FILES_CHANGED`: `backend/modules/JeaServices/Engine/WorkflowEngine.php` — the allocation now issues an unconditional INSERT, swallows the `UniqueConstraintViolationException` (which is the expected race outcome), then proceeds to `lockForUpdate` — which is guaranteed to find the row now. Both winner and loser reach the lock and each gets a distinct serial.
+- `TESTS_ADDED`: `CertificateSerialAllocationTest::test_first_issue_when_counter_row_already_exists_uses_that_next_serial` — pre-inserts a counter row (simulating a concurrent winner with `next_serial=7`) and verifies the allocation returns 7 (not overwritten) and advances the counter to 8.
+- `TESTS_RUN`: 805 pass.
+- `RESIDUAL_RISK`: True cross-process concurrency verification requires PostgreSQL CI (still `BLOCKED_EXTERNAL_INPUT` — see C-05). The SQLite-in-memory test proves the semantic correctness of the code path.
 - H-04 · Nashmi integration lacks HMAC signature + timestamp + replay + IP allowlist
 - H-05 · GSB IP whitelist fails open when unconfigured
 - H-06 · GSB error-path log dumps raw response body (PII)
@@ -173,3 +181,4 @@ L-01 through L-13 — see final report §5.
 - **2026-07-30** — H-01 · Null-org authenticated users now fail closed (zero rows) with a security warning. 774 pass, +3 tests.
 - **2026-07-30** — H-05 + H-06 · GSB integration hardening: IP whitelist fails closed in production; error-path log redacts body. 779 pass, +5 tests.
 - **2026-07-30** — M-22 + P0-E + C-02 + C-03 · Production boot safety: sanctum.php published (480-min absolute lifetime), ProductionSafety validator (12 invariants), Mock/Fake bindings restricted to non-production, HttpJeaMembershipVerifier skeleton + config/jea.php. 804 pass, +25 tests. External blockers: real PaymentGateway driver + JEA endpoint contract.
+- **2026-07-30** — H-03 · Certificate first-per-year serial allocation now handles the concurrent-first-writer race by swallowing UniqueConstraintViolationException and falling through to FOR UPDATE. 805 pass, +1 test.

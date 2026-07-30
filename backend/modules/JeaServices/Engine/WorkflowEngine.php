@@ -692,14 +692,38 @@ class WorkflowEngine
 
     private function allocateCertificateSerial(int $orgId, int $year): int
     {
-        // firstOrCreate is safe here because we're inside a transaction:
-        // if two writers race, one gets a unique-key violation and the
-        // outer transaction retries via Laravel's built-in retry logic
-        // for serialization errors.
-        \Modules\JeaServices\Models\CertificateCounter::firstOrCreate(
-            ['organization_id' => $orgId, 'year' => $year],
-            ['next_serial' => 1],
-        );
+        // H-03: The atomic sequence is `INSERT if missing → SELECT
+        // FOR UPDATE → increment`. Previously we called firstOrCreate
+        // outside the lockForUpdate scope: the FIRST-ever call for a
+        // given (org, year) had a race window between two concurrent
+        // firstOrCreate reads, and the loser got a duplicate-key
+        // violation that bubbled up as a 500 (the outer transaction
+        // was not wrapped with retry attempts). Once a row existed
+        // the SELECT FOR UPDATE serialized cleanly.
+        //
+        // Fix: attempt the INSERT eagerly; swallow the unique-constraint
+        // violation (that's precisely the concurrent-first-writer case
+        // we expect); then take the SELECT FOR UPDATE lock which is
+        // guaranteed to find the row now. The winner and loser both
+        // reach the lock; the winner increments, then the loser
+        // proceeds and increments — each gets a distinct serial.
+        try {
+            \Modules\JeaServices\Models\CertificateCounter::create([
+                'organization_id' => $orgId,
+                'year'            => $year,
+                'next_serial'     => 1,
+            ]);
+        } catch (\Illuminate\Database\UniqueConstraintViolationException) {
+            // Expected under concurrent first-writer race. Fall through.
+        } catch (\Illuminate\Database\QueryException $e) {
+            // Older SQLite versions raise a plain QueryException with
+            // SQLSTATE 23000 rather than the specialized subclass.
+            // Preserve legacy compatibility.
+            $sqlState = $e->errorInfo[0] ?? null;
+            if (!in_array($sqlState, ['23000', '23505'], true)) {
+                throw $e;
+            }
+        }
 
         $row = \Modules\JeaServices\Models\CertificateCounter::where('organization_id', $orgId)
             ->where('year', $year)
