@@ -2,7 +2,7 @@
 
 A generic, schema-driven e-government services platform built by **Eqratech**. One JSON schema file defines a complete e-service — form fields, workflow stages, fee rules, document requirements, and certificate configuration — with no additional code beyond the schema.
 
-**Stack:** Laravel 12 · PHP 8.2+ · MySQL 8 · React 18 · TypeScript · Tailwind CSS v3  
+**Stack:** Laravel 13 · PHP 8.3+ (tested on 8.5) · PostgreSQL / MySQL 8 (SQLite for dev + test) · React 18 · TypeScript · Tailwind CSS v3
 **Auth:** Laravel Sanctum bearer tokens  
 **Methodology:** Eqratech IEEE-Aligned Decision Assurance Methodology v1.1
 
@@ -35,7 +35,7 @@ A generic, schema-driven e-government services platform built by **Eqratech**. O
 └────────────────────────┬────────────────────────────────┘
                          │ Bearer Token (Sanctum)
 ┌────────────────────────▼────────────────────────────────┐
-│                 Laravel 12 Backend API                   │
+│                 Laravel 13 Backend API                   │
 │                    /api/v1/*  (port 8002)                │
 │                                                          │
 │  ┌──────────────┐  ┌──────────────┐  ┌───────────────┐ │
@@ -95,7 +95,7 @@ Every node in a generated schema (field, workflow stage, document, fee, certific
 
 ```
 esp-v2/
-├── backend/                    # Laravel 12 API
+├── backend/                    # Laravel 13 API
 │   ├── app/
 │   │   ├── Console/Commands/   # Artisan commands (GSB log pruning, etc.)
 │   │   ├── Engine/
@@ -176,10 +176,10 @@ esp-v2/
 
 ### Prerequisites
 
-- PHP 8.2+ with extensions: `pdo_mysql`, `mbstring`, `fileinfo`, `zip`
+- PHP 8.3+ (tested on 8.5) with extensions: `pdo_mysql` or `pdo_pgsql`, `mbstring`, `fileinfo`, `zip`
 - Composer 2
 - Node.js 20+
-- MySQL 8 (or SQLite for development)
+- PostgreSQL 15+ / MySQL 8 (SQLite for local development + test suite)
 
 ### Backend Setup
 

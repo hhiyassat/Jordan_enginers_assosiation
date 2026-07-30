@@ -14,7 +14,7 @@ This contract is written **before line one of code**. Every implementation decis
 
 A generic, schema-driven e-government services platform. One JSON schema file → one fully running e-service with no additional code beyond the schema. The Business License service (رخصة تجارية) is the first proof of concept.
 
-**Stack:** Laravel 12 · PHP 8.2+ · MySQL 8 · React 18 · TypeScript · Tailwind CSS v3  
+**Stack:** Laravel 13 · PHP 8.3+ (tested on 8.5) · PostgreSQL / MySQL 8 · React 18 · TypeScript · Tailwind CSS v3
 **Auth:** Laravel Sanctum bearer tokens  
 **Directory:** `/tenders/esp-v2/`
 
