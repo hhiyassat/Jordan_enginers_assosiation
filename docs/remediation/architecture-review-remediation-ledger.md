@@ -85,7 +85,21 @@
 
 ### High
 
-- H-01 · Null-org silent scope no-op (`OrganizationScope.php:27`)
+#### H-01 · Null-org silent scope no-op → fail-closed
+- `ORIGINAL_SEVERITY`: HIGH
+- `ORIGINAL_EVIDENCE`: `OrganizationScope::apply` returned without filtering when `Auth::user()->organization_id` was null. Any authenticated user with a null org (integration user, corrupted row, misconfigured account) read every tenant's data unfiltered.
+- `IMPLEMENTATION_STATUS`: FIXED
+- `FILES_CHANGED`:
+  - `backend/app/Models/Concerns/OrganizationScope.php` — null-org branch now filters `whereRaw('1 = 0')` (zero rows) and logs `org_scope.null_org_authenticated_user` warning.
+  - `backend/app/Models/Concerns/BelongsToOrganization.php` — `scopeForCurrentOrganization` mirrored fail-closed; docblock updated.
+- `TESTS_ADDED`:
+  - `BelongsToOrganizationTest::test_null_org_authenticated_user_sees_zero_rows_via_global_scope`
+  - `BelongsToOrganizationTest::test_null_org_authenticated_user_sees_zero_rows_via_for_current_organization`
+  - `BelongsToOrganizationTest::test_null_org_can_still_use_without_org_scope_for_explicit_cross_tenant` (documents the escape hatch)
+- `TESTS_RUN`: 774 passed / 1 skipped / 2751 assertions
+- `RESIDUAL_RISK`: A future code path that runs `Auth::login($user)` with a `$user` whose org happens to be null will now get empty results instead of accidental cross-tenant data. If such a path exists intentionally, it must call `::withoutOrgScope()` explicitly.
+- `EXTERNAL_DEPENDENCY`: None.
+
 - H-02 · Application reference-number race (`Application::generateReference` count()+1)
 - H-03 · First-per-year certificate serial race (firstOrCreate outside FOR UPDATE lock)
 - H-04 · Nashmi integration lacks HMAC signature + timestamp + replay + IP allowlist
@@ -109,3 +123,4 @@ L-01 through L-13 — see final report §5.
 ## Change log
 
 - **2026-07-30** — C-01 · Superuser scope restricted to user-management only. 771 pass, +37 tests.
+- **2026-07-30** — H-01 · Null-org authenticated users now fail closed (zero rows) with a security warning. 774 pass, +3 tests.

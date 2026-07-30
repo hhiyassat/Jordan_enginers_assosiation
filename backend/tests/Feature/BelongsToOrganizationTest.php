@@ -119,4 +119,45 @@ class BelongsToOrganizationTest extends TestCase
         ]);
         $this->assertSame($this->orgB->id, $p->organization_id);
     }
+
+    /**
+     * H-01: An authenticated user whose organization_id is NULL must
+     * NOT silently receive every tenant's rows. Previously the scope
+     * returned without filtering in that case; this test pins the
+     * fail-closed behavior.
+     */
+    public function test_null_org_authenticated_user_sees_zero_rows_via_global_scope(): void
+    {
+        Auth::login($this->userA);
+        // Simulate a corrupted / mis-provisioned auth user by nulling
+        // the org in-memory. The DB row still has a valid FK but the
+        // in-memory Auth::user() no longer exposes it, which is what
+        // OrganizationScope reads.
+        Auth::user()->organization_id = null;
+
+        $this->assertSame(0, Project::query()->count(),
+            'H-01: null-org authenticated user must fail closed and see zero rows.');
+    }
+
+    public function test_null_org_authenticated_user_sees_zero_rows_via_for_current_organization(): void
+    {
+        Auth::login($this->userA);
+        Auth::user()->organization_id = null;
+
+        $count = Project::withoutOrgScope()->forCurrentOrganization()->count();
+        $this->assertSame(0, $count,
+            'H-01: forCurrentOrganization must fail closed for null-org auth user.');
+    }
+
+    public function test_null_org_can_still_use_without_org_scope_for_explicit_cross_tenant(): void
+    {
+        // Documents the escape hatch: if the caller explicitly opts
+        // out of the global scope (e.g. an integration job), it is
+        // still able to read cross-tenant data. This is intentional —
+        // the H-01 fix only closes the SILENT default.
+        Auth::login($this->userA);
+        Auth::user()->organization_id = null;
+
+        $this->assertSame(3, Project::withoutOrgScope()->count());
+    }
 }
