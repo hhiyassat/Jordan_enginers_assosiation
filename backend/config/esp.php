@@ -15,15 +15,14 @@ return [
     // Password policy (SEC-004, SEC-012)
     'password_expiry_days' => (int) env('PASSWORD_EXPIRY_DAYS', 90),
 
-    // SLA configuration (WF-008)
-    'default_sla_hours' => (int) env('DEFAULT_SLA_HOURS', 48),
-
-    // File upload limits (SEC-008)
-    'max_upload_size_mb' => (int) env('MAX_UPLOAD_SIZE_MB', 10),
-
-    // Rate limiting (SEC-009)
-    'rate_limit_login'  => (int) env('RATE_LIMIT_LOGIN', 5),   // per minute
-    'rate_limit_api'    => (int) env('RATE_LIMIT_API', 120),    // per minute
+    // P2 dead-key cleanup (architecture review): the four legacy keys
+    //   'default_sla_hours', 'max_upload_size_mb', 'rate_limit_login',
+    //   'rate_limit_api'
+    // were previously defined here but never read anywhere in the
+    // codebase. `login_rate_limit_per_minute` (below) supersedes
+    // `rate_limit_login`; per-service SLA values live in schema
+    // (schema.workflow[*].sla_hours) so a global default was
+    // unreachable; per-schema upload rules cover the size limit.
 
     // API read SLO (NFR-001) — LogApiAccess middleware emits `slow_request`
     // warnings when GET/HEAD requests exceed this (ms).
