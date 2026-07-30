@@ -102,6 +102,22 @@ class WorkflowEngine
         $prevStatus = $app->status;
 
         DB::transaction(function () use ($app, $actor, $firstReviewer, $prevStatus) {
+            // C-04 TOCTOU Guard: Re-evaluate cross-cutting submission pipeline inside the atomic
+            // transaction scope before status transition. Prevents concurrent submissions from
+            // separate organizations from bypassing cadastral and owner conflict guards.
+            $crossCuttingErrors = app(CrossCuttingSubmissionPipeline::class)->validate($app);
+            if (! empty($crossCuttingErrors)) {
+                $messages = [];
+                foreach ($crossCuttingErrors as $err) {
+                    if (is_array($err)) {
+                        $messages[] = implode(' ', $err);
+                    } elseif (is_string($err)) {
+                        $messages[] = $err;
+                    }
+                }
+                throw new Exceptions\ConflictException(implode(' ', $messages) ?: 'تعذر تقديم الطلب بسبب وجود تعارض في الحقول العامة.');
+            }
+
             // B-5 + WF-001: transition through ALLOWED_TRANSITIONS
             $this->transitionTo($app, Application::STATUS_SUBMITTED);
 

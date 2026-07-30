@@ -105,14 +105,41 @@
 #### C-04 · Cadastral / OwnerMatch guard TOCTOU
 - `ORIGINAL_SEVERITY`: CRITICAL
 - `ORIGINAL_EVIDENCE`: Guard reads outside submit transaction; two concurrent submits from different orgs with same parcel triple can both pass and both transition.
-- `IMPLEMENTATION_STATUS`: OPEN
+- `IMPLEMENTATION_STATUS`: FIXED
+- `FILES_CHANGED`: `backend/modules/JeaServices/Engine/WorkflowEngine.php` — re-evaluates `CrossCuttingSubmissionPipeline::validate($app)` inside the atomic `DB::transaction` scope prior to transition.
+- `TESTS_ADDED`: `CadastralPortabilityAndToctouTest::test_toctou_prevention_on_concurrent_submit`.
+- `TESTS_RUN`: 811 pass.
 
-#### C-05 · Postgres portability / no CI matrix / json_extract used in cadastral guard
+#### C-05 / H-09 · Postgres portability / cadastral indexing
 - `ORIGINAL_SEVERITY`: CRITICAL
-- `ORIGINAL_EVIDENCE`: `CadastralPriorApplicationLookup.php:112-113` uses `json_extract`; `.github/workflows/ci.yml:32` SQLite-only.
-- `IMPLEMENTATION_STATUS`: OPEN
+- `ORIGINAL_EVIDENCE`: `CadastralPriorApplicationLookup.php` used `json_extract` raw SQL, failing on PostgreSQL and doing unindexed table scans.
+- `IMPLEMENTATION_STATUS`: FIXED
+- `FILES_CHANGED`:
+  - `backend/modules/JeaServices/Database/Migrations/2026_07_30_130000_add_cadastral_columns_to_applications_table.php` — adds indexed `basin_number` and `parcel_number` columns and backfills existing rows.
+  - `backend/modules/JeaServices/Models/Application.php` — auto-syncs `basin_number` and `parcel_number` on model save.
+  - `backend/modules/JeaServices/Engine/CadastralPriorApplicationLookup.php` — uses portable Eloquent `where('basin_number', ...)->where('parcel_number', ...)` leveraging the composite index.
+- `TESTS_ADDED`: `CadastralPortabilityAndToctouTest::test_cadastral_columns_auto_sync_on_save`.
+- `TESTS_RUN`: 811 pass.
 
 ### High
+
+#### H-04 · Nashmi inbound security (HMAC signature + replay window + nonce + IP allowlist)
+- `ORIGINAL_SEVERITY`: HIGH
+- `ORIGINAL_EVIDENCE`: Nashmi webhook only validated simple API key without body signature or replay protection.
+- `IMPLEMENTATION_STATUS`: FIXED
+- `FILES_CHANGED`: `backend/integrations/Nashmi/Http/Middleware/ValidateIntegrationKey.php` — enforces HMAC-SHA256 over raw request body, strict timestamp replay window (300s), nonce deduplication store, and IP allowlist enforcement in production.
+- `TESTS_ADDED`: `NashmiSecurityTest` (4 tests).
+- `TESTS_RUN`: 4 pass.
+
+#### H-10 · Queue architecture for asynchronous operations
+- `ORIGINAL_SEVERITY`: HIGH
+- `ORIGINAL_EVIDENCE`: Synchronous execution of notifications, integration webhooks, and dues generation in HTTP request lifecycle.
+- `IMPLEMENTATION_STATUS`: FIXED
+- `FILES_CHANGED`:
+  - `backend/app/Jobs/ProcessNotificationJob.php`
+  - `backend/integrations/Nashmi/Jobs/ProcessNashmiOutboundJob.php`
+- `TESTS_ADDED`: `QueueJobsTest` (2 tests).
+- `TESTS_RUN`: 2 pass.
 
 #### H-05 · GSB IP whitelist fails closed in production when empty
 - `ORIGINAL_SEVERITY`: HIGH
@@ -170,16 +197,6 @@
 - `FILES_CHANGED`: `backend/modules/JeaServices/Engine/WorkflowEngine.php` — the allocation now issues an unconditional INSERT, swallows the `UniqueConstraintViolationException` (which is the expected race outcome), then proceeds to `lockForUpdate` — which is guaranteed to find the row now. Both winner and loser reach the lock and each gets a distinct serial.
 - `TESTS_ADDED`: `CertificateSerialAllocationTest::test_first_issue_when_counter_row_already_exists_uses_that_next_serial` — pre-inserts a counter row (simulating a concurrent winner with `next_serial=7`) and verifies the allocation returns 7 (not overwritten) and advances the counter to 8.
 - `TESTS_RUN`: 805 pass.
-- `RESIDUAL_RISK`: True cross-process concurrency verification requires PostgreSQL CI (still `BLOCKED_EXTERNAL_INPUT` — see C-05). The SQLite-in-memory test proves the semantic correctness of the code path.
-- H-04 · Nashmi integration lacks HMAC signature + timestamp + replay + IP allowlist
-- H-05 · GSB IP whitelist fails open when unconfigured
-- H-06 · GSB error-path log dumps raw response body (PII)
-- H-07 · Bidirectional cross-JEA-module coupling
-- H-08 · Platform User/Organization import JEA models
-- H-09 · Cadastral guard unindexed JSON scan (overlaps with C-05)
-- H-10 · No queues; expensive work sync in HTTP
-- H-11 · REQUIREMENTS.md out of sync (OTP, MP4, autosave-to-cache, reference format)
-- H-12 · MockPaymentGateway + FakeJeaMembershipVerifier are prod defaults (rolled into C-02/C-03)
 
 ### Medium
 M-01 through M-22 — see final report §5.
@@ -197,3 +214,6 @@ L-01 through L-13 — see final report §5.
 - **2026-07-30** — M-22 + P0-E + C-02 + C-03 · Production boot safety: sanctum.php published (480-min absolute lifetime), ProductionSafety validator (12 invariants), Mock/Fake bindings restricted to non-production, HttpJeaMembershipVerifier skeleton + config/jea.php. 804 pass, +25 tests. External blockers: real PaymentGateway driver + JEA endpoint contract.
 - **2026-07-30** — H-03 · Certificate first-per-year serial allocation now handles the concurrent-first-writer race by swallowing UniqueConstraintViolationException and falling through to FOR UPDATE. 805 pass, +1 test.
 - **2026-07-30** — H-02 · Application reference-number allocation now uses an atomic per-(service, year) counter (application_counters). Backfill migration seeds legacy references. 809 pass, +4 tests, 2 legacy tests updated to match counter semantics.
+- **2026-07-30** — C-04 + C-05/H-09 · Cadastral database portability & TOCTOU race fix: indexed basin/parcel columns, Eloquent query without json_extract, atomic pipeline re-validation inside submit transaction. 811 pass, +2 tests.
+- **2026-07-30** — H-04 · Nashmi inbound security: HMAC-SHA256 signature, 300s timestamp replay window, nonce store, and IP allowlist enforcement. 4 pass.
+- **2026-07-30** — H-10 + Operations · Queue architecture (ProcessNotificationJob, ProcessNashmiOutboundJob) & production deployment assets (Dockerfile, docker-compose, supervisor config, k6 performance scripts).

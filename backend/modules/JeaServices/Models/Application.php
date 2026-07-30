@@ -50,6 +50,20 @@ class Application extends Model
      */
     protected static function booted(): void
     {
+        static::saving(function (Application $app) {
+            $data = is_array($app->data) ? $app->data : [];
+            if ($app->isDirty('data') || ! empty($data)) {
+                $basin = isset($data['basin_number']) && $data['basin_number'] !== '' ? (string) $data['basin_number'] : null;
+                $parcel = isset($data['parcel_number']) && $data['parcel_number'] !== '' ? (string) $data['parcel_number'] : null;
+                if ($app->basin_number !== $basin) {
+                    $app->basin_number = $basin;
+                }
+                if ($app->parcel_number !== $parcel) {
+                    $app->parcel_number = $parcel;
+                }
+            }
+        });
+
         static::deleted(function (Application $app) {
             app(\Modules\JeaProjects\Engine\QuotaLedger::class)->releaseFor($app);
         });
@@ -60,6 +74,7 @@ class Application extends Model
         'assigned_reviewer_id', 'status', 'current_stage', 'data', 'fee_amount',
         'payment_status', 'payment_reference', 'payment_confirmed_at',
         'sla_deadline', 'sla_breached_at', 'review_round',
+        'basin_number', 'parcel_number',
     ];
 
     protected $casts = [
