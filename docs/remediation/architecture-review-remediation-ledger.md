@@ -85,6 +85,24 @@
 
 ### High
 
+#### H-05 · GSB IP whitelist fails closed in production when empty
+- `ORIGINAL_SEVERITY`: HIGH
+- `ORIGINAL_EVIDENCE`: `GsbIpWhitelist::handle` logged a warning and allowed all traffic when `config('gsb.allowed_ips')` was empty. Violated MODEE Annex 4.15 §4.5 rule 11 silently in any production where ops forgot to set `GSB_ALLOWED_IPS`.
+- `IMPLEMENTATION_STATUS`: FIXED
+- `FILES_CHANGED`: `backend/integrations/Gsb/Http/Middleware/GsbIpWhitelist.php` — empty allowlist in `app()->environment('production')` returns 403 and logs `critical`. Non-production keeps the permissive warning behavior so dev isn't locked out.
+- `TESTS_ADDED`: `GsbSecurityTest::test_empty_allowlist_in_production_denies_access`, `test_empty_allowlist_in_local_still_allows_with_warning`, `test_configured_allowlist_permits_matching_ip_in_any_env`, `test_configured_allowlist_denies_non_matching_ip`.
+- `TESTS_RUN`: 779 pass.
+- `EXTERNAL_DEPENDENCY`: The actual production IP allowlist values remain `BLOCKED_EXTERNAL_INPUT`.
+
+#### H-06 · GSB error-path log no longer dumps raw response body
+- `ORIGINAL_SEVERITY`: HIGH
+- `ORIGINAL_EVIDENCE`: `GsbClient::call` logged up to 500 bytes of the raw response body on 4xx/5xx, bypassing `stripImageFields`. GSB error responses regularly contain citizen PII (MODEE §4.5.2 violation).
+- `IMPLEMENTATION_STATUS`: FIXED
+- `FILES_CHANGED`: `backend/integrations/Gsb/Services/GsbClient.php` — the `Log::warning('GSB call failed', …)` context now contains `url`, `status`, `body_length` only.
+- `TESTS_ADDED`: `GsbSecurityTest::test_gsb_error_log_does_not_contain_raw_response_body` — uses `Log::spy` + `Http::fake` to prove the log context excludes the raw body and any PII markers.
+- `TESTS_RUN`: 779 pass.
+- `RESIDUAL_RISK`: Debugging a production GSB incident now requires reproducing with dev-side capture or querying GSB directly; there is no on-disk raw-body trail.
+
 #### H-01 · Null-org silent scope no-op → fail-closed
 - `ORIGINAL_SEVERITY`: HIGH
 - `ORIGINAL_EVIDENCE`: `OrganizationScope::apply` returned without filtering when `Auth::user()->organization_id` was null. Any authenticated user with a null org (integration user, corrupted row, misconfigured account) read every tenant's data unfiltered.
@@ -124,3 +142,4 @@ L-01 through L-13 — see final report §5.
 
 - **2026-07-30** — C-01 · Superuser scope restricted to user-management only. 771 pass, +37 tests.
 - **2026-07-30** — H-01 · Null-org authenticated users now fail closed (zero rows) with a security warning. 774 pass, +3 tests.
+- **2026-07-30** — H-05 + H-06 · GSB integration hardening: IP whitelist fails closed in production; error-path log redacts body. 779 pass, +5 tests.

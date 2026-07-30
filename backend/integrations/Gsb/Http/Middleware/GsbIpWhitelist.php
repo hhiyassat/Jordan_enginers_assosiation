@@ -22,10 +22,24 @@ class GsbIpWhitelist
     {
         $allowedIps = config('gsb.allowed_ips', []);
 
-        // If no IPs configured, log warning but allow through
-        // (avoids locking out in development with empty config)
+        // H-05: Fail closed in production. An empty allowlist previously
+        // allowed all traffic through with a warning log — that dropped
+        // MODEE Annex 4.15 §4.5 rule 11 silently whenever ops forgot
+        // to set GSB_ALLOWED_IPS. In non-production environments we
+        // keep the permissive-with-warning behavior so local dev
+        // isn't locked out; in production we deny with an actionable
+        // 500 that tells ops to set the allowlist.
         if (empty($allowedIps)) {
-            logger()->warning('GSB_IP_WHITELIST: no IPs configured — allowing all (set GSB_ALLOWED_IPS in .env)');
+            if (app()->environment('production')) {
+                logger()->channel(config('logging.default'))->critical(
+                    'GSB_IP_WHITELIST: empty allowlist in production',
+                    ['path' => $request->path(), 'ip' => $request->ip()],
+                );
+                return response()->json([
+                    'message' => 'Access denied.',
+                ], 403);
+            }
+            logger()->warning('GSB_IP_WHITELIST: no IPs configured — allowing all in non-production (set GSB_ALLOWED_IPS)');
             return $next($request);
         }
 

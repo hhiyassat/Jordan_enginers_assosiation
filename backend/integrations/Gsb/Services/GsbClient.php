@@ -191,11 +191,17 @@ class GsbClient
         );
 
         if (! $success) {
-            // §4.8.1: generic message — internal detail goes to log only
+            // §4.8.1: generic message — internal detail goes to log only.
+            // H-06: do NOT log the raw response body. GSB error responses
+            // frequently contain citizen PII that would end up on disk
+            // via the standard log channel (violating §4.5.2). Log
+            // structured metadata only. If body inspection is needed
+            // during an incident, capture it through the audit-log
+            // channel with explicit PII redaction.
             Log::warning('GSB call failed', [
-                'url'    => $fullUrl,
-                'status' => $response->status(),
-                'body'   => substr($response->body(), 0, 500),
+                'url'         => $fullUrl,
+                'status'      => $response->status(),
+                'body_length' => strlen($response->body()),
             ]);
             throw new \RuntimeException('Government service returned an error. Please try again later.');
         }
