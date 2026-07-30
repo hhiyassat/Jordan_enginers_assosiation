@@ -61,17 +61,46 @@
 - `RESIDUAL_RISK`: None internal. Post-deploy, verify any external tooling that assumed superuser could reach the JEA admin surface (there is none in-repo).
 - `EXTERNAL_DEPENDENCY`: None.
 
-#### C-02 · Replace MockPaymentGateway (production-safe abstraction + boot guard)
+#### C-02 · MockPaymentGateway blocked in production
 - `ORIGINAL_SEVERITY`: CRITICAL
-- `ORIGINAL_EVIDENCE`: `AppServiceProvider.php:54` binds `MockPaymentGateway` unconditionally; `verifyCallback` accepts any payload.
-- `IMPLEMENTATION_STATUS`: OPEN
-- `EXTERNAL_DEPENDENCY`: real gateway (eFAWATEERcom or equivalent) provider contract, callback specification, credentials — `BLOCKED_EXTERNAL_INPUT` for the real driver.
+- `ORIGINAL_EVIDENCE`: `AppServiceProvider.php:54` bound `MockPaymentGateway` unconditionally; `verifyCallback` accepts any payload.
+- `IMPLEMENTATION_STATUS`: FIXED_PENDING_PRODUCTION_VALIDATION (real gateway = `BLOCKED_EXTERNAL_INPUT`)
+- `FILES_CHANGED`:
+  - `backend/app/Providers/AppServiceProvider.php` — Mock binding wrapped in `if (!$this->app->environment('production'))`.
+  - `backend/app/Support/ProductionSafety.php` (new) — `checkPaymentGatewayBinding()` aborts boot in production when Mock resolves or when nothing is bound.
+- `TESTS_ADDED`: `ProductionSafetyTest::test_mock_payment_gateway_bound_in_production_is_a_violation`, `test_real_payment_gateway_bound_is_ok`.
+- `RESIDUAL_RISK`: Deploying to `APP_ENV=production` without a real PaymentGateway binding intentionally aborts boot with a clear error. Ops must add the real gateway binding in a production-only ServiceProvider before deploying.
+- `EXTERNAL_DEPENDENCY`: `BLOCKED_EXTERNAL_INPUT` — real gateway provider (eFAWATEERcom / JoMoPay / other) contract, callback signature spec, credentials.
 
-#### C-03 · Replace FakeJeaMembershipVerifier (production-safe abstraction + boot guard + HTTP driver skeleton)
+#### C-03 · FakeJeaMembershipVerifier blocked in production + HTTP driver skeleton
 - `ORIGINAL_SEVERITY`: CRITICAL
-- `ORIGINAL_EVIDENCE`: `JeaServicesServiceProvider.php:100` binds `FakeJeaMembershipVerifier` unconditionally; fake accepts any non-empty name+number pair.
-- `IMPLEMENTATION_STATUS`: OPEN
-- `EXTERNAL_DEPENDENCY`: real JEA membership verification endpoint URL + auth scheme + response schema.
+- `ORIGINAL_EVIDENCE`: `JeaServicesServiceProvider.php:100` bound `FakeJeaMembershipVerifier` unconditionally.
+- `IMPLEMENTATION_STATUS`: FIXED_PENDING_PRODUCTION_VALIDATION (real endpoint = `BLOCKED_EXTERNAL_INPUT`)
+- `FILES_CHANGED`:
+  - `backend/modules/JeaServices/Providers/JeaServicesServiceProvider.php` — Fake binding wrapped in non-production check.
+  - `backend/modules/JeaServices/Engine/HttpJeaMembershipVerifier.php` (new) — production HTTP driver: typed request/response, configurable auth scheme (bearer/basic/header), timeout+retry, PII-safe error logs, throws on network/non-2xx (never silently accepts).
+  - `backend/config/jea.php` (new) — configuration surface for the JEA API (base_url, auth_scheme, auth_token, basic credentials, timeout, retry policy).
+  - `backend/app/Support/ProductionSafety.php` — `checkJeaMembershipVerifierBinding()` aborts boot when Fake resolves in production.
+- `TESTS_ADDED`:
+  - `ProductionSafetyTest::test_fake_jea_verifier_bound_in_production_is_a_violation`, `test_http_jea_verifier_bound_is_ok`.
+  - `HttpJeaMembershipVerifierTest` (7 tests): empty inputs, valid+invalid endpoint responses, missing reason default, 5xx throws, missing base_url throws.
+- `RESIDUAL_RISK`: The real driver is written against a defensible request/response shape (POST `{name, membership_number}` → `{is_valid, reason_ar}`); if the real JEA contract differs, the mapping in `HttpJeaMembershipVerifier` needs one method-body edit — callers depend only on the interface.
+- `EXTERNAL_DEPENDENCY`: `BLOCKED_EXTERNAL_INPUT` — real JEA endpoint URL, auth scheme, request/response schema.
+
+#### M-22 · sanctum.php published with absolute token lifetime
+- `ORIGINAL_SEVERITY`: MEDIUM
+- `ORIGINAL_EVIDENCE`: No `backend/config/sanctum.php` → `expiration` fell back to Sanctum's default `null` → tokens never expired absolutely.
+- `IMPLEMENTATION_STATUS`: FIXED
+- `FILES_CHANGED`: `backend/config/sanctum.php` (new) with `'expiration' => (int) env('SANCTUM_EXPIRATION_MINUTES', 480)`; ProductionSafety enforces positive value in production.
+- `TESTS_ADDED`: `ProductionSafetyTest::test_sanctum_expiration_null_is_a_violation`, `test_sanctum_expiration_positive_is_ok`.
+
+#### P0-E · Production readiness validator
+- `ORIGINAL_SEVERITY`: (composite of many boot-time invariants)
+- `IMPLEMENTATION_STATUS`: FIXED
+- `FILES_CHANGED`:
+  - `backend/app/Support/ProductionSafety.php` (new) — centralized checklist: PaymentGateway binding, JeaMembershipVerifier binding, FILESYSTEM_DISK, QUEUE_CONNECTION, CACHE_STORE, SESSION_DRIVER, APP_DEBUG, SESSION_SECURE_COOKIE, SESSION_HTTP_ONLY, sanctum.expiration, GSB_ALLOWED_IPS, NASHMI_SIGNING_SECRET, CAPTCHA_ENABLED.
+  - `backend/app/Providers/AppServiceProvider.php` — `boot()` now calls `ProductionSafety::enforce($this->app)`. No-op outside production.
+- `TESTS_ADDED`: `ProductionSafetyTest` (18 tests): one negative + one positive per invariant, plus a test that `enforce()` throws with a clear multi-line message when app env is production.
 
 #### C-04 · Cadastral / OwnerMatch guard TOCTOU
 - `ORIGINAL_SEVERITY`: CRITICAL
@@ -143,3 +172,4 @@ L-01 through L-13 — see final report §5.
 - **2026-07-30** — C-01 · Superuser scope restricted to user-management only. 771 pass, +37 tests.
 - **2026-07-30** — H-01 · Null-org authenticated users now fail closed (zero rows) with a security warning. 774 pass, +3 tests.
 - **2026-07-30** — H-05 + H-06 · GSB integration hardening: IP whitelist fails closed in production; error-path log redacts body. 779 pass, +5 tests.
+- **2026-07-30** — M-22 + P0-E + C-02 + C-03 · Production boot safety: sanctum.php published (480-min absolute lifetime), ProductionSafety validator (12 invariants), Mock/Fake bindings restricted to non-production, HttpJeaMembershipVerifier skeleton + config/jea.php. 804 pass, +25 tests. External blockers: real PaymentGateway driver + JEA endpoint contract.

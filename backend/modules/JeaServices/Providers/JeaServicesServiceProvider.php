@@ -91,13 +91,23 @@ class JeaServicesServiceProvider extends ServiceProvider
         });
 
         // JEA membership verifier — external syndicate API abstraction.
-        // FakeJeaMembershipVerifier is the default for demo + tests
-        // (accepts any non-empty name+number). When the real HTTP API
-        // becomes available, swap the binding here for HttpJea...Verifier
-        // — everything downstream (OfficeRegistrationValidator + the
-        // registration flow) depends on the interface only.
+        //
+        // C-03: FakeJeaMembershipVerifier is bound as the default only
+        // in non-production. In production the deployment MUST bind
+        // HttpJeaMembershipVerifier (or another real driver) — the
+        // ProductionSafety validator aborts boot if Fake resolves in
+        // a production environment. Binding for the real driver is
+        // deferred here because the base URL / auth scheme is
+        // BLOCKED_EXTERNAL_INPUT (real JEA endpoint contract not
+        // available in-repo).
+        //
+        // Example production binding once the JEA contract is fixed:
+        //     $this->app->bind(JeaMembershipVerifier::class, HttpJeaMembershipVerifier::class);
+        //
         // See docs/architecture/office-registration-flow.md.
-        $this->app->bind(JeaMembershipVerifier::class, FakeJeaMembershipVerifier::class);
+        if (!$this->app->environment('production')) {
+            $this->app->bind(JeaMembershipVerifier::class, FakeJeaMembershipVerifier::class);
+        }
     }
 
     public function boot(): void

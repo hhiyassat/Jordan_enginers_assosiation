@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Support\ProductionSafety;
 use Integrations\Gsb\Services\GsbAuthManager;
 use Integrations\Gsb\Services\GsbClient;
 use App\Services\Payment\MockPaymentGateway;
@@ -45,18 +46,28 @@ class AppServiceProvider extends ServiceProvider
         });
 
         // ── Payment gateway ──────────────────────────────────────────────
-        // WorkflowEngine + controllers resolve PaymentGateway from the
-        // container. MockPaymentGateway is bound today so local dev + the
-        // test suite exercise the code path without a real provider. Swap
-        // this binding (only — no other files change) when the real
-        // integration lands:
+        // C-02: The MockPaymentGateway approves any callback and is safe
+        // only in non-production. Production must bind a real gateway
+        // with signature verification, e.g.:
         //     $this->app->singleton(PaymentGateway::class, JoMoPayGateway::class);
-        $this->app->singleton(PaymentGateway::class, MockPaymentGateway::class);
+        // Until that real binding lands, ProductionSafety::enforce()
+        // aborts boot in production if PaymentGateway resolves to Mock.
+        if (!$this->app->environment('production')) {
+            $this->app->singleton(PaymentGateway::class, MockPaymentGateway::class);
+        }
+        // In production, PaymentGateway is intentionally NOT bound here;
+        // the deployment must provide the real binding in a
+        // production-only ServiceProvider (or via a config-driven
+        // resolver once the real provider is selected).
     }
 
     public function boot(): void
     {
         $this->registerRateLimiters();
+
+        // P0-E: fail-closed production boot invariants. This is a no-op
+        // outside production. See App\Support\ProductionSafety.
+        ProductionSafety::enforce($this->app);
     }
 
     /**
