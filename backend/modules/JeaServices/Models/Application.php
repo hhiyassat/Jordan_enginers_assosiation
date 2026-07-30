@@ -261,14 +261,56 @@ class Application extends Model
         $yy      = str_pad((string) (now()->year % 100), 2, '0', STR_PAD_LEFT);
         $svcCode = str_pad((string) ($service->id % 10000), 4, '0', STR_PAD_LEFT);
 
-        $yearStart = now()->startOfYear();
-        $seq = self::withoutOrgScope()
-            ->where('service_definition_id', $service->id)
-            ->where('created_at', '>=', $yearStart)
-            ->count() + 1;
+        $seq = self::allocateReferenceSerial((int) $service->id, (int) now()->year);
 
         $seqStr = str_pad((string) $seq, 4, '0', STR_PAD_LEFT);
 
         return $yy . $svcCode . $seqStr;
+    }
+
+    /**
+     * H-02: atomic per-(service, year) sequence allocation.
+     *
+     * Same shape as WorkflowEngine::allocateCertificateSerial (H-03):
+     * unconditional INSERT of the counter row (swallow the unique-
+     * constraint violation if a concurrent writer beat us there) →
+     * SELECT FOR UPDATE (guaranteed to find the row after the INSERT
+     * path) → increment. Two concurrent submits for the same
+     * (service, year) serialize cleanly on the lock and each gets a
+     * distinct serial.
+     *
+     * Public for tests + so callers can pre-warm counters if needed.
+     * Wraps its own DB::transaction with retry so callers do not
+     * have to reason about the concurrency envelope.
+     */
+    public static function allocateReferenceSerial(int $serviceDefinitionId, int $year): int
+    {
+        return \Illuminate\Support\Facades\DB::transaction(function () use ($serviceDefinitionId, $year) {
+            try {
+                ApplicationCounter::create([
+                    'service_definition_id' => $serviceDefinitionId,
+                    'year'                  => $year,
+                    'next_serial'           => 1,
+                ]);
+            } catch (\Illuminate\Database\UniqueConstraintViolationException) {
+                // Expected under concurrent first-writer race.
+            } catch (\Illuminate\Database\QueryException $e) {
+                $sqlState = $e->errorInfo[0] ?? null;
+                if (!in_array($sqlState, ['23000', '23505'], true)) {
+                    throw $e;
+                }
+            }
+
+            $row = ApplicationCounter::where('service_definition_id', $serviceDefinitionId)
+                ->where('year', $year)
+                ->lockForUpdate()
+                ->first();
+
+            $serial            = $row->next_serial;
+            $row->next_serial  = $serial + 1;
+            $row->save();
+
+            return $serial;
+        }, attempts: 5);
     }
 }

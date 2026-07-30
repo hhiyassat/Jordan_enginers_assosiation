@@ -147,7 +147,21 @@
 - `RESIDUAL_RISK`: A future code path that runs `Auth::login($user)` with a `$user` whose org happens to be null will now get empty results instead of accidental cross-tenant data. If such a path exists intentionally, it must call `::withoutOrgScope()` explicitly.
 - `EXTERNAL_DEPENDENCY`: None.
 
-- H-02 · Application reference-number race (`Application::generateReference` count()+1)
+#### H-02 · Application reference-number atomic counter
+- `ORIGINAL_SEVERITY`: HIGH
+- `ORIGINAL_EVIDENCE`: `Application::generateReference()` computed the next sequence with `Application::count() + 1`. Two concurrent submits for the same (service, year) both saw N and both wrote N+1 — one insert died on `reference_number` unique index.
+- `IMPLEMENTATION_STATUS`: FIXED
+- `FILES_CHANGED`:
+  - `backend/modules/JeaServices/Database/Migrations/2026_07_30_120000_create_application_counters_table.php` (new) — table `application_counters(service_definition_id, year, next_serial)` with unique `(service_definition_id, year)`. Reversible.
+  - `backend/modules/JeaServices/Models/ApplicationCounter.php` (new).
+  - `backend/modules/JeaServices/Models/Application.php` — `generateReference()` now delegates to `allocateReferenceSerial()` which mirrors the H-03 pattern: unconditional INSERT (swallow duplicate-key), then SELECT FOR UPDATE, then increment. Wrapped in `DB::transaction(..., attempts: 5)`.
+- `TESTS_ADDED`:
+  - `ApplicationReferenceSerialTest` (4 tests): strictly monotonic sequence, pre-existing counter row honored, uniqueness across many allocations, per-service independence.
+- `TESTS_UPDATED`:
+  - `ApplicationReferenceTest::test_sequence_increments_per_service_per_year` and `test_sequence_is_independent_across_services` were pinning the old count-based semantics (seeded rows influencing the sequence). Updated to consume from the counter directly, matching the new correct contract.
+- `TESTS_RUN`: 809 pass / 1 skipped. Migration rollback + re-migrate verified.
+- `RESIDUAL_RISK`: True cross-process concurrency verification requires PostgreSQL CI (still `BLOCKED_EXTERNAL_INPUT` — see C-05).
+- `BACKFILL`: The migration seeds each `(service, year)` counter from `MAX(numeric_seq) + 1` over pre-existing 10-digit references. Legacy alpha references (`ESP-XXX-…`) are ignored. Runs at migration time in driver-agnostic PHP so it works on SQLite, PostgreSQL, and MySQL without dialect-specific SQL.
 
 #### H-03 · Certificate first-per-year serial race
 - `ORIGINAL_SEVERITY`: HIGH
@@ -182,3 +196,4 @@ L-01 through L-13 — see final report §5.
 - **2026-07-30** — H-05 + H-06 · GSB integration hardening: IP whitelist fails closed in production; error-path log redacts body. 779 pass, +5 tests.
 - **2026-07-30** — M-22 + P0-E + C-02 + C-03 · Production boot safety: sanctum.php published (480-min absolute lifetime), ProductionSafety validator (12 invariants), Mock/Fake bindings restricted to non-production, HttpJeaMembershipVerifier skeleton + config/jea.php. 804 pass, +25 tests. External blockers: real PaymentGateway driver + JEA endpoint contract.
 - **2026-07-30** — H-03 · Certificate first-per-year serial allocation now handles the concurrent-first-writer race by swallowing UniqueConstraintViolationException and falling through to FOR UPDATE. 805 pass, +1 test.
+- **2026-07-30** — H-02 · Application reference-number allocation now uses an atomic per-(service, year) counter (application_counters). Backfill migration seeds legacy references. 809 pass, +4 tests, 2 legacy tests updated to match counter semantics.
