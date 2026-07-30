@@ -50,7 +50,9 @@ Route::prefix('api/v1')->middleware(['auth:sanctum', 'token.inactivity', 'passwo
     });
 
     // Admin-only surface — office boost flags + specialization-head.
-    Route::middleware('role:admin,superuser')->group(function () {
+    // C-01: admin owns JEA office administration. Superuser is
+    // user-management only.
+    Route::middleware('role:admin')->group(function () {
         Route::get  ('admin/offices',                                     [OfficeSettingsController::class, 'index']);
         Route::get  ('admin/offices/{id}',                                [OfficeSettingsController::class, 'show']);
         Route::patch('admin/offices/{id}',                                [OfficeSettingsController::class, 'update']);

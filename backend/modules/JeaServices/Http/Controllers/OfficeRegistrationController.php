@@ -200,7 +200,9 @@ class OfficeRegistrationController extends Controller
     private function authorizeAdmin(Request $request): void
     {
         $user = $request->user();
-        if (! $user || ! in_array($user->role, ['admin', 'superuser'], true)) {
+        // C-01: office-registration decisions are admin (JEA business).
+        // Superuser is user-management only.
+        if (! $user || ! $user->isAdmin()) {
             abort(403, 'الاعتماد أو الرفض متاح لمدير النقابة فقط.');
         }
     }

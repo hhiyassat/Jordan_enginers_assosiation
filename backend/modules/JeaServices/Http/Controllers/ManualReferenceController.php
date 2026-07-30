@@ -39,7 +39,8 @@ class ManualReferenceController extends Controller
     public function index(Request $request): JsonResponse
     {
         if ($request->boolean('pending')) {
-            if (! $request->user()->isAdmin() && ! $request->user()->isSuperuser()) {
+            // C-01: admin only. Superuser is user-management scope.
+            if (! $request->user()->isAdmin()) {
                 abort(403);
             }
             $refs = ManualReference::where('needs_reimplementation', true)
@@ -59,7 +60,8 @@ class ManualReferenceController extends Controller
     public function update(Request $request, int $id): JsonResponse
     {
         $user = $request->user();
-        if (! $user->isAdmin() && ! $user->isSuperuser()) {
+        // C-01: admin only. Superuser is user-management scope.
+        if (! $user->isAdmin()) {
             abort(403, 'المسؤولون فقط يمكنهم تعديل النصوص النظامية.');
         }
 
@@ -107,7 +109,8 @@ class ManualReferenceController extends Controller
     public function acknowledge(Request $request, int $id): JsonResponse
     {
         $user = $request->user();
-        if (! $user->isAdmin() && ! $user->isSuperuser()) {
+        // C-01: admin only. Superuser is user-management scope.
+        if (! $user->isAdmin()) {
             abort(403);
         }
 

@@ -114,8 +114,11 @@ Route::prefix('api/v1')->middleware(['auth:sanctum', 'token.inactivity', 'passwo
         Route::post('applications/{id}/issue-certificate',  [CertificatesController::class, 'issue']);
     });
 
-    // Admin surface — service catalog admin, fee editor, lock/unlock.
-    Route::middleware('role:admin,superuser')->group(function () {
+    // Admin surface — service catalog admin, fee editor, lock/unlock,
+    // manual references, office-registration review.
+    // C-01: service-catalog + operational admin is admin territory.
+    // Superuser is user-management only.
+    Route::middleware('role:admin')->group(function () {
         // FR-017: admin views all services regardless of status.
         Route::get  ('admin/services',                       [ServiceCatalogController::class, 'adminIndex']);
         Route::get  ('admin/services/{id}',                  [ServiceCatalogController::class, 'adminShow']);

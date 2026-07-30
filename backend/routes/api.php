@@ -91,8 +91,10 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'token.inactivity', 'password.p
     // application flow.
 
     // ── Admin-only routes ─────────────────────────────────────────────
+    // C-01: superuser is user-management only; admin owns the JEA
+    // business admin surface (dashboard, applications, audit logs).
 
-    Route::middleware('role:admin,superuser')->group(function () {
+    Route::middleware('role:admin')->group(function () {
         // FR-014 to FR-016: Admin dashboard
         // Workstream 5C: dashboard + applications + audit-logs extracted
         // from AdminController.

@@ -109,13 +109,14 @@ class ServiceLockingTest extends TestCase
         $this->assertTrue($this->service->fresh()->is_locked);
     }
 
-    public function test_superuser_can_toggle_lock(): void
+    public function test_superuser_cannot_toggle_lock(): void
     {
+        // C-01: superuser is user-management only. Service catalog
+        // authorship (including lock/unlock) is admin territory.
         Sanctum::actingAs($this->superuser);
-        $this->postJson("/api/v1/admin/services/{$this->service->id}/unlock")->assertOk();
-        $this->assertFalse($this->service->fresh()->is_locked);
-        $this->postJson("/api/v1/admin/services/{$this->service->id}/lock")->assertOk();
-        $this->assertTrue($this->service->fresh()->is_locked);
+        $this->postJson("/api/v1/admin/services/{$this->service->id}/unlock")->assertStatus(403);
+        $this->assertTrue($this->service->fresh()->is_locked, 'superuser must not unlock services');
+        $this->postJson("/api/v1/admin/services/{$this->service->id}/lock")->assertStatus(403);
     }
 
     public function test_staff_cannot_unlock(): void
@@ -134,15 +135,15 @@ class ServiceLockingTest extends TestCase
         $this->assertSame('اسم جديد', $this->service->fresh()->name_ar);
     }
 
-    public function test_superuser_can_edit_after_unlock(): void
+    public function test_superuser_cannot_edit_services(): void
     {
-        // Regression: prior to this feature the services route was
-        // role:admin, so superuser got a 403 even without any lock. The
-        // canEditServices() helper should let them through when unlocked.
+        // C-01: superuser is user-management only. Service catalog edits
+        // are admin (JEA business) territory. Previously superuser was
+        // allowed through canEditServices() — that was the F-ADM-01
+        // policy violation the architecture review flagged as CRITICAL.
         Sanctum::actingAs($this->superuser);
-        $this->postJson("/api/v1/admin/services/{$this->service->id}/unlock")->assertOk();
         $this->putJson("/api/v1/services/{$this->service->id}", ['name_ar' => 'من المستخدم الأعلى'])
-            ->assertOk();
+            ->assertStatus(403);
     }
 
     public function test_newly_created_service_defaults_to_locked(): void

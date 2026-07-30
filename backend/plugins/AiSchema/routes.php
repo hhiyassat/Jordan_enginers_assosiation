@@ -21,7 +21,9 @@ use Plugins\AiSchema\Http\Controllers\AiSchemaController;
  * names are process-global) — this file only references it.
  */
 Route::prefix('api/v1')->middleware(['auth:sanctum', 'token.inactivity', 'password.policy', 'track.activity'])->group(function () {
-    Route::middleware('role:admin,superuser')->group(function () {
+    // C-01: AI schema generation is service-catalog authorship, which is
+    // admin (JEA business) territory. Superuser is user-management only.
+    Route::middleware('role:admin')->group(function () {
         Route::post('admin/services/generate-schema',           [AiSchemaController::class, 'generateSchema'])
             ->middleware('throttle:ai-schema');
         Route::post('admin/services/generate-schema-from-file', [AiSchemaController::class, 'generateSchemaFromFile'])

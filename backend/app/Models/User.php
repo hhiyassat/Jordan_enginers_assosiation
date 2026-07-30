@@ -88,10 +88,18 @@ class User extends Authenticatable
     public function isAuditor(): bool   { return $this->role === 'auditor'; }
     public function isApplicant(): bool { return $this->role === 'applicant'; }
 
-    /** Staff, auditors, admins, and superusers can all review applications */
+    /**
+     * Staff, auditors, and admins review applications.
+     *
+     * Superuser is intentionally EXCLUDED: superuser scope is
+     * user-management administration only, not JEA business
+     * operations (application review, service catalog edits,
+     * dues, discipline, etc.). See docs/adr on superuser scope
+     * and the C-01 remediation ledger entry.
+     */
     public function isReviewer(): bool
     {
-        return in_array($this->role, ['staff', 'auditor', 'admin', 'superuser']);
+        return in_array($this->role, ['staff', 'auditor', 'admin']);
     }
 
     /**
@@ -123,11 +131,13 @@ class User extends Authenticatable
 
     /**
      * Authorized to edit service definitions and toggle their lock state.
-     * Both admin and superuser qualify; every mutation is still gated by
-     * ServiceDefinition::isLocked() so protection is layered.
+     *
+     * Admin only. Superuser is intentionally EXCLUDED — service-catalog
+     * authorship is JEA business administration, not user-management.
+     * See C-01 remediation ledger entry.
      */
     public function canEditServices(): bool
     {
-        return $this->isAdmin() || $this->isSuperuser();
+        return $this->isAdmin();
     }
 }
