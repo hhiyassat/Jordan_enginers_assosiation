@@ -8,6 +8,7 @@ use Modules\JeaServices\Http\Controllers\CertificatesController;
 use Modules\JeaServices\Http\Controllers\JeaAdminDashboardController;
 use Modules\JeaServices\Http\Controllers\ManualReferenceController;
 use Modules\JeaServices\Http\Controllers\OfficeRegistrationController;
+use Modules\JeaServices\Http\Controllers\PaymentCallbackController;
 use Modules\JeaServices\Http\Controllers\PaymentsController;
 use Modules\JeaServices\Http\Controllers\ReviewDashboardController;
 use Modules\JeaServices\Http\Controllers\ReviewQueueController;
@@ -74,6 +75,14 @@ Route::prefix('api/v1')->group(function () {
         ->middleware('throttle:5,1');
 });
 
+// ── Gateway payment webhook (no auth — signature-verified) ────────
+// CS-03: unauthenticated route reachable by the payment provider.
+// The controller resolves PaymentGateway::verifyCallback which is the
+// signature check — invalid callers get 401 there, not at Sanctum.
+// Rate-limited to blunt scanning attempts.
+Route::post('/api/payment/callback', [PaymentCallbackController::class, 'handle'])
+    ->middleware('throttle:60,1');
+
 // ── Authenticated surface ─────────────────────────────────────────
 Route::prefix('api/v1')->middleware(['auth:sanctum', 'token.inactivity', 'password.policy', 'track.activity'])->group(function () {
 
@@ -123,10 +132,25 @@ Route::prefix('api/v1')->middleware(['auth:sanctum', 'token.inactivity', 'passwo
         Route::post('applications/{id}/decide',    [ReviewQueueController::class, 'decide']);
     });
 
-    // Staff+admin (payment confirmation + certificate issuance).
+    // Applicant + staff/admin can initiate a payment via the gateway.
+    Route::middleware('role:applicant,staff,auditor,admin')->group(function () {
+        // CS-03: uses PaymentGateway::initiate — the only place ESP
+        // hands a PaymentIntent to the abstraction. Response returns
+        // the redirect URL the applicant follows.
+        Route::post('applications/{id}/initiate-payment', [PaymentsController::class, 'initiate']);
+    });
+
+    // Certificate issuance — staff + admin.
     Route::middleware('role:staff,admin')->group(function () {
-        Route::post('applications/{id}/confirm-payment',    [PaymentsController::class, 'confirm']);
         Route::post('applications/{id}/issue-certificate',  [CertificatesController::class, 'issue']);
+    });
+
+    // Admin manual reconciliation only. CS-03: `confirm-payment` was
+    // formerly staff+admin and treated a raw payment_reference as
+    // proof; it now requires the admin role AND a `manual_reason`
+    // string and is explicitly NOT the proof-of-payment path.
+    Route::middleware('role:admin')->group(function () {
+        Route::post('applications/{id}/confirm-payment', [PaymentsController::class, 'confirm']);
     });
 
     // Admin surface — service catalog admin, fee editor, lock/unlock,

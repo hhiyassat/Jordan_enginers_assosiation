@@ -87,7 +87,7 @@ recorded in the residual backlog rather than expanded into scope.
 ITEM_ID=CS-01
 ORIGINAL_FINDING=NEW-A1 (config key typo aborts every production boot)
 START_HEAD=a4224fcceff08a73d7c348b4a3324417fe66a413
-END_HEAD=<recorded after commit — see ledger>
+END_HEAD=510525726fae1b14e8cc202b3acb1ab9a85b261b
 STATUS=FIXED
 ROOT_CAUSE=Validator read a non-existent nested config path (`integrations.nashmi.signing_secret`) instead of the actual key (`nashmi.signing_secret`). The empty-string default fell through, so the check appended a violation regardless of the real env value.
 IMPLEMENTATION_DECISION=Correct the config key and its error message; update the pre-existing miswritten test; add positive + shadow-key regression tests + an end-to-end "safe production boots" test.
@@ -101,7 +101,7 @@ STATIC_ANALYSIS_RESULT=PASS (PHPStan on ProductionSafety.php — 0 errors). Test
 RUNTIME_VERIFICATION=The added `test_all_safe_production_settings_produce_zero_violations` exercises the full `collectViolations()` path against a production-shaped config and asserts zero violations. Without the fix this test would fail because the Nashmi check appends a violation regardless of the secret being present.
 RESIDUAL_RISK=Low. The other 12 ProductionSafety checks were re-inspected during this change and each still reads its own dedicated top-level config namespace (`filesystems.default`, `queue.default`, `cache.default`, `session.*`, `app.debug`, `sanctum.expiration`, `gsb.allowed_ips`, `esp.*`). None depends on a similarly-mistaken sub-tree lookup.
 EXTERNAL_BLOCKER=none
-COMMIT=<recorded after commit — see ledger>
+COMMIT=5105257
 NEXT_ITEM=CS-02
 ```
 

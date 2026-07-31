@@ -174,12 +174,16 @@ class CrossTenantIsolationTest extends TestCase
 
     // ── PaymentsController + CertificatesController (mutation) ───
 
-    public function test_org_b_staff_cannot_confirm_payment_on_org_a_application(): void
+    public function test_org_b_admin_cannot_confirm_payment_on_org_a_application(): void
     {
-        $staffB = $this->makeUser($this->orgB, 'staff', 'iso-staff-b@t.esp');
-        Sanctum::actingAs($staffB);
+        // CS-03: confirm-payment is now admin-only manual reconciliation
+        // and requires a manual_reason. Even a valid admin in Org B must
+        // hit the tenant boundary (404) before touching Org A's app.
+        $adminB = $this->makeUser($this->orgB, 'admin', 'iso-admin-b-cs03@t.esp');
+        Sanctum::actingAs($adminB);
         $this->postJson("/api/v1/applications/{$this->appA->id}/confirm-payment", [
             'payment_reference' => 'X-1',
+            'manual_reason'     => 'cross-tenant isolation regression check',
         ])->assertNotFound();
     }
 

@@ -32,6 +32,12 @@ use Modules\JeaProjects\Models\Project;
  * @property int|null                           $assigned_reviewer_id
  * @property array<string, mixed>|null          $data
  * @property float|string                       $fee_amount
+ * @property int|null                           $organization_id
+ * @property string|null                        $payment_status
+ * @property string|null                        $payment_reference
+ * @property \Illuminate\Support\Carbon|null    $payment_confirmed_at
+ * @property string|null                        $basin_number
+ * @property string|null                        $parcel_number
  * @property ServiceDefinition|null             $serviceDefinition
  * @property Project|null                       $project
  * @property Certificate|null                   $certificate

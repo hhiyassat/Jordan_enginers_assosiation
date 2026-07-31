@@ -175,7 +175,7 @@ $ php artisan migrate:rollback --step=3
 ITEM_ID=CS-02
 ORIGINAL_FINDING=H-10 / NEW-A14 / NEW-A15 — jobs scaffold-only; missing jobs/failed_jobs migrations
 START_HEAD=5105257
-END_HEAD=<recorded after commit — see ledger>
+END_HEAD=5d0252f6dbce325bdaef041975e7135f160ee52a
 STATUS=FIXED
 ROOT_CAUSE=Job classes existed as scaffolding but had zero production dispatch sites; the queue system's supporting schema had never been shipped as migrations, so any deploy on the code-default `database` driver would 500 on first dispatch.
 IMPLEMENTATION_DECISION=Wire ONE real dispatcher per job (Nashmi outbound + password-changed notification), ship the missing framework migrations, upgrade both job classes with idempotency middleware + timeout + backoff + structured logging + correlation id, and cover the whole pipeline with unit + feature + real-worker tests.
@@ -189,7 +189,7 @@ STATIC_ANALYSIS_RESULT=PASS (PHPStan 0 errors across every touched file)
 RUNTIME_VERIFICATION=RealWorkerIntegrationTest dispatches on database driver, asserts jobs table row, invokes worker via Queue::pop()->fire(), asserts Notification row inserted, jobs row removed, failed_jobs empty. Full backend suite = 877 tests / 873 passed / 4 skipped / 2917 assertions.
 RESIDUAL_RISK=JeaNotificationService::send() still writes notifications synchronously (transactional coupling to WorkflowEngine); making it async needs dispatchAfterCommit plumbing and is out of CS-02 scope. Nashmi outbound retries land at Nashmi's endpoint — Nashmi's own idempotency is not guaranteed, so a partial-success retry may create duplicate Nashmi-side projects. This is external and cannot be fixed here.
 EXTERNAL_BLOCKER=Redis provisioning for production (recommended over `database` driver for lower latency); Nashmi outbound endpoint idempotency (external contract).
-COMMIT=<recorded after commit — see ledger>
+COMMIT=5d0252f
 NEXT_ITEM=CS-03
 ```
 
