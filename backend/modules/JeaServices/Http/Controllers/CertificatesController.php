@@ -99,6 +99,47 @@ class CertificatesController extends Controller
             abort(410, 'هذه الشهادة ملغاة.');
         }
 
+        return $this->renderPdf($cert);
+    }
+
+    /**
+     * P1-10: Authenticated applicant/reviewer download path — NO
+     * token in URL. Uses the same org-scoped `findAccessible` model
+     * as the P1-09 document endpoint, then returns the same PDF the
+     * public token URL would.
+     *
+     * The public token URL is retained for QR-scan verification
+     * (physical QRs on printed certs cannot be rotated); this new
+     * endpoint is what the SPA uses for the applicant's own
+     * download so their browser history and any middlebox log
+     * never see the qr_token.
+     */
+    public function downloadPdfAuthenticated(Request $request, int $applicationId): \Illuminate\Http\Response
+    {
+        $app = Application::forOrganization($request->user()->organization_id);
+        if ($request->user()->isApplicant()) {
+            $app = $app->where('applicant_id', $request->user()->id);
+        }
+        /** @var Application $application */
+        $application = $app->findOrFail($applicationId);
+
+        $cert = Certificate::with([
+            'application.serviceDefinition:id,name_ar,name_en',
+            'issuedTo:id,name',
+        ])->where('application_id', $application->id)->firstOrFail();
+
+        if ($cert->status !== 'active') {
+            abort(410, 'هذه الشهادة ملغاة.');
+        }
+
+        return $this->renderPdf($cert);
+    }
+
+    /**
+     * PDF-rendering pipeline shared by both download paths.
+     */
+    private function renderPdf(Certificate $cert): \Illuminate\Http\Response
+    {
         $service = $cert->application?->serviceDefinition;
         $certConfig = $service?->getCertificateConfig() ?? [];
         $titleAr = $certConfig['title_ar'] ?? ($service->name_ar ?? 'شهادة');

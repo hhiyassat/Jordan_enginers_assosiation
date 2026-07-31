@@ -101,6 +101,15 @@ Route::prefix('api/v1')->middleware(['auth:sanctum', 'token.inactivity', 'passwo
         // application caller receives 404.
         Route::get ('applications/{id}/documents/{docId}',     [ApplicationController::class, 'downloadDocument'])
             ->whereNumber('id')->whereNumber('docId');
+
+        // P1-10: authenticated certificate PDF download — no token in URL.
+        // The public token-based route stays at `/certificates/{n}/pdf`
+        // (loaded elsewhere in this file) for QR-scan verification of
+        // physical certificates. This endpoint is what the SPA uses so
+        // the applicant's browser history + upstream logs never see
+        // the qr_token.
+        Route::get ('applications/{id}/certificate/pdf',        [CertificatesController::class, 'downloadPdfAuthenticated'])
+            ->whereNumber('id');
     });
 
     // Reviewer surface (staff/auditor/admin).
