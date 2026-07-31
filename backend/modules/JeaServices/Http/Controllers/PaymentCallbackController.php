@@ -74,18 +74,28 @@ class PaymentCallbackController extends Controller
         }
 
         // 3) Idempotent reconciliation.
+        //
+        // Use insertOrIgnore rather than create()+catch(QueryException):
+        // PostgreSQL aborts the surrounding transaction on any error,
+        // so a catch()-then-continue pattern would fail the next
+        // Eloquent call inside the same transaction with
+        // "current transaction is aborted". insertOrIgnore is the
+        // cross-driver-safe primitive for "insert if new, do nothing
+        // if key already exists" and returns 1/0 accordingly.
         return DB::transaction(function () use ($application, $receipt) {
-            try {
-                PaymentCallback::create([
-                    'application_id' => $application->id,
-                    'reference'      => $receipt->reference,
-                    'amount'         => $receipt->amount,
-                    'currency'       => $receipt->currency,
-                    'settled_at'     => $receipt->settledAt,
-                    'gateway_meta'   => $receipt->meta,
-                    'received_at'    => now(),
-                ]);
-            } catch (\Illuminate\Database\QueryException $e) {
+            $inserted = PaymentCallback::query()->insertOrIgnore([
+                'application_id' => $application->id,
+                'reference'      => $receipt->reference,
+                'amount'         => $receipt->amount,
+                'currency'       => $receipt->currency,
+                'settled_at'     => $receipt->settledAt,
+                'gateway_meta'   => json_encode($receipt->meta),
+                'received_at'    => now(),
+                'created_at'     => now(),
+                'updated_at'     => now(),
+            ]);
+
+            if ($inserted === 0) {
                 Log::channel('security')->info('payment_callback_replay_ignored', [
                     'reference'      => $receipt->reference,
                     'application_id' => $application->id,

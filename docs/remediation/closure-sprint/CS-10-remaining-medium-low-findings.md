@@ -124,7 +124,7 @@ described as fixed or closed.**
 ITEM_ID=CS-10
 ORIGINAL_FINDING=Composite: M-14, M-16, M-17, L-01, L-04, L-06, L-08, NEW-A4, NEW-A5, NEW-A11, NEW-A20 (plus M-10 + NEW-A17 which were closed by CS-06 + CS-08)
 START_HEAD=5f1d305
-END_HEAD=<recorded after commit — see ledger>
+END_HEAD=aa3c0193bfd4702dd55644f92e47fa6304fe97a9
 STATUS=PARTIALLY_FIXED
 ROOT_CAUSE=n/a (composite reconciliation item)
 IMPLEMENTATION_DECISION=Classify each finding; execute every FIX_NOW-eligible one; move the substantial refactors to explicit backlog with acceptance criteria and effort estimates; call out the two NOT_REPRODUCIBLE items with evidence (L-06 CORS credentials false is correct for bearer-token auth; NEW-A20 GsbClient::isIpAllowed is annotation-only, the security boundary is elsewhere).
@@ -140,7 +140,7 @@ STATIC_ANALYSIS_RESULT=PASS (PHPStan 0 errors across every touched file after an
 RUNTIME_VERIFICATION=env() → config() conversion is functionally equivalent under a hot cache and strictly better under `php artisan config:cache`; deletion of dead code confirmed by `grep -RIn` showing zero production callers before removal; new rate limiter uses the same pattern as the existing captcha-issue / register limiters.
 RESIDUAL_RISK=BL-M14, BL-M16, BL-M17, BL-L01, BL-L08, BL-CS05-1, BL-CS03-1, BL-CS03-2, BL-CS02-1, BL-OPS-1..3 all remain — see residual-backlog.md. NOT_REPRODUCIBLE items (L-06, NEW-A20) documented with counter-evidence.
 EXTERNAL_BLOCKER=BLK-01, BLK-02, BLK-03, BLK-04 continue to gate real production deploy.
-COMMIT=<recorded after commit — see ledger>
+COMMIT=aa3c019
 NEXT_ITEM=(final sprint verification + report)
 ```
 
