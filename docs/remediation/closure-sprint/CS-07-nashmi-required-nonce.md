@@ -101,7 +101,7 @@ HEAD~5:...`). The new nonce block itself is clean.
 ITEM_ID=CS-07
 ORIGINAL_FINDING=NEW-A12 (Nashmi nonce optional in production; replay protection degraded to timestamp window)
 START_HEAD=ee31466
-END_HEAD=<recorded after commit — see ledger>
+END_HEAD=dff547c2fb02e638039a2d6f449749c4119f41a3
 STATUS=FIXED
 ROOT_CAUSE=Nonce header was documented but not required in any environment; storage used non-atomic Cache::has()/put(); cache key derivation used md5() and did not incorporate the signing secret so key rotations didn't invalidate prior nonces.
 IMPLEMENTATION_DECISION=Enforce presence in production (401 on missing); switch storage to atomic Cache::add() so two concurrent identical requests cannot both pass; namespace the cache key by the first 12 hex chars of sha256(secret) so a key rotation invalidates prior nonces; use full sha256 for the nonce hash to remove cheap collision engineering.
@@ -115,7 +115,7 @@ STATIC_ANALYSIS_RESULT=PASS on the new nonce block; the pre-existing `booleanAnd
 RUNTIME_VERIFICATION=`test_atomic_replay_protection_only_one_of_two_concurrent_wins` reconstructs the exact cache key the middleware writes; if the middleware ever changes its key derivation the test fails immediately.
 RESIDUAL_RISK=Cache-backed atomicity depends on the CACHE_STORE being a serialized backend (redis/database). If a deploy uses `file` or `array` in production Cache::add() semantics can still be non-atomic across workers — but ProductionSafety::checkCacheStore already rejects `file`/`array` at boot.
 EXTERNAL_BLOCKER=Nashmi provider must include a nonce header on every request. If Nashmi's own client cannot send one in production, `X-Request-Id` (which most reverse proxies emit) will be accepted as a fallback per the middleware's chain of `X-Nashmi-Nonce` → `X-Integration-Nonce` → `X-Request-Id`.
-COMMIT=<recorded after commit — see ledger>
+COMMIT=dff547c
 NEXT_ITEM=CS-08
 ```
 
