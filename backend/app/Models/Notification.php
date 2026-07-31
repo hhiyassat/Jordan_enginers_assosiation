@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToOrganization;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -31,6 +32,13 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  */
 class Notification extends Model
 {
+    // L-10: notifications carry an organization_id but historically did
+    // not use the trait — every controller filtered by user_id and
+    // relied on user.organization_id transitivity. Adding the trait is
+    // defense-in-depth: any future query that forgets the user filter
+    // still can't cross tenants.
+    use BelongsToOrganization;
+
     protected $fillable = [
         'organization_id', 'user_id', 'type', 'title', 'body',
         'link', 'related_type', 'related_id', 'payload', 'read_at',
@@ -47,11 +55,7 @@ class Notification extends Model
         return $this->belongsTo(User::class);
     }
 
-    /** @return BelongsTo<Organization, $this> */
-    public function organization(): BelongsTo
-    {
-        return $this->belongsTo(Organization::class);
-    }
+    // organization() relation is provided by BelongsToOrganization trait.
 
     /** @return MorphTo<Model, $this> */
     public function related(): MorphTo

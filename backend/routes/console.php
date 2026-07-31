@@ -74,3 +74,16 @@ Schedule::command('retention:remind')
     ->dailyAt('05:00')
     ->withoutOverlapping()
     ->runInBackground();
+
+// ── M-09: notification pruning ─────────────────────────────────────
+//
+// Delete read notifications older than
+// `esp.notification_retention_days` (default 180) and unread
+// notifications older than `esp.notification_unread_retention_days`
+// (default 365). Keeps the applicant's dashboard responsive without
+// losing "certificate ready" notices for inactive users too quickly.
+
+Schedule::command('notifications:prune')
+    ->dailyAt('02:30')
+    ->withoutOverlapping()
+    ->runInBackground();
