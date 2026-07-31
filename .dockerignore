@@ -1,0 +1,44 @@
+# CS-09: keep host artifacts out of the build context.
+# The Dockerfile runs composer install + npm install inside the
+# image so the host's vendor / node_modules / cache MUST NOT
+# clobber the container's PHP-8.3-compatible installs. Without
+# this, `COPY backend/ ./` overwrites vendor/ with the host's
+# vendor (built against PHP 8.5) and the runtime crashes with
+# "Your Composer dependencies require a PHP version >= 8.4.1".
+
+.git
+.gitignore
+
+# Backend
+backend/vendor
+backend/node_modules
+backend/storage/logs/*
+backend/storage/framework/cache/data/*
+backend/storage/framework/sessions/*
+backend/storage/framework/views/*
+backend/storage/framework/testing/*
+backend/bootstrap/cache/*.php
+backend/.env
+backend/.env.*
+backend/*.sqlite
+backend/database/database.sqlite
+
+# Frontend
+frontend/node_modules
+frontend/dist
+frontend/.vite
+
+# Editor / OS
+.idea
+.vscode
+.DS_Store
+
+# Docs + user work not needed at runtime
+docs
+mcp
+performance
+e2e
+
+# CI + tooling
+.github
+.claude

@@ -14,8 +14,8 @@ Sprint start HEAD:   `a4224fcceff08a73d7c348b4a3324417fe66a413`
 | CS-05 | [CS-05-cross-module-boundaries.md](CS-05-cross-module-boundaries.md) | PARTIALLY_FIXED | `0f33728` | Detector strengthened to catch app()/resolve()/new; 4 hidden resolves now allowlisted; frontend cross-module import removed; optional-module boot test added. 14 documented backend couplings still in retirement backlog. |
 | CS-06 | [CS-06-office-registration-captcha.md](CS-06-office-registration-captcha.md) | FIXED | `ee31466` | Captcha middleware wired to public office-registration submit; 6 tests covering missing/invalid/expired/replayed/valid + ProductionSafety guard. |
 | CS-07 | [CS-07-nashmi-required-nonce.md](CS-07-nashmi-required-nonce.md) | FIXED | `dff547c` | Nonce required in production; atomic Cache::add() dedupe; namespaced by signing-secret fingerprint so key rotation invalidates old nonces. |
-| CS-08 | [CS-08-application-reviews-index.md](CS-08-application-reviews-index.md) | FIXED | (pending) | Composite (reviewer_id, created_at) index; EXPLAIN on Postgres 15 confirms both dashboard queries use it (~9500x speedup on recent-decisions). |
-| CS-09 | CS-09-docker-runtime-stack.md | pending | — | — |
+| CS-08 | [CS-08-application-reviews-index.md](CS-08-application-reviews-index.md) | FIXED | `484b363` | Composite (reviewer_id, created_at) index; EXPLAIN on Postgres 15 confirms both dashboard queries use it (~9500x speedup on recent-decisions). |
+| CS-09 | [CS-09-docker-runtime-stack.md](CS-09-docker-runtime-stack.md) | FIXED | (pending) | Repaired Dockerfile (nginx/supervisord/php-fpm configs, redis ext, .dockerignore); six-service compose (app+worker+scheduler+pg+redis+minio) up-tested; live queued job round-trip. |
 | CS-10 | CS-10-remaining-medium-low-findings.md | pending | — | — |
 
 ## Governance

@@ -123,7 +123,7 @@ No regressions.
 ITEM_ID=CS-08
 ORIGINAL_FINDING=NEW-A17 (application_reviews.reviewer_id had no supporting composite index; Postgres does not auto-index FK columns)
 START_HEAD=dff547c
-END_HEAD=<recorded after commit — see ledger>
+END_HEAD=484b36374ae5c7deaa32883399ea8ade3c0e00e2
 STATUS=FIXED
 ROOT_CAUSE=Foreign-key columns are not automatically indexed by PostgreSQL. The original create table migration only added an index on (application_id, stage_id); every reviewer-dashboard query fell back to a seq scan proportional to total review volume across all reviewers.
 IMPLEMENTATION_DECISION=Add a single composite btree index (reviewer_id, created_at). Supports both the equality-range queries (WHERE reviewer_id = ? AND created_at >= ?) and the ordered-limit query (WHERE reviewer_id = ? ORDER BY created_at DESC LIMIT ...) via one physical structure. Did not add per-decision or per-stage columns because query evidence does not need them yet (avoid speculative width).
@@ -137,7 +137,7 @@ STATIC_ANALYSIS_RESULT=NOT_APPLICABLE (migration-only change; no PHP source touc
 RUNTIME_VERIFICATION=EXPLAIN (ANALYZE, BUFFERS) on PostgreSQL 15 shows both dashboard-shape queries switch from Seq Scan (~1220ms with JIT) to Bitmap Index Scan / Index Scan Backward using the new index (~0.13ms). Rollback + re-apply on Postgres clean.
 RESIDUAL_RISK=Index covers reviewer-side queries only; the reviewer *queue* claim/release path filters on `assigned_reviewer_id` on the applications table — a separate concern (Applications.assigned_reviewer_id also has no explicit index but the query pattern is different and less hot).
 EXTERNAL_BLOCKER=none
-COMMIT=<recorded after commit — see ledger>
+COMMIT=484b363
 NEXT_ITEM=CS-09
 ```
 
