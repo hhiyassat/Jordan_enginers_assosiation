@@ -158,7 +158,7 @@ in the committed state.
 ITEM_ID=CS-05
 ORIGINAL_FINDING=NEW-A6 / NEW-A7 (hidden app(FQCN) resolves invisible to boundary tests) + NEW-A8 (frontend Apply.tsx importing JeaProjects/pages)
 START_HEAD=3f7883a
-END_HEAD=<recorded after commit — see ledger>
+END_HEAD=0f3372861d4373f667c9f9a4f35224a8c75376c3
 STATUS=PARTIALLY_FIXED (hidden-resolve invisibility fully closed; frontend cross-module import removed; optional-module boot test added; full retirement of the 14 documented backend allowlist entries is CS-05 backlog)
 ROOT_CAUSE=Two distinct gaps: (1) the sibling boundary detector only matched `^use ...` lines, so runtime container resolutions and `new \Modules\...` instantiations slipped past it; (2) full removal of every sibling coupling requires FK-relation refactors + cross-cutting guard registry + seed migrations that are out of scope for a single closure sprint item.
 IMPLEMENTATION_DECISION=Close the invisibility gap: strengthen the detector to catch app/resolve/make/new patterns and register the four hidden resolves in SM_ALLOWED_IMPORTS with retirement notes. Move the one frontend cross-module import to its true home (ProjectContextHeader → JeaServices/pages). Add an optional-module boot test that publishes the honest independence matrix. Explicitly leave the 14 documented backend couplings for the CS-05 residual backlog.
@@ -173,7 +173,7 @@ STATIC_ANALYSIS_RESULT=PASS (tsc --noEmit exit 0; vite build exit 0; PHPStan on 
 RUNTIME_VERIFICATION=Full backend + frontend + build all green post-changes. Detector self-test: deliberately introducing a new cross-module `use` in JeaDues fails the boundary test with a clear message; reverted for the commit.
 RESIDUAL_RISK=15 SM_ALLOWED_IMPORTS entries remain (14 old + 1 net-new for the hidden-resolves bundle). The coupled cluster jea-services / jea-projects / jea-discipline can still not be disabled independently. Retirement of each entry is CS-05-BL-1..CS-05-BL-6 in residual-backlog.md.
 EXTERNAL_BLOCKER=none
-COMMIT=<recorded after commit — see ledger>
+COMMIT=0f33728
 NEXT_ITEM=CS-06
 ```
 

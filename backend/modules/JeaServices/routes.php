@@ -71,8 +71,17 @@ Route::prefix('api/v1')->group(function () {
     // Office-registration signup — anonymous submit. Rate-limited so a
     // scripted attacker can't flood the queue with junk registrations.
     // See docs/architecture/office-registration-flow.md.
+    //
+    // CS-06 (2026-07-31): captcha middleware added — the throttle
+    // slows scripted floods but a real bot farm can burn 5 req/min
+    // per IP indefinitely. The captcha aliased by the Captcha plugin
+    // is one-time-use (see CaptchaService::verify — cache entry is
+    // dropped on any verify attempt) so replays fail. Middleware
+    // short-circuits when CAPTCHA_ENABLED=false (local dev + test
+    // fixtures); production requires CAPTCHA_ENABLED=true per
+    // ProductionSafety.
     Route::post('office-registrations', [OfficeRegistrationController::class, 'submit'])
-        ->middleware('throttle:5,1');
+        ->middleware(['throttle:5,1', 'captcha']);
 });
 
 // ── Gateway payment webhook (no auth — signature-verified) ────────
