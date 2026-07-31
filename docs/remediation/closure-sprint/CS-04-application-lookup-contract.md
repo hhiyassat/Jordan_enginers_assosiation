@@ -135,7 +135,7 @@ The other 14 items are the CS-05 sibling-coupling backlog.
 ITEM_ID=CS-04
 ORIGINAL_FINDING=NEW-A3 (ApplicationLookup contract had zero production consumers; 15 sibling files still imported Modules\JeaServices\Models\Application directly)
 START_HEAD=89bfc40
-END_HEAD=<recorded after commit — see ledger>
+END_HEAD=3f7883a00f75c284b3be7f5ed98e42643be9780c
 STATUS=FIXED (adopted — contract now has a production consumer)
 ROOT_CAUSE=The contract was added as scaffolding for a future migration but nothing consumed it. The retirement notes in SM_ALLOWED_IMPORTS were prose without a first mover.
 IMPLEMENTATION_DECISION=Adopt the contract via SanctionGuard — the sibling consumer whose Application-field footprint (applicant_id only) fits ApplicationSnapshot exactly and whose call site is production-critical (application submit path). Add a public static snapshotOf() helper so callers already holding the Eloquent model don't need a second DB round-trip. Explicitly leave the 6 backlog items (QuotaLedger, CapacityGuard, LegalFineController, LegalFine.php, SupervisionTransfer.php, SupervisionTransferService, RemindExpiries) as CS-05 sibling-coupling work because each needs richer contract extensions or an architectural move (FK relations, whereHas, etc.) that would balloon CS-04 scope.
@@ -149,7 +149,7 @@ STATIC_ANALYSIS_RESULT=PASS on CS-04-touched code (SanctionGuard + EloquentAppli
 RUNTIME_VERIFICATION=ApplicationController::submit calls the contract via a static-helper snapshot; the sanction gate rejects a submitting user under a blocking sanction identically to the pre-CS-04 flow. Full suite 895 tests / 891 passed / 4 skipped confirms no behavioural regression.
 RESIDUAL_RISK=Only 1 of 15 SM_ALLOWED_IMPORTS entries retired. The remaining 14 are CS-05 backlog. Contract still lacks a `findByPaymentReference(string): ?ApplicationSnapshot` method that a future Platform-side PaymentCallbackController could use; CS-03 kept its callback in JEA precisely to avoid extending the contract mid-sprint. That extension is in the CS-05 shortlist.
 EXTERNAL_BLOCKER=none
-COMMIT=<recorded after commit — see ledger>
+COMMIT=3f7883a
 NEXT_ITEM=CS-05
 ```
 

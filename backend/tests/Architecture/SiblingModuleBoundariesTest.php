@@ -98,6 +98,21 @@ class SiblingModuleBoundariesTest extends TestCase
         // App\Contracts\Applications\ApplicationSnapshot; the JEA
         // ApplicationController maps at the boundary via
         // EloquentApplicationLookup::snapshotOf($app).
+
+        // ── CS-05 · previously-hidden cross-JEA-module container
+        //           resolutions surfaced by the strengthened detector.
+        //           These files reach into a sibling via
+        //           `app(\Modules\<other>\...)` rather than a `use`.
+        //           Retirement: contribute each guard/service to a
+        //           Platform-owned registry so the caller never names
+        //           the concrete sibling class.
+        'JeaServices/Http/Controllers/ApplicationController.php' =>
+            'Three sibling resolves in submit(): app(\\Modules\\JeaProjects\\Engine\\QuotaLedger) '
+            . '(overflow surcharge + capacity) and app(\\Modules\\JeaDiscipline\\Engine\\SanctionGuard). '
+            . 'SanctionGuard now takes ApplicationSnapshot (CS-04); the resolves stay until '
+            . 'either the CrossCuttingSubmissionGuard registry accepts external contributions '
+            . '(JeaDiscipline register()) or an OverflowSurchargeCalculator contract lands.',
+
         'JeaDiscipline/Http/Controllers/LegalFineController.php' =>
             'Loads Application to attach a fine. Retirement: ApplicationLookup + a small '
             . 'ApplicationRef DTO for attach-target lookups.',
@@ -114,6 +129,12 @@ class SiblingModuleBoundariesTest extends TestCase
      * Sibling boundary — DETECT any UNDOCUMENTED cross-JEA-module import.
      * Fails the moment a new one is introduced (must be added to
      * SM_ALLOWED_IMPORTS with a retirement path).
+     *
+     * CS-05: also matches hidden container resolutions and direct
+     * `new` instantiations by FQCN — these previously slipped past
+     * the `^use ...` detector (Application::booted, ApplicationController's
+     * app(\Modules\...) calls). Detection unifies visible imports with
+     * hidden resolves so future coupling has one policy.
      */
     public function test_no_undocumented_cross_jea_module_imports(): void
     {
@@ -131,25 +152,20 @@ class SiblingModuleBoundariesTest extends TestCase
             }
 
             $content = (string) file_get_contents($file->getPathname());
-            preg_match_all('/^use\s+(Modules\\\\Jea[^;\s]+)/m', $content, $matches);
+            $found = $this->crossModuleReferencesIn($content, $ownModule);
 
-            foreach (($matches[1] ?? []) as $import) {
-                foreach (self::JEA_MODULES as $other) {
-                    if ($other === $ownModule) continue;
-                    if (str_starts_with($import, "Modules\\{$other}\\")) {
-                        if (!isset(self::SM_ALLOWED_IMPORTS[$relative])) {
-                            $violations[$relative] = $violations[$relative] ?? [];
-                            $violations[$relative][] = $import;
-                        }
-                        break;
-                    }
-                }
+            if ($found === []) {
+                continue;
             }
+            if (isset(self::SM_ALLOWED_IMPORTS[$relative])) {
+                continue;
+            }
+            $violations[$relative] = $found;
         }
 
         $this->assertEmpty(
             $violations,
-            "UNDOCUMENTED cross-JEA-module imports detected. Either extract a Platform "
+            "UNDOCUMENTED cross-JEA-module coupling detected. Either extract a Platform "
             . "contract (e.g. App\\Contracts\\Applications\\ApplicationLookup) and depend "
             . "on that, or add the file to SM_ALLOWED_IMPORTS with an explicit "
             . "retirement path.\n"
@@ -158,10 +174,69 @@ class SiblingModuleBoundariesTest extends TestCase
     }
 
     /**
+     * Extract every cross-JEA-module reference in the file's source,
+     * covering both visible `use` imports AND hidden runtime resolves.
+     *
+     * Detected patterns:
+     *   • ^use Modules\<Other>\...
+     *   • app(\Modules\<Other>\...::class)
+     *   • resolve(\Modules\<Other>\...::class)
+     *   • \App::make(\Modules\<Other>\...::class)  ← rare, still caught
+     *   • new \Modules\<Other>\...
+     *
+     * @return list<string>
+     */
+    private function crossModuleReferencesIn(string $content, string $ownModule): array
+    {
+        $found  = [];
+        $others = array_filter(self::JEA_MODULES, fn ($m) => $m !== $ownModule);
+
+        // 1) Visible `use` imports.
+        if (preg_match_all('/^use\s+(Modules\\\\Jea[^;\s]+)/m', $content, $m)) {
+            foreach ($m[1] as $import) {
+                foreach ($others as $other) {
+                    if (str_starts_with($import, "Modules\\{$other}\\")) {
+                        $found[] = "use {$import}";
+                        break;
+                    }
+                }
+            }
+        }
+
+        // 2) Hidden resolves via app(...) / resolve(...) / make(...).
+        $callPattern = '/\b(?:app|resolve|make)\s*\(\s*\\\\?(Modules\\\\Jea[^:\s\)\)]+)::class\s*\)/';
+        if (preg_match_all($callPattern, $content, $m)) {
+            foreach ($m[1] as $fqcn) {
+                foreach ($others as $other) {
+                    if (str_starts_with($fqcn, "Modules\\{$other}\\")) {
+                        $found[] = "app({$fqcn}::class)";
+                        break;
+                    }
+                }
+            }
+        }
+
+        // 3) Direct instantiation via `new \Modules\Other\...`.
+        $newPattern = '/\bnew\s+\\\\?(Modules\\\\Jea[^(\s]+)/';
+        if (preg_match_all($newPattern, $content, $m)) {
+            foreach ($m[1] as $fqcn) {
+                foreach ($others as $other) {
+                    if (str_starts_with($fqcn, "Modules\\{$other}\\")) {
+                        $found[] = "new {$fqcn}";
+                        break;
+                    }
+                }
+            }
+        }
+
+        return array_values(array_unique($found));
+    }
+
+    /**
      * Sanity check: every entry in SM_ALLOWED_IMPORTS must correspond
      * to a file that still contains at least one cross-JEA-module
-     * `use` — otherwise the entry is stale and should be removed
-     * (that's a completed migration).
+     * reference — visible OR hidden. Otherwise the entry is stale
+     * and should be removed (that's a completed migration).
      */
     public function test_sm_allowlist_entries_still_have_violations(): void
     {
@@ -174,19 +249,11 @@ class SiblingModuleBoundariesTest extends TestCase
             }
             $content = (string) file_get_contents($path);
             $ownModule = $this->moduleFor($relative);
-            $foundOtherImport = false;
-            if (preg_match_all('/^use\s+(Modules\\\\Jea[^;\s]+)/m', $content, $matches)) {
-                foreach (($matches[1] ?? []) as $import) {
-                    foreach (self::JEA_MODULES as $other) {
-                        if ($other !== $ownModule && str_starts_with($import, "Modules\\{$other}\\")) {
-                            $foundOtherImport = true;
-                            break 2;
-                        }
-                    }
-                }
+            if ($ownModule === null) {
+                continue;
             }
-            if (!$foundOtherImport) {
-                $stale[] = "{$relative} (no cross-module imports remain — congrats, remove entry)";
+            if ($this->crossModuleReferencesIn($content, $ownModule) === []) {
+                $stale[] = "{$relative} (no cross-module refs remain — congrats, remove entry)";
             }
         }
 
