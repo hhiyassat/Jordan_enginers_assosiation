@@ -382,12 +382,50 @@ class ApplicationController extends Controller
         return response()->json(['document' => $doc], 201);
     }
 
+    // ── Document download (P1-09) ───────────────────────────────────
+    //
+    // Serves a previously-uploaded ApplicationDocument to a caller who
+    // has read access to the parent Application. The invariant:
+    //   findAccessible() first — that enforces both the org filter
+    //   (BelongsToOrganization) and the applicant-own-only rule for
+    //   applicants. Then look up the document scoped by application_id
+    //   so a cross-application document ID request returns 404.
+    // Cross-tenant callers get 404 (findAccessible throws
+    // ModelNotFoundException) — never a redirect or a signed URL that
+    // could leak the storage path.
+
+    public function downloadDocument(Request $request, int $id, int $docId): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        $app = $this->findAccessible($request, $id);
+
+        $doc = ApplicationDocument::where('application_id', $app->id)
+            ->where('id', $docId)
+            ->firstOrFail();
+
+        $disk = \Illuminate\Support\Facades\Storage::disk($doc->disk);
+        if (! $disk->exists($doc->path)) {
+            abort(404, 'الملف غير متوفر.');
+        }
+
+        return $disk->download(
+            $doc->path,
+            $doc->original_filename ?: $doc->stored_filename,
+            [
+                'Content-Type'        => (string) ($doc->mime_type ?: 'application/octet-stream'),
+                // Never index/cache: the response is a scoped-authorized
+                // private file, not a public asset.
+                'Cache-Control'       => 'private, no-store',
+                'X-Content-Type-Options' => 'nosniff',
+            ],
+        );
+    }
+
     // Workstream 5B: reviewer queue + review dashboard + claim + decide
     // + confirmPayment + issueCertificate + verifyCertificate +
     // downloadCertificatePdf moved to purpose-built controllers.
     // Routes updated to match. ApplicationController now owns only the
     // JEA application-lifecycle CRUD (index, show, store, update,
-    // submit, uploadDocument).
+    // submit, uploadDocument, downloadDocument).
 
     // ── Private helpers ───────────────────────────────────────────────
 

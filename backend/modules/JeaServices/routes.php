@@ -96,6 +96,11 @@ Route::prefix('api/v1')->middleware(['auth:sanctum', 'token.inactivity', 'passwo
         Route::post('applications/{id}/submit',                [ApplicationController::class, 'submit']);
         Route::post('applications/{id}/documents',             [ApplicationController::class, 'uploadDocument'])
             ->middleware('throttle:document-upload');
+        // P1-09: authorized document download. findAccessible enforces
+        // both org scope and applicant-own-only; a cross-tenant / cross-
+        // application caller receives 404.
+        Route::get ('applications/{id}/documents/{docId}',     [ApplicationController::class, 'downloadDocument'])
+            ->whereNumber('id')->whereNumber('docId');
     });
 
     // Reviewer surface (staff/auditor/admin).
