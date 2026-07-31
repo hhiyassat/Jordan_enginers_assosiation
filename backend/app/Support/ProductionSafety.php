@@ -188,9 +188,14 @@ final class ProductionSafety
 
     private function checkNashmiSigningSecret(): void
     {
-        $secret = (string) config('integrations.nashmi.signing_secret', '');
+        // Nashmi lives at backend/config/nashmi.php; there is no
+        // `integrations.nashmi.*` sub-tree — `integrations.php` only
+        // holds the provider-class registry. Reading the wrong key
+        // always resolved to empty, causing every prod boot to abort
+        // even when NASHMI_SIGNING_SECRET was set (see CS-01).
+        $secret = (string) config('nashmi.signing_secret', '');
         if ($secret === '') {
-            $this->violations[] = 'integrations.nashmi.signing_secret is empty; production must set NASHMI_SIGNING_SECRET before accepting webhook traffic.';
+            $this->violations[] = 'nashmi.signing_secret is empty; production must set NASHMI_SIGNING_SECRET before accepting webhook traffic.';
         }
     }
 

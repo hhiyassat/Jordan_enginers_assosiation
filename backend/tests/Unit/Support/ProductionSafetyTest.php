@@ -141,11 +141,40 @@ class ProductionSafetyTest extends TestCase
         $this->assertContainsSubstring('GSB_ALLOWED_IPS is empty', $violations);
     }
 
+    // ── NEW-A1 / CS-01 · Nashmi signing-secret key ────────────────
+
     public function test_missing_nashmi_signing_secret_is_a_violation(): void
     {
-        config(['integrations.nashmi.signing_secret' => '']);
+        config(['nashmi.signing_secret' => null]);
         $violations = (new ProductionSafety($this->app))->collectViolations();
-        $this->assertContainsSubstring('integrations.nashmi.signing_secret is empty', $violations);
+        $this->assertContainsSubstring('nashmi.signing_secret is empty', $violations);
+    }
+
+    public function test_empty_string_nashmi_signing_secret_is_a_violation(): void
+    {
+        config(['nashmi.signing_secret' => '']);
+        $violations = (new ProductionSafety($this->app))->collectViolations();
+        $this->assertContainsSubstring('nashmi.signing_secret is empty', $violations);
+    }
+
+    public function test_populated_nashmi_signing_secret_is_ok(): void
+    {
+        config(['nashmi.signing_secret' => 'a-strong-shared-secret']);
+        $violations = (new ProductionSafety($this->app))->collectViolations();
+        $this->assertNotContainsSubstring('nashmi.signing_secret is empty', $violations);
+    }
+
+    public function test_wrong_legacy_key_does_not_shadow_correct_one(): void
+    {
+        // Regression guard: setting a NON-canonical key must not silence
+        // the real check. If someone later re-introduces integrations.nashmi.*,
+        // populating that alone must not satisfy the validator.
+        config([
+            'integrations.nashmi.signing_secret' => 'wrong-key-value',
+            'nashmi.signing_secret'              => '',
+        ]);
+        $violations = (new ProductionSafety($this->app))->collectViolations();
+        $this->assertContainsSubstring('nashmi.signing_secret is empty', $violations);
     }
 
     public function test_captcha_disabled_is_a_violation(): void
@@ -163,6 +192,47 @@ class ProductionSafetyTest extends TestCase
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('Refusing to boot in production');
         ProductionSafety::enforce($this->app);
+    }
+
+    // ── CS-01 · Safe production boot regression guard ─────────────
+
+    public function test_all_safe_production_settings_produce_zero_violations(): void
+    {
+        $realGateway = new class implements PaymentGateway {
+            public function initiate(\App\Services\Payment\PaymentIntent $intent): \App\Services\Payment\PaymentInitiation {
+                throw new \LogicException('stub');
+            }
+            public function verifyCallback(array $callbackPayload): \App\Services\Payment\PaymentReceipt {
+                throw new \LogicException('stub');
+            }
+            public function refund(string $paymentReference, ?string $reason = null): bool {
+                return false;
+            }
+        };
+        $this->app->instance(PaymentGateway::class, $realGateway);
+        $this->app->bind(JeaMembershipVerifier::class, HttpJeaMembershipVerifier::class);
+
+        config([
+            'filesystems.default'           => 's3',
+            'queue.default'                 => 'redis',
+            'cache.default'                 => 'redis',
+            'session.driver'                => 'redis',
+            'app.debug'                     => false,
+            'session.secure'                => true,
+            'session.http_only'             => true,
+            'sanctum.expiration'            => 480,
+            'gsb.allowed_ips'               => ['10.0.0.0/8'],
+            'nashmi.signing_secret'         => 'a-strong-shared-secret',
+            'esp.captcha_enabled'           => true,
+            'esp.password_check_compromised'=> true,
+        ]);
+
+        $violations = (new ProductionSafety($this->app))->collectViolations();
+
+        $this->assertSame([], $violations,
+            'Expected zero violations with all safe production settings, got: '
+            . json_encode($violations, JSON_UNESCAPED_UNICODE)
+        );
     }
 
     // ── helpers ───────────────────────────────────────────────────

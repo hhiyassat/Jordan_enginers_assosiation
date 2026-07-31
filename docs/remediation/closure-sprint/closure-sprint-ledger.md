@@ -1,0 +1,25 @@
+# Closure Sprint Ledger
+
+Sprint start branch: `remediation/architecture-security-production-readiness`
+Sprint start HEAD:   `a4224fcceff08a73d7c348b4a3324417fe66a413`
+
+## Item log
+
+| Item | Report | Status | Commit | Notes |
+| ---- | ------ | ------ | ------ | ----- |
+| CS-01 | [CS-01-new-a1-production-safety.md](CS-01-new-a1-production-safety.md) | FIXED | (pending) | Nashmi signing-secret config key corrected + regression tests. |
+| CS-02 | CS-02-queue-runtime-integration.md | pending | — | — |
+| CS-03 | CS-03-payment-gateway-runtime.md | pending | — | — |
+| CS-04 | CS-04-application-lookup-contract.md | pending | — | — |
+| CS-05 | CS-05-cross-module-boundaries.md | pending | — | — |
+| CS-06 | CS-06-office-registration-captcha.md | pending | — | — |
+| CS-07 | CS-07-nashmi-required-nonce.md | pending | — | — |
+| CS-08 | CS-08-application-reviews-index.md | pending | — | — |
+| CS-09 | CS-09-docker-runtime-stack.md | pending | — | — |
+| CS-10 | CS-10-remaining-medium-low-findings.md | pending | — | — |
+
+## Governance
+
+- Working under P0 R2 emergency single-human amendment (Hussein sole signatory; Claude Code executor; ChatGPT reviewer).
+- Local commits only. No push, no tag, no merge, no force-reset.
+- User-owned untracked files preserved throughout.
