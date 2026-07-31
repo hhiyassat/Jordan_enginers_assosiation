@@ -8,6 +8,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Middleware\ReadTokenFromCookie;
 use App\Models\AuditLog;
 use App\Models\User;
+use App\Support\PasswordHistory;
+use App\Support\PasswordPolicy;
 use App\Support\SecurityEvents;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -172,19 +174,25 @@ class AuthController extends Controller
         $data = $request->validate([
             'name'             => ['required', 'string', 'max:255'],
             'email'            => ['required', 'email', 'unique:users,email'],
-            'password'         => ['required', 'confirmed', Password::min(8)->mixedCase()->numbers()],
+            'password'         => ['required', 'confirmed', PasswordPolicy::baseRule()],
             'organization_id'  => ['required', 'exists:organizations,id'],
             'phone'            => ['nullable', 'string', 'max:20'],
         ]);
+
+        $hash = Hash::make($data['password']);
 
         $user = User::create([
             'organization_id'    => $data['organization_id'],
             'name'               => $data['name'],
             'email'              => $data['email'],
-            'password'           => Hash::make($data['password']),
+            'password'           => $hash,
             'role'               => 'applicant',
             'password_changed_at' => now(),
         ]);
+
+        // P1-08: seed history with the initial password so first
+        // change cannot round-trip back to it.
+        PasswordHistory::remember($user, $hash);
 
         $token = $user->createToken('esp-token')->plainTextToken;
 
@@ -219,7 +227,12 @@ class AuthController extends Controller
 
         $rules = [
             'current_password' => ['required', 'string'],
-            'password'         => ['required', 'confirmed', Password::min(8)->mixedCase()->numbers()],
+            'password'         => [
+                'required',
+                'confirmed',
+                PasswordPolicy::baseRule(),
+                PasswordPolicy::distinctFromHistoryFor($user),
+            ],
         ];
         // On first login the superuser may pick their own login email.
         if ($user->isSuperuser() && $user->must_change_password) {
@@ -231,8 +244,9 @@ class AuthController extends Controller
             return response()->json(['message' => 'كلمة المرور الحالية غير صحيحة.'], 422);
         }
 
+        $newHash = Hash::make($data['password']);
         $update = [
-            'password'             => Hash::make($data['password']),
+            'password'             => $newHash,
             'must_change_password' => false,
             'password_changed_at'  => now(),
         ];
@@ -240,6 +254,9 @@ class AuthController extends Controller
             $update['email'] = $data['email'];
         }
         $user->update($update);
+
+        // P1-08: remember the new hash so history rule catches reuse.
+        PasswordHistory::remember($user, $newHash);
 
         // P0-E-2: password_changed event for the security channel.
         SecurityEvents::passwordChanged($request, $user->id);

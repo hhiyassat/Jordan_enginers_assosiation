@@ -15,6 +15,14 @@ return [
     // Password policy (SEC-004, SEC-012)
     'password_expiry_days' => (int) env('PASSWORD_EXPIRY_DAYS', 90),
 
+    // P1-08: rolling history size (rejects reuse of the last N hashes).
+    'password_history_size' => (int) env('PASSWORD_HISTORY_SIZE', 5),
+
+    // P1-08: HIBP k-anonymity check via Password::uncompromised(). Off
+    // by default because the check needs outbound network and can be
+    // flaky under CI; ProductionSafety enforces it true in production.
+    'password_check_compromised' => filter_var(env('PASSWORD_CHECK_COMPROMISED', false), FILTER_VALIDATE_BOOLEAN),
+
     // P2 dead-key cleanup (architecture review): the four legacy keys
     //   'default_sla_hours', 'max_upload_size_mb', 'rate_limit_login',
     //   'rate_limit_api'

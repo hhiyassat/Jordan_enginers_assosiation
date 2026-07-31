@@ -81,8 +81,8 @@ class SuperuserFirstLoginTest extends TestCase
         Sanctum::actingAs($user);
         $this->postJson('/api/v1/auth/password/change', [
             'current_password'      => 'OldPass1!',
-            'password'              => 'NewPass1!',
-            'password_confirmation' => 'NewPass1!',
+            'password'              => 'NewPass1234!',   // P1-08: 12-char minimum
+            'password_confirmation' => 'NewPass1234!',
         ])->assertOk();
     }
 

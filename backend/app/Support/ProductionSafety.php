@@ -78,6 +78,7 @@ final class ProductionSafety
         $this->checkGsbIpAllowlist();
         $this->checkNashmiSigningSecret();
         $this->checkCaptchaEnabled();
+        $this->checkPasswordCompromisedGate();
 
         return $this->violations;
     }
@@ -197,6 +198,13 @@ final class ProductionSafety
     {
         if ((bool) config('esp.captcha_enabled', false) !== true) {
             $this->violations[] = 'CAPTCHA_ENABLED must be true in production so login/register/office-registration are protected.';
+        }
+    }
+
+    private function checkPasswordCompromisedGate(): void
+    {
+        if ((bool) config('esp.password_check_compromised', false) !== true) {
+            $this->violations[] = 'PASSWORD_CHECK_COMPROMISED must be true in production so leaked passwords are rejected via the HIBP k-anonymity API.';
         }
     }
 }

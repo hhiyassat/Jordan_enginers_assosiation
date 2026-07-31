@@ -73,7 +73,7 @@ class SuperuserScopeTest extends TestCase
         $this->postJson('/api/v1/admin/users', [
             'name'     => 'new admin',
             'email'    => 'new-admin@t.esp',
-            'password' => 'Aa123456',
+            'password' => 'Aa123456!Bcd',
             'role'     => 'admin',
         ])->assertCreated();
     }
