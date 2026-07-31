@@ -29,9 +29,9 @@ These documents are created in this order, before `composer create-project`:
 | 1 | Build Contract | `BUILD_CONTRACT.md` (this file) | Compliance authority | AUTHORED |
 | 2 | Requirements Register | `REQUIREMENTS.md` | §6 — all BR/FR/NFR/SEC | AUTHORED |
 | 3 | Architecture Document | `ARCHITECTURE.md` | §7.1 — 7 viewpoints | STUB (P4-2) |
-| 4 | Security Controls | `docs/SECURITY_CONTROLS.md` | §8.1 — 8 control groups | STUB (P4-2) |
+| 4 | Security Controls | `docs/SECURITY_CONTROLS.md` | §8.1 — 8 control groups | AUTHORED (2026-07-31) |
 | 5 | EDA Decision Chain | `docs/EDA_DECISION_CHAIN.md` | §13.2 — per-operation EDA mapping | AUTHORED |
-| 6 | Business Rules Register | `docs/BUSINESS_RULES_REGISTER.md` | §4.3 — Fixed vs Derivable | STUB (P4-2) |
+| 6 | Business Rules Register | `docs/BUSINESS_RULES_REGISTER.md` | §4.3 — Fixed vs Derivable | AUTHORED (2026-07-31) |
 | 7 | ADR Template | `docs/adr/ADR-TEMPLATE.md` | §12.2 — all 12 fields | AUTHORED (2026-07-31) |
 | 8 | ADR-001 | `docs/adr/ADR-001-schema-driven-engine.md` | First architectural decision | AUTHORED (2026-07-31, retroactive) |
 | 9 | Methodology Audit | `METHODOLOGY_AUDIT.md` | Compliance tracker — updated alongside code | AUTHORED |
