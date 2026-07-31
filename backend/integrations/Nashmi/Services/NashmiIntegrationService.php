@@ -2,8 +2,8 @@
 
 namespace Integrations\Nashmi\Services;
 
+use App\Contracts\Services\ServiceDefinitionSnapshot;
 use Integrations\Nashmi\Models\IntegrationCycle;
-use Modules\JeaServices\Models\ServiceDefinition;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Log;
  * Auth: X-Integration-Key header (shared secret)
  *
  * Two outbound use-cases:
- *   1. pushService()    — push a ServiceDefinition as a new requirements project
+ *   1. pushService()    — push a ServiceDefinitionSnapshot as a new requirements project
  *   2. notifyCodeDone() — notify Nashmi that code for a cycle is ready for review
  */
 class NashmiIntegrationService
@@ -36,7 +36,7 @@ class NashmiIntegrationService
 
     // ── 1. Push a service definition as a project to Nashmi ──────────────────
 
-    public function pushService(ServiceDefinition $service): array
+    public function pushService(ServiceDefinitionSnapshot $service): array
     {
         $pdfContent = $this->generateServiceRequirementsDoc($service);
         $tmpPath    = $this->writeMinimalPdf($pdfContent, 'esp_service_' . $service->id);
@@ -138,7 +138,7 @@ class NashmiIntegrationService
 
     // ── Document generators ───────────────────────────────────────────────────
 
-    private function generateServiceRequirementsDoc(ServiceDefinition $service): string
+    private function generateServiceRequirementsDoc(ServiceDefinitionSnapshot $service): string
     {
         $now     = now()->format('Y-m-d H:i');
         $nameEn  = preg_replace('/[^\x20-\x7E]/', '', $service->name_en ?? '');
@@ -186,7 +186,7 @@ class NashmiIntegrationService
         TXT;
     }
 
-    private function buildServiceDescription(ServiceDefinition $service): string
+    private function buildServiceDescription(ServiceDefinitionSnapshot $service): string
     {
         return sprintf(
             'ESP service module: %s (%s). Schema-driven — %d fields, %d docs, %d stages. Auto-generated from ESP service registry on %s.',

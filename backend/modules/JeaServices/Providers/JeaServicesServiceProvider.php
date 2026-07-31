@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\JeaServices\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use App\Contracts\Services\ServiceLockLookup;
 use Modules\JeaServices\Engine\CadastralConflictGuard;
 use Modules\JeaServices\Engine\CrossCuttingSubmissionPipeline;
 use Modules\JeaServices\Engine\FakeJeaMembershipVerifier;
@@ -12,6 +13,7 @@ use Modules\JeaServices\Engine\JeaMembershipVerifier;
 use Modules\JeaServices\Engine\OwnerMatchClearanceGuard;
 use Modules\JeaServices\Engine\ServiceSubmissionGuardRegistry;
 use Modules\JeaServices\Engine\Srv001Guard;
+use Modules\JeaServices\Services\EloquentServiceLockLookup;
 
 /**
  * JeaServicesServiceProvider — Workstream 8C.
@@ -108,6 +110,12 @@ class JeaServicesServiceProvider extends ServiceProvider
         if (!$this->app->environment('production')) {
             $this->app->bind(JeaMembershipVerifier::class, FakeJeaMembershipVerifier::class);
         }
+
+        // H-07: Plugins + integrations that need to gate on JEA service-
+        // lock state depend on the ServiceLockLookup contract in Platform,
+        // never on `Modules\JeaServices\Models\ServiceDefinition`. This
+        // module supplies the Eloquent implementation.
+        $this->app->bind(ServiceLockLookup::class, EloquentServiceLockLookup::class);
     }
 
     public function boot(): void

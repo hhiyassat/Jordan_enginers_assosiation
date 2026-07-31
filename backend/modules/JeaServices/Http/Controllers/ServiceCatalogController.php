@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Modules\JeaServices\Http\Controllers;
 
 use Modules\JeaServices\Engine\SchemaStructureValidator;
-use App\Http\Concerns\RespondsWithLockedService;
+use Modules\JeaServices\Http\Concerns\RespondsWithLockedService;
 use App\Http\Controllers\Controller;
 use Modules\JeaServices\Models\ServiceDefinition;
 use Illuminate\Http\JsonResponse;
@@ -157,7 +157,7 @@ class ServiceCatalogController extends Controller
         return response()->json(['service' => $service, 'message' => 'تم إقفال الخدمة — أصبحت للقراءة فقط.']);
     }
 
-    // lockedResponse() moved to App\Http\Concerns\RespondsWithLockedService
+    // lockedResponse() moved to Modules\JeaServices\Http\Concerns\RespondsWithLockedService
     // (Workstream 5). Both ServiceCatalogController and ServiceFeesController
     // consume the trait so the 423 envelope stays consistent.
 

@@ -12,8 +12,8 @@ use App\Models\AuditLog;
 use Modules\JeaServices\Models\Certificate;
 use Modules\JeaServices\Models\ServiceDefinition;
 use App\Models\User;
-use App\Services\Notifications\NotificationService;
 use App\Services\Payment\PaymentReceipt;
+use Modules\JeaServices\Services\JeaNotificationService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -149,7 +149,7 @@ class WorkflowEngine
         // must not block the workflow — swallow + log so the submit is
         // still returned success on any downstream notification failure.
         try {
-            app(NotificationService::class)->emitApplicationSubmitted($app->fresh());
+            app(JeaNotificationService::class)->emitApplicationSubmitted($app->fresh());
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::warning('notification emit failed', [
                 'event' => 'application.submitted',
@@ -442,7 +442,7 @@ class WorkflowEngine
         // case as under_review) so the notification would be noise.
         if ($nextStageIfApproving === null) {
             try {
-                app(NotificationService::class)
+                app(JeaNotificationService::class)
                     ->emitApplicationDecided($app->fresh(), $actor, $decision);
             } catch (\Throwable $e) {
                 \Illuminate\Support\Facades\Log::warning('notification emit failed', [
@@ -532,7 +532,7 @@ class WorkflowEngine
 
         // JORD-9: applicant should see the paid confirmation in the bell.
         try {
-            app(NotificationService::class)->emitPaymentConfirmed($app->fresh());
+            app(JeaNotificationService::class)->emitPaymentConfirmed($app->fresh());
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::warning('notification emit failed', [
                 'event' => 'application.paid',
@@ -625,7 +625,7 @@ class WorkflowEngine
 
         // JORD-9: notify the applicant that the certificate is ready.
         try {
-            app(NotificationService::class)->emitCertificateIssued($app->fresh());
+            app(JeaNotificationService::class)->emitCertificateIssued($app->fresh());
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::warning('notification emit failed', [
                 'event' => 'application.certificate_issued',
@@ -709,37 +709,20 @@ class WorkflowEngine
     private function allocateCertificateSerial(int $orgId, int $year): int
     {
         // H-03: The atomic sequence is `INSERT if missing → SELECT
-        // FOR UPDATE → increment`. Previously we called firstOrCreate
-        // outside the lockForUpdate scope: the FIRST-ever call for a
-        // given (org, year) had a race window between two concurrent
-        // firstOrCreate reads, and the loser got a duplicate-key
-        // violation that bubbled up as a 500 (the outer transaction
-        // was not wrapped with retry attempts). Once a row existed
-        // the SELECT FOR UPDATE serialized cleanly.
-        //
-        // Fix: attempt the INSERT eagerly; swallow the unique-constraint
-        // violation (that's precisely the concurrent-first-writer case
-        // we expect); then take the SELECT FOR UPDATE lock which is
-        // guaranteed to find the row now. The winner and loser both
-        // reach the lock; the winner increments, then the loser
-        // proceeds and increments — each gets a distinct serial.
-        try {
-            \Modules\JeaServices\Models\CertificateCounter::create([
-                'organization_id' => $orgId,
-                'year'            => $year,
-                'next_serial'     => 1,
-            ]);
-        } catch (\Illuminate\Database\UniqueConstraintViolationException) {
-            // Expected under concurrent first-writer race. Fall through.
-        } catch (\Illuminate\Database\QueryException $e) {
-            // Older SQLite versions raise a plain QueryException with
-            // SQLSTATE 23000 rather than the specialized subclass.
-            // Preserve legacy compatibility.
-            $sqlState = $e->errorInfo[0] ?? null;
-            if (!in_array($sqlState, ['23000', '23505'], true)) {
-                throw $e;
-            }
-        }
+        // FOR UPDATE → increment`. The INSERT step uses insertOrIgnore
+        // (portable across Postgres `ON CONFLICT DO NOTHING`, MySQL
+        // `INSERT IGNORE`, SQLite `INSERT OR IGNORE`) so a concurrent
+        // race in the enclosing transaction does not poison the
+        // Postgres transaction (which would surface as 25P02 on the
+        // next statement). After this call the counter row exists —
+        // the SELECT FOR UPDATE below finds it deterministically.
+        \Illuminate\Support\Facades\DB::table('certificate_counters')->insertOrIgnore([
+            'organization_id' => $orgId,
+            'year'            => $year,
+            'next_serial'     => 1,
+            'created_at'      => now(),
+            'updated_at'      => now(),
+        ]);
 
         $row = \Modules\JeaServices\Models\CertificateCounter::where('organization_id', $orgId)
             ->where('year', $year)

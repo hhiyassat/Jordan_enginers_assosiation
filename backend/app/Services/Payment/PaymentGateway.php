@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Services\Payment;
 
-use Modules\JeaServices\Models\Application;
-
 /**
  * PaymentGateway
  *
@@ -15,15 +13,18 @@ use Modules\JeaServices\Models\Application;
  * the container binding in AppServiceProvider, not touching any
  * business logic in WorkflowEngine or the controllers.
  *
+ * H-07: `initiate()` takes a provider-neutral `PaymentIntent` DTO
+ * rather than a JEA `Application` model. The JEA-side adapter builds
+ * the intent from an Application and hands it across the Platform /
+ * gateway boundary — Platform no longer imports any JEA class.
+ *
  * Deliberately narrow: three methods that model the three moments a
- * payment surface interacts with the domain. Adding operations here is
- * a design decision; adding them to a concrete implementation is a
- * data-in / data-out detail.
+ * payment surface interacts with the domain.
  */
 interface PaymentGateway
 {
     /**
-     * Kick off a payment for the given application.
+     * Kick off a payment for the given intent.
      *
      * Returns a PaymentInitiation carrying the gateway's transaction
      * reference + a redirect URL the applicant follows to complete
@@ -31,7 +32,7 @@ interface PaymentGateway
      * synthetic reference and a local URL so the flow can be exercised
      * end-to-end without hitting an upstream sandbox.
      */
-    public function initiate(Application $app): PaymentInitiation;
+    public function initiate(PaymentIntent $intent): PaymentInitiation;
 
     /**
      * Verify + persist a gateway callback.

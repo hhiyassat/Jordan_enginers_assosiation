@@ -300,22 +300,23 @@ class Application extends Model
      */
     public static function allocateReferenceSerial(int $serviceDefinitionId, int $year): int
     {
-        return \Illuminate\Support\Facades\DB::transaction(function () use ($serviceDefinitionId, $year) {
-            try {
-                ApplicationCounter::create([
-                    'service_definition_id' => $serviceDefinitionId,
-                    'year'                  => $year,
-                    'next_serial'           => 1,
-                ]);
-            } catch (\Illuminate\Database\UniqueConstraintViolationException) {
-                // Expected under concurrent first-writer race.
-            } catch (\Illuminate\Database\QueryException $e) {
-                $sqlState = $e->errorInfo[0] ?? null;
-                if (!in_array($sqlState, ['23000', '23505'], true)) {
-                    throw $e;
-                }
-            }
+        // insertOrIgnore is portable (`ON CONFLICT DO NOTHING` on Postgres,
+        // `INSERT IGNORE` on MySQL, `INSERT OR IGNORE` on SQLite). Doing
+        // the "create if missing" step OUTSIDE the surrounding
+        // transaction means a concurrent race can't poison the enclosing
+        // transaction on Postgres (which would otherwise leave the
+        // savepoint in an aborted state and cause 25P02 on the next
+        // statement). After this call the row exists — the lockForUpdate
+        // inside the transaction is guaranteed to find it.
+        \Illuminate\Support\Facades\DB::table('application_counters')->insertOrIgnore([
+            'service_definition_id' => $serviceDefinitionId,
+            'year'                  => $year,
+            'next_serial'           => 1,
+            'created_at'            => now(),
+            'updated_at'            => now(),
+        ]);
 
+        return \Illuminate\Support\Facades\DB::transaction(function () use ($serviceDefinitionId, $year) {
             $row = ApplicationCounter::where('service_definition_id', $serviceDefinitionId)
                 ->where('year', $year)
                 ->lockForUpdate()

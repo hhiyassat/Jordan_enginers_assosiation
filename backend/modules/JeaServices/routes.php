@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Illuminate\Support\Facades\Route;
 use Modules\JeaServices\Http\Controllers\ApplicationController;
 use Modules\JeaServices\Http\Controllers\CertificatesController;
+use Modules\JeaServices\Http\Controllers\JeaAdminDashboardController;
 use Modules\JeaServices\Http\Controllers\ManualReferenceController;
 use Modules\JeaServices\Http\Controllers\OfficeRegistrationController;
 use Modules\JeaServices\Http\Controllers\PaymentsController;
@@ -133,6 +134,12 @@ Route::prefix('api/v1')->middleware(['auth:sanctum', 'token.inactivity', 'passwo
     // C-01: service-catalog + operational admin is admin territory.
     // Superuser is user-management only.
     Route::middleware('role:admin')->group(function () {
+        // H-07 (session 3): JEA-specific dashboard + application listing
+        // moved out of App\Http\Controllers\Api\AdminDashboardController
+        // so Platform no longer imports JEA models. URLs unchanged.
+        Route::get  ('admin/dashboard',                       [JeaAdminDashboardController::class, 'dashboard']);
+        Route::get  ('admin/applications',                    [JeaAdminDashboardController::class, 'allApplications']);
+
         // FR-017: admin views all services regardless of status.
         Route::get  ('admin/services',                       [ServiceCatalogController::class, 'adminIndex']);
         Route::get  ('admin/services/{id}',                  [ServiceCatalogController::class, 'adminShow']);

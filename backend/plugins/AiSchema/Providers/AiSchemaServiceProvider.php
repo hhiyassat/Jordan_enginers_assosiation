@@ -18,9 +18,10 @@ use Illuminate\Support\ServiceProvider;
  *   POST /api/v1/admin/services/chat-schema
  *
  * Dependency direction:
- *   • PLG→SM: reads Modules\JeaServices\Models\ServiceDefinition to
- *     write generated schemas back. Legitimate — plugins may depend
- *     on service modules; the reverse (SM→PLG) is forbidden.
+ *   • PLG→PC (contracts only): consults `App\Contracts\Services\ServiceLockLookup`
+ *     to gate writes on service-lock state. JeaServicesServiceProvider binds
+ *     the Eloquent implementation; the plugin has no direct import of any
+ *     `Modules\JeaServices\*` class (H-07 remediation, session 3).
  *   • PLG→PC: uses App\Http\Concerns\RequiresAdminTier + auth guards.
  *
  * Rate-limiter registration: throttle:ai-schema stays in

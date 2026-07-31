@@ -2,17 +2,21 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Concerns;
+namespace Modules\JeaServices\Http\Concerns;
 
-use Modules\JeaServices\Models\ServiceDefinition;
 use Illuminate\Http\JsonResponse;
+use Modules\JeaServices\Models\ServiceDefinition;
 
 /**
  * Shared 423 Locked response for controllers that mutate a
  * ServiceDefinition. Extracted so ServiceCatalogController and
- * ServiceFeesController (Workstream 5 split) emit identical envelopes
- * without duplicating the string — a divergence risk once the two
- * controllers live in different modules.
+ * ServiceFeesController emit identical envelopes without duplicating
+ * the string.
+ *
+ * H-07 (2026-07-31): moved from `App\Http\Concerns` into this
+ * JEA-owned namespace so Platform no longer imports
+ * `Modules\JeaServices\Models\ServiceDefinition`. The "locked
+ * service" concept IS jea-services; the trait lives with it.
  */
 trait RespondsWithLockedService
 {

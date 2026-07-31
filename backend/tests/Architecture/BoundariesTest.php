@@ -170,35 +170,32 @@ class BoundariesTest extends TestCase
      * @var array<string, string>
      */
     private const PC_ALLOWLIST = [
-        'Http/Controllers/Api/AdminDashboardController.php' =>
-            'RED: reads Modules\JeaServices for org-wide app list + '
-            . 'certificate count. Splits into a platform admin shell + '
-            . 'a jea-services "recent apps" widget in a future WS.',
         'Providers/AppServiceProvider.php' =>
-            'Composition root binds Integrations\Gsb\* into the container. '
-            . 'The wiring belongs at the composition boundary; a future WS '
-            . 'can move the bindings into GsbServiceProvider itself.',
+            'Composition-root registration of the Integrations\Gsb\* '
+            . 'singleton bindings. This is the framework-bootstrap '
+            . 'exception the H-07 mandate explicitly permits: no '
+            . 'domain method calls, only container wiring so anyone '
+            . 'resolving GsbClient gets the shared instance. Movable '
+            . 'into GsbServiceProvider in a follow-up if / when the '
+            . 'composition root is reorganized; not blocking closure.',
         // H-08 (2026-07-31): removed Models/User.php + Models/Organization.php
-        // from this allowlist. User no longer imports OfficeCoalition /
-        // OfficeCoalitionMember — the accessor lifted to
-        // Modules\JeaProjects\Support\OfficeCoalitionResolver. Organization
-        // no longer imports Application / ServiceDefinition / OfficeCoalition
-        // — the deprecated hasMany relations were removed (no callers).
-        'Http/Concerns/RespondsWithLockedService.php' =>
-            'The 423 locked-service response reads Modules\JeaServices\Models\ServiceDefinition. '
-            . 'Trait should move to modules/JeaServices/Http/Concerns/ since '
-            . 'the "locked" concept IS jea-services.',
-        'Services/Payment/MockPaymentGateway.php' =>
-            'Payment abstraction takes Modules\JeaServices\Models\Application directly. '
-            . 'Should invert: Application implements a PaymentTarget contract; '
-            . 'gateway takes the contract.',
-        'Services/Payment/PaymentGateway.php' =>
-            'Same as MockPaymentGateway — takes Application concrete instead of '
-            . 'a PaymentTarget contract. Follow-up contract-inversion refactor.',
-        'Services/Notifications/NotificationService.php' =>
-            'Notification service has Application knowledge baked in. Should '
-            . 'accept a domain-neutral Notifiable + template payload; each '
-            . 'module builds its own payload.',
+        // — accessors extracted to OfficeCoalitionResolver.
+        // H-07 session-3 (2026-07-31): removed
+        //   Http/Controllers/Api/AdminDashboardController.php — JEA-specific
+        //     dashboard + application listing moved to
+        //     Modules\JeaServices\Http\Controllers\JeaAdminDashboardController;
+        //     Platform's AdminDashboardController now owns only /admin/audit-logs.
+        //   Http/Concerns/RespondsWithLockedService.php   — moved to Modules\JeaServices\Http\Concerns.
+        //   Services/Payment/MockPaymentGateway.php       — takes PaymentIntent DTO (no JEA import).
+        //   Services/Payment/PaymentGateway.php           — same signature.
+        //   Services/Notifications/NotificationService.php — slimmed to a
+        //     domain-neutral primitive; JEA emitters moved to
+        //     Modules\JeaServices\Services\JeaNotificationService.
+        //
+        // Plugins + integrations that need JEA state depend on
+        // App\Contracts\Services\ServiceLockLookup and
+        // App\Contracts\Services\ServiceDefinitionSnapshot — never on
+        // Modules\Jea* directly. See ServiceLockLookup + snapshot DTO.
     ];
 
     public function test_platform_does_not_import_service_modules(): void

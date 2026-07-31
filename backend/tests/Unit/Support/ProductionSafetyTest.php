@@ -38,7 +38,7 @@ class ProductionSafetyTest extends TestCase
     public function test_real_payment_gateway_bound_is_ok(): void
     {
         $realGateway = new class implements PaymentGateway {
-            public function initiate(\Modules\JeaServices\Models\Application $app): \App\Services\Payment\PaymentInitiation {
+            public function initiate(\App\Services\Payment\PaymentIntent $intent): \App\Services\Payment\PaymentInitiation {
                 throw new \LogicException('stub');
             }
             public function verifyCallback(array $callbackPayload): \App\Services\Payment\PaymentReceipt {

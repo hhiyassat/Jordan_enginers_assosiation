@@ -101,14 +101,11 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'token.inactivity', 'password.p
     // business admin surface (dashboard, applications, audit logs).
 
     Route::middleware('role:admin')->group(function () {
-        // FR-014 to FR-016: Admin dashboard
-        // Workstream 5C: dashboard + applications + audit-logs extracted
-        // from AdminController.
-        Route::get('admin/dashboard',             [AdminDashboardController::class, 'dashboard']);
-        // User CRUD moved to the superuser role — see the role:superuser
-        // block further down. Admin keeps read-only visibility via dashboard
-        // stats but no longer touches the user roster.
-        Route::get('admin/applications',          [AdminDashboardController::class, 'allApplications']);
+        // H-07 (session 3): /admin/dashboard and /admin/applications
+        // moved to Modules\JeaServices\Http\Controllers\JeaAdminDashboardController
+        // and are now declared in backend/modules/JeaServices/routes.php.
+        // Platform's AdminDashboardController retains only /admin/audit-logs
+        // since AuditLog is a Platform primitive.
         Route::get('admin/audit-logs',            [AdminDashboardController::class, 'auditLogs']);
 
         // Workstream 8C: admin service catalog + fee editor + lock/unlock

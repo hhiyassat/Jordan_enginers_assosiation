@@ -36,16 +36,22 @@ class MockPaymentGatewayTest extends TestCase
 
     public function test_initiate_returns_a_reference_amount_currency_and_redirect(): void
     {
-        $app = $this->makeApplication(fee: 150.75, currency: 'JOD');
+        // H-07: PaymentGateway::initiate now takes a PaymentIntent DTO.
+        // The JEA-side adapter builds it from an Application; the
+        // gateway itself has no dependency on the JEA module.
+        $intent = new \App\Services\Payment\PaymentIntent(
+            reference:      'app-42',
+            organizationId: 1,
+            amount:         150.75,
+            currency:       'JOD',
+        );
 
-        $init = (new MockPaymentGateway())->initiate($app);
+        $init = (new MockPaymentGateway())->initiate($intent);
         $this->assertInstanceOf(PaymentInitiation::class, $init);
-        $this->assertStringStartsWith('MOCK-' . $app->id . '-', $init->reference,
-            'Reference should carry the application id for easy DB correlation');
+        $this->assertStringStartsWith('MOCK-app-42-', $init->reference,
+            'Reference should carry the intent reference for easy correlation');
         $this->assertSame(150.75, $init->amount);
         $this->assertSame('JOD', $init->currency);
-        // Redirect URL exists and echoes the reference so a caller can
-        // deep-link the applicant to the mock payment page.
         $this->assertStringContainsString($init->reference, $init->redirectUrl);
     }
 
