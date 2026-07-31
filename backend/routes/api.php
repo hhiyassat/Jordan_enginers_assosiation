@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AdminDashboardController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\HealthController;
 // Workstream 8A: EngineerController + ProjectController + OfficeSettingsController
 // moved to Modules\JeaProjects.
 // Workstream 8C: ApplicationController + ReviewDashboardController +
@@ -33,6 +34,11 @@ use Illuminate\Support\Facades\Route;
 // Workstream 14: Nashmi integration routes (NO Sanctum — X-Integration-Key)
 // moved to Integrations\Nashmi\routes.php. Removing 'nashmi' from
 // config/integrations.enabled drops all 6 /api/integration/* endpoints.
+
+// L-12: readiness probe. Sits OUTSIDE the /v1 prefix so orchestration
+// probes hit a stable path (`/api/ready`) independent of API versioning.
+// The `/up` liveness probe is registered by bootstrap/app.php.
+Route::get('ready', [HealthController::class, 'ready']);
 
 // ── Public routes (no auth) ─────────────────────────────────────────
 

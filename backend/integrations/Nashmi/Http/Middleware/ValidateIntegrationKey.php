@@ -2,6 +2,7 @@
 
 namespace Integrations\Nashmi\Http\Middleware;
 
+use App\Support\SecurityEvents;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -51,6 +52,7 @@ class ValidateIntegrationKey
                 'ip' => $request->ip(),
                 'path' => $request->path(),
             ]);
+            SecurityEvents::integrationSignatureFailure($request, 'integration_key_mismatch');
             return response()->json(['message' => 'Unauthorized.'], 401);
         }
 
@@ -70,6 +72,7 @@ class ValidateIntegrationKey
                 Log::channel('integration')->warning('Missing or invalid Nashmi timestamp header', [
                     'ip' => $request->ip(),
                 ]);
+                SecurityEvents::integrationSignatureFailure($request, 'missing_or_invalid_timestamp');
                 return response()->json(['message' => 'Missing or invalid timestamp.'], 401);
             }
 
@@ -80,6 +83,10 @@ class ValidateIntegrationKey
                     'ip' => $request->ip(),
                     'timestamp' => $timestamp,
                     'current_time' => time(),
+                ]);
+                SecurityEvents::integrationSignatureFailure($request, 'timestamp_outside_window', [
+                    'skew_seconds' => abs(time() - $timestamp),
+                    'window'       => $replayWindow,
                 ]);
                 return response()->json(['message' => 'Request timestamp outside allowed window.'], 401);
             }
@@ -98,6 +105,7 @@ class ValidateIntegrationKey
                         'ip' => $request->ip(),
                         'nonce' => $nonce,
                     ]);
+                    SecurityEvents::integrationSignatureFailure($request, 'nonce_replay');
                     return response()->json(['message' => 'Replay attempt detected.'], 401);
                 }
 
@@ -110,6 +118,7 @@ class ValidateIntegrationKey
 
             if (! $signatureHeader) {
                 Log::channel('integration')->warning('Missing Nashmi signature header', ['ip' => $request->ip()]);
+                SecurityEvents::integrationSignatureFailure($request, 'missing_signature_header');
                 return response()->json(['message' => 'Missing signature header.'], 401);
             }
 
@@ -121,6 +130,7 @@ class ValidateIntegrationKey
                     'ip' => $request->ip(),
                     'path' => $request->path(),
                 ]);
+                SecurityEvents::integrationSignatureFailure($request, 'hmac_mismatch');
                 return response()->json(['message' => 'Invalid signature.'], 401);
             }
         }

@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Middleware\ReadTokenFromCookie;
 use App\Models\AuditLog;
 use App\Models\User;
+use App\Support\SecurityEvents;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cookie;
@@ -36,6 +37,11 @@ class AuthController extends Controller
             ->first();
 
         if (! $user || ! Hash::check($data['password'], $user->password)) {
+            // P0-E-2: emit authentication failure event. Attempted email
+            // logged; password NEVER logged. Ops can pattern-match on
+            // repeated failures for the same email (targeted stuffing)
+            // or the same IP (spraying).
+            SecurityEvents::loginFailed($request, $data['email']);
             return response()->json(['message' => 'بيانات الاعتماد غير صحيحة.'], 401);
         }
 
@@ -43,6 +49,9 @@ class AuthController extends Controller
         $user->tokens()->delete();
 
         $token = $user->createToken('esp-token')->plainTextToken;
+
+        // P0-E-2: authentication success event.
+        SecurityEvents::loginSuccess($request, $user->id);
 
         // JORD-30: token still returned in JSON for backward compat
         // with any lingering bearer-header consumer, but the CANONICAL
@@ -82,7 +91,11 @@ class AuthController extends Controller
 
     public function logout(Request $request): JsonResponse
     {
+        $userId = $request->user()->id;
         $request->user()->currentAccessToken()->delete();
+        // P0-E-2: emit logout + token-revoked events for audit trail.
+        SecurityEvents::logout($request);
+        SecurityEvents::tokenRevoked($request, $userId, 'user_logout');
         return response()
             ->json(['message' => 'تم تسجيل الخروج.'])
             // JORD-30: clear the httpOnly cookie so a stolen browser
@@ -227,6 +240,9 @@ class AuthController extends Controller
             $update['email'] = $data['email'];
         }
         $user->update($update);
+
+        // P0-E-2: password_changed event for the security channel.
+        SecurityEvents::passwordChanged($request, $user->id);
 
         return response()->json(['message' => 'تم تغيير كلمة المرور.']);
     }
