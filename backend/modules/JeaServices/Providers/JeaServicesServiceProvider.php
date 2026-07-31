@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\JeaServices\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use App\Contracts\Applications\ApplicationLookup;
 use App\Contracts\Services\ServiceLockLookup;
 use Modules\JeaServices\Engine\CadastralConflictGuard;
 use Modules\JeaServices\Engine\CrossCuttingSubmissionPipeline;
@@ -13,6 +14,7 @@ use Modules\JeaServices\Engine\JeaMembershipVerifier;
 use Modules\JeaServices\Engine\OwnerMatchClearanceGuard;
 use Modules\JeaServices\Engine\ServiceSubmissionGuardRegistry;
 use Modules\JeaServices\Engine\Srv001Guard;
+use Modules\JeaServices\Services\EloquentApplicationLookup;
 use Modules\JeaServices\Services\EloquentServiceLockLookup;
 
 /**
@@ -116,6 +118,11 @@ class JeaServicesServiceProvider extends ServiceProvider
         // never on `Modules\JeaServices\Models\ServiceDefinition`. This
         // module supplies the Eloquent implementation.
         $this->app->bind(ServiceLockLookup::class, EloquentServiceLockLookup::class);
+
+        // H-07 (session 3, cross-JEA-module): sibling modules depend on
+        // ApplicationLookup instead of the JEA Application model. JEA
+        // supplies the Eloquent adapter that maps Model → snapshot DTO.
+        $this->app->bind(ApplicationLookup::class, EloquentApplicationLookup::class);
     }
 
     public function boot(): void
