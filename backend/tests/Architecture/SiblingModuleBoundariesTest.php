@@ -94,9 +94,10 @@ class SiblingModuleBoundariesTest extends TestCase
             . 'iteration; snapshot exposes reference_number + applicant_id; final '
             . 'migration step: move the whole RemindExpiries command into JeaServices '
             . '(reminders are application-level events, not discipline-level).',
-        'JeaDiscipline/Engine/SanctionGuard.php' =>
-            'Reads Application in the cross-cutting submission guard. Retirement: '
-            . 'accept ApplicationSnapshot; pipeline builder maps at boundary.',
+        // CS-04 (2026-07-31) — retired. SanctionGuard now consumes
+        // App\Contracts\Applications\ApplicationSnapshot; the JEA
+        // ApplicationController maps at the boundary via
+        // EloquentApplicationLookup::snapshotOf($app).
         'JeaDiscipline/Http/Controllers/LegalFineController.php' =>
             'Loads Application to attach a fine. Retirement: ApplicationLookup + a small '
             . 'ApplicationRef DTO for attach-target lookups.',

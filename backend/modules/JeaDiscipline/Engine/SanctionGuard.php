@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\JeaDiscipline\Engine;
 
-use Modules\JeaServices\Models\Application;
+use App\Contracts\Applications\ApplicationSnapshot;
 use Modules\JeaDiscipline\Models\Sanction;
 
 /**
@@ -21,13 +21,20 @@ use Modules\JeaDiscipline\Models\Sanction;
  * Non-blocking / expired / future-dated sanctions are ignored.
  * Multiple active sanctions → the earliest one wins the message
  * (so the applicant sees "why can't I submit" once, not a list).
+ *
+ * CS-04: the signature accepts `App\Contracts\Applications\ApplicationSnapshot`
+ * rather than `Modules\JeaServices\Models\Application`. Callers that hold a
+ * JEA Application build a snapshot via `ApplicationLookup::find($id)` or
+ * `EloquentApplicationLookup::snapshotOf($app)` before invoking. Removing
+ * the concrete JEA Application dependency drops this file from
+ * `SM_ALLOWED_IMPORTS`.
  */
 class SanctionGuard
 {
     /**
      * @return array<string, string>  Empty array = OK.
      */
-    public function validate(Application $app): array
+    public function validate(ApplicationSnapshot $app): array
     {
         // Deregistrations + suspensions block; warnings don't.
         $active = Sanction::where('office_user_id', $app->applicant_id)

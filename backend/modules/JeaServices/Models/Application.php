@@ -33,6 +33,7 @@ use Modules\JeaProjects\Models\Project;
  * @property array<string, mixed>|null          $data
  * @property float|string                       $fee_amount
  * @property int|null                           $organization_id
+ * @property int|null                           $service_definition_id
  * @property string|null                        $payment_status
  * @property string|null                        $payment_reference
  * @property \Illuminate\Support\Carbon|null    $payment_confirmed_at

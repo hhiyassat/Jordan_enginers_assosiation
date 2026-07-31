@@ -40,6 +40,20 @@ final class EloquentApplicationLookup implements ApplicationLookup
         }
     }
 
+    /**
+     * CS-04: public helper for callers that already have an Application
+     * model in hand (e.g. JeaServices\Http\Controllers\ApplicationController)
+     * and want to hand a snapshot to a sibling-module consumer
+     * (SanctionGuard) without a redundant DB round-trip.
+     *
+     * Kept static + public so the caller can invoke without resolving
+     * the lookup from the container.
+     */
+    public static function snapshotOf(Application $app): ApplicationSnapshot
+    {
+        return (new self())->toSnapshot($app);
+    }
+
     private function toSnapshot(Application $app): ApplicationSnapshot
     {
         return new ApplicationSnapshot(

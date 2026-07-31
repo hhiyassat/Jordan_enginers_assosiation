@@ -15,6 +15,16 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * cleanup. SanctionGuard treats a sanction as "active" when
  * effective_from <= today AND (effective_until IS NULL OR
  * effective_until > today).
+ *
+ * @property int                             $id
+ * @property int|null                        $organization_id
+ * @property int|null                        $office_user_id
+ * @property int|null                        $complaint_id
+ * @property string                          $kind
+ * @property \Illuminate\Support\Carbon      $effective_from
+ * @property \Illuminate\Support\Carbon|null $effective_until
+ * @property string|null                     $reason
+ * @property int|null                        $issued_by_user_id
  */
 class Sanction extends Model
 {

@@ -182,7 +182,7 @@ $ php artisan migrate:rollback --step=1
 ITEM_ID=CS-03
 ORIGINAL_FINDING=NEW-A2 (PaymentGateway abstraction had zero runtime consumers; raw payment_reference was accepted as proof-of-payment)
 START_HEAD=5d0252f
-END_HEAD=<recorded after commit — see ledger>
+END_HEAD=89bfc401e4fed4ea59f5442001922d1da39aac40
 STATUS=FIXED
 ROOT_CAUSE=The gateway abstraction was infrastructure without any callers — no initiation path, no callback path, and the confirm-payment endpoint bypassed it entirely. Any staff (later, admin) account could flip payment_status by inventing a reference. `verifyCallback()` was interface-only.
 IMPLEMENTATION_DECISION=Build the complete internal payment boundary against the existing abstraction: dedicated callback controller (verifyCallback + idempotency table), applicant-facing initiate() endpoint that uses PaymentGateway::initiate(), and reduce confirm-payment to admin-only manual reconciliation with a required rationale string. Add a real HMAC-signed test gateway to cover unsigned/invalid/tampered/expired/duplicate/valid callback paths deterministically. Leave the real-provider binding as BLOCKED_EXTERNAL_INPUT.
@@ -196,7 +196,7 @@ STATIC_ANALYSIS_RESULT=PASS (PHPStan 0 errors across every touched CS-03 file). 
 RUNTIME_VERIFICATION=Callback flow exercised end-to-end against SignedTestPaymentGateway: valid callback flips payment_status via WorkflowEngine::confirmPaymentFromReceipt; a replayed valid callback hits the unique(reference) index and returns idempotent success without a second workflow mutation. Initiate flow persists the gateway reference on the application and writes application.payment_initiated audit. Manual confirm requires admin + reason and writes application.payment_manual_reconciliation audit.
 RESIDUAL_RISK=Real-provider adapter is not bound in production. Any deploy still requires binding a real PaymentGateway implementation (concrete provider class + credentials) before payments can flow. The refund() interface method still has no controller — no operator surface to trigger a refund exists yet.
 EXTERNAL_BLOCKER=BLK-01 (real payment provider: contract + credentials + callback protocol) remains unresolved.
-COMMIT=<recorded after commit — see ledger>
+COMMIT=89bfc40
 NEXT_ITEM=CS-04
 ```
 

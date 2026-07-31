@@ -315,7 +315,14 @@ class ApplicationController extends Controller
         // cannot submit ANY application until the sanction lapses.
         // Fires last so field / doc / capacity issues surface first
         // (fixable in-place), and the sanction message is a hard stop.
-        $sanctionErrors = app(\Modules\JeaDiscipline\Engine\SanctionGuard::class)->validate($app);
+        //
+        // CS-04: SanctionGuard consumes ApplicationSnapshot (not the
+        // JEA Application model), so the guard file no longer imports
+        // Modules\JeaServices\Models\Application and drops out of
+        // SM_ALLOWED_IMPORTS. We build the snapshot in one call here
+        // rather than re-fetching from the container.
+        $snapshot       = \Modules\JeaServices\Services\EloquentApplicationLookup::snapshotOf($app);
+        $sanctionErrors = app(\Modules\JeaDiscipline\Engine\SanctionGuard::class)->validate($snapshot);
         if ($sanctionErrors) {
             return response()->json([
                 'message' => 'لا يمكن تقديم الطلب بسبب عقوبة تأديبية نافذة على المكتب.',
