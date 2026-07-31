@@ -178,15 +178,12 @@ class BoundariesTest extends TestCase
             'Composition root binds Integrations\Gsb\* into the container. '
             . 'The wiring belongs at the composition boundary; a future WS '
             . 'can move the bindings into GsbServiceProvider itself.',
-        'Models/User.php' =>
-            'User has JEA relations (OfficeCoalition, OfficeCoalitionMember) '
-            . 'from JORD-77. Needs a User contract that jea-projects can '
-            . 'extend without the platform User importing it.',
-        'Models/Organization.php' =>
-            'Organization hasMany JEA aggregations (services, applications, '
-            . 'coalitions). Same pattern as User.php — needs a contract so '
-            . 'the tenant model can enumerate its domain data without '
-            . 'importing modules directly.',
+        // H-08 (2026-07-31): removed Models/User.php + Models/Organization.php
+        // from this allowlist. User no longer imports OfficeCoalition /
+        // OfficeCoalitionMember — the accessor lifted to
+        // Modules\JeaProjects\Support\OfficeCoalitionResolver. Organization
+        // no longer imports Application / ServiceDefinition / OfficeCoalition
+        // — the deprecated hasMany relations were removed (no callers).
         'Http/Concerns/RespondsWithLockedService.php' =>
             'The 423 locked-service response reads Modules\JeaServices\Models\ServiceDefinition. '
             . 'Trait should move to modules/JeaServices/Http/Concerns/ since '

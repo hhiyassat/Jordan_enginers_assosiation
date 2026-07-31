@@ -8,8 +8,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
-use Modules\JeaProjects\Models\OfficeCoalition;
-use Modules\JeaProjects\Models\OfficeCoalitionMember;
 
 /**
  * User
@@ -17,6 +15,11 @@ use Modules\JeaProjects\Models\OfficeCoalitionMember;
  * SEC-005: Role-based access. CheckRole middleware reads $user->role.
  * SEC-004: must_change_password + password_changed_at drive EnforcePasswordPolicy.
  * DATA-004: SoftDeletes — user records are never hard-deleted.
+ *
+ * H-08: JEA-specific accessors (activeCoalition) were removed from
+ * this Platform model. Callers query
+ * `\Modules\JeaProjects\Support\OfficeCoalitionResolver::activeCoalitionFor($user)`
+ * instead so Platform stays free of module imports.
  */
 class User extends Authenticatable
 {
@@ -58,22 +61,9 @@ class User extends Authenticatable
         return $this->belongsTo(Organization::class);
     }
 
-    /**
-     * JORD-77: this office's active coalition, if any. A membership
-     * is "active" iff both the coalition isn't dissolved AND the
-     * office hasn't left it. Returns null for standalone offices
-     * (the common case).
-     */
-    public function activeCoalition(): ?OfficeCoalition
-    {
-        $member = OfficeCoalitionMember::where('office_user_id', $this->id)
-            ->whereNull('left_at')
-            ->latest()
-            ->first();
-        if (!$member) return null;
-        $coalition = $member->coalition;
-        return ($coalition && $coalition->isActive()) ? $coalition : null;
-    }
+    // H-08: activeCoalition() lifted to
+    // Modules\JeaProjects\Support\OfficeCoalitionResolver so Platform
+    // stops importing JEA models.
 
     // ── Role helpers (used by CheckRole middleware) ────────────────────
 

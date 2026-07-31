@@ -5,10 +5,18 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Modules\JeaProjects\Models\OfficeCoalition;
-use Modules\JeaServices\Models\Application;
-use Modules\JeaServices\Models\ServiceDefinition;
 
+/**
+ * Organization — platform tenant root.
+ *
+ * H-08: the previous version imported JEA models (`OfficeCoalition`,
+ * `Application`, `ServiceDefinition`) and exposed `services()`,
+ * `applications()`, `activeCoalition()` accessors that were either
+ * unused or already deprecated. Those imports were removed so
+ * Platform → JEA module coupling drops one link. Callers that need
+ * per-tenant JEA rows query the module models directly
+ * (`Application::forOrganization($org->id)` etc.).
+ */
 class Organization extends Model
 {
     use SoftDeletes;
@@ -28,17 +36,6 @@ class Organization extends Model
         'has_iso_cert'         => 'boolean',
     ];
 
-    public function users(): HasMany        { return $this->hasMany(User::class); }
-    public function services(): HasMany     { return $this->hasMany(ServiceDefinition::class); }
-    public function applications(): HasMany { return $this->hasMany(Application::class); }
-
-    /**
-     * @deprecated JORD-77: coalitions moved to per-office (User).
-     * Use User::activeCoalition() instead. Kept as a shim returning
-     * null so any lingering call sites don't crash.
-     */
-    public function activeCoalition(): ?OfficeCoalition
-    {
-        return null;
-    }
+    /** @return HasMany<User, $this> */
+    public function users(): HasMany { return $this->hasMany(User::class); }
 }
