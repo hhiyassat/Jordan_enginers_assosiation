@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\JeaServices\Engine;
 
+use Illuminate\Support\Facades\DB;
 use Modules\JeaServices\Models\Application;
 
 /**
@@ -34,6 +35,20 @@ class CrossCuttingSubmissionPipeline
      */
     public function validate(Application $app): array
     {
+        // C-04 hardening (session 3): serialize any concurrent submit
+        // that targets the same cadastral triple by acquiring a
+        // PostgreSQL advisory lock keyed on the triple. Without this,
+        // two concurrent submits from different orgs on the same
+        // parcel both read zero conflicts (neither has committed yet)
+        // and both pass — the exact TOCTOU race the concurrency test
+        // caught. The lock is per-triple, so unrelated submits do not
+        // serialize against each other.
+        //
+        // On non-Postgres drivers (sqlite in tests) this is a no-op;
+        // the driver's coarser locking already prevents concurrent
+        // writers in practice.
+        $this->acquireCadastralAdvisoryLockFor($app);
+
         foreach ($this->guards as $guard) {
             $errors = $guard->validate($app);
             if (! empty($errors)) {
@@ -41,6 +56,22 @@ class CrossCuttingSubmissionPipeline
             }
         }
         return [];
+    }
+
+    private function acquireCadastralAdvisoryLockFor(Application $app): void
+    {
+        if (DB::connection()->getDriverName() !== 'pgsql') {
+            return;
+        }
+        $triple = CadastralPriorApplicationLookup::extractTriple($app);
+        if ($triple === null) {
+            return; // guard reports the missing-field error itself
+        }
+        // 63-bit int derived from the cadastral triple. Advisory locks
+        // scope to the current transaction (pg_advisory_xact_lock) so
+        // they release on COMMIT/ROLLBACK — no explicit unlock needed.
+        $key = crc32($triple['basin_number'] . '|' . $triple['parcel_number']);
+        DB::statement('SELECT pg_advisory_xact_lock(?)', [$key]);
     }
 
     /** @return list<string>  class names of registered guards, for introspection */
