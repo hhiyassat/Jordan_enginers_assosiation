@@ -31,7 +31,11 @@ class TokenInactivityCheck
 
         if ($user) {
             $token = $user->currentAccessToken();
-            $timeoutMinutes = (int) env('SESSION_TIMEOUT_MINUTES', 30);
+            // CS-10 / L-04: read via config() — env() returns null under
+            // php artisan config:cache, so token expiry would silently
+            // default to 30 minutes on any cached-config deploy even if
+            // the operator raised SESSION_TIMEOUT_MINUTES.
+            $timeoutMinutes = (int) config('esp.session_timeout_minutes', 30);
 
             if ($token && $token->last_used_at) {
                 $idleMinutes = $token->last_used_at->diffInMinutes(now());

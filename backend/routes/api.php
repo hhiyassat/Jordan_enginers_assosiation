@@ -78,7 +78,11 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'token.inactivity', 'password.p
     // red row in the browser console (JORD-84 PM). PATCH /auth/me
     // stays protected — profile updates require an active session.
     Route::post('auth/logout',             [AuthController::class, 'logout']);
-    Route::post('auth/password/change',    [AuthController::class, 'changePassword']);
+    // CS-10 / NEW-A11: rate-limited to make brute-forcing current_password
+    // via a stolen sanctum token infeasible (see the `password-change`
+    // limiter in AppServiceProvider — 5/min + 20/hour per user).
+    Route::post('auth/password/change',    [AuthController::class, 'changePassword'])
+        ->middleware('throttle:password-change');
     // JORD-10: user updates their own profile (name + phone).
     Route::patch('auth/me',                [AuthController::class, 'updateProfile']);
 

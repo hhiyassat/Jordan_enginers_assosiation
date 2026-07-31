@@ -117,6 +117,25 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(60)->by((string) $request->ip());
         });
 
+        // CS-10 / NEW-A11: password change endpoint. Sanctum-authed but a
+        // stolen access token could otherwise brute-force current_password
+        // arbitrarily many times. 5/minute per user + a 20/hour ceiling
+        // makes online guessing prohibitively slow while keeping legit
+        // "typed my new password wrong" behaviour comfortable.
+        RateLimiter::for('password-change', function (Request $request) {
+            // The password-change route is inside the auth:sanctum group,
+            // so $request->user() is guaranteed non-null by the time this
+            // callback runs. Use it directly (PHPStan flags the nullsafe
+            // ?? IP fallback as dead code).
+            $subject = (string) $request->user()->id;
+            return [
+                Limit::perMinute(5)->by('password-change:min:' . $subject)
+                    ->response($this->logHitAndReply('password-change', $request)),
+                Limit::perHour(20)->by('password-change:hour:' . $subject)
+                    ->response($this->logHitAndReply('password-change', $request)),
+            ];
+        });
+
         // AI schema generator — the most expensive endpoint we host.
         // Each call spends ~2k+ Claude tokens and takes 10-20s. 10/hour
         // per user is generous for legitimate authoring but crushes a

@@ -67,7 +67,11 @@ class SecurityHeaders
         );
 
         // ── Session timeout hint for SPA ─────────────────────────────────
-        $timeoutSeconds = (int) env('SESSION_TIMEOUT_MINUTES', 30) * 60;
+        // CS-10 / L-04: read via config() so cache:config keeps this in
+        // the compiled config file. Direct env() calls bypass that cache
+        // and return null at runtime whenever `php artisan config:cache`
+        // has been run.
+        $timeoutSeconds = (int) config('esp.session_timeout_minutes', 30) * 60;
         $response->headers->set('X-Session-Timeout', (string) $timeoutSeconds);
 
         // ── Cache control — no caching of API responses ───────────────────

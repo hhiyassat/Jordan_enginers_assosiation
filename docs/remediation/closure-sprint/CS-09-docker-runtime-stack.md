@@ -162,7 +162,7 @@ APP_NAME. Post-fix state: three notifications for `cs09.smoke`,
 ITEM_ID=CS-09
 ORIGINAL_FINDING=OPERATIONS_STATUS=PARTIAL (Dockerfile not runnable; docker-compose incomplete; nothing ever executed end-to-end)
 START_HEAD=484b363
-END_HEAD=<recorded after commit — see ledger>
+END_HEAD=5f1d305c950b4e98456b0a8b4436581ab781942d
 STATUS=FIXED
 ROOT_CAUSE=Dockerfile referenced infra configs that were never COPY'd (nginx, supervisord, php-fpm pool); had a build-flag typo; and lacked .dockerignore so the host's PHP-8.5 vendor overwrote the container's PHP-8.3 install. Compose declared APP_ENV=production without providing the real-provider bindings ProductionSafety requires; had no worker/scheduler/S3 services; nothing had ever been exercised.
 IMPLEMENTATION_DECISION=Ship the missing infra configs under deployment/{nginx,supervisor,php-fpm}/ so the image is self-contained. Rewrite the Dockerfile as a two-stage build with a working non-root php-fpm pool + supervisord + nginx + redis ext + composer dump-autoload post-code-copy + world-readable chmod. Rewrite docker-compose with six services (app + worker + scheduler + postgres + redis + minio) at APP_ENV=staging so ProductionSafety enforces the invariants that don't need real-provider credentials. Add a .dockerignore that prevents the host vendor from clobbering the container's PHP-3-compatible install.
@@ -177,7 +177,7 @@ STATIC_ANALYSIS_RESULT=NOT_APPLICABLE (no application PHP source touched — onl
 RUNTIME_VERIFICATION=docker compose build exit 0; docker compose up -d brings all six services healthy; GET /up → 200; GET /api/ready → 200 with {database:ok, cache:ok}; 45 Postgres migrations applied inside container; queued ProcessNotificationJob dispatched from app container is consumed by the worker container and the Notification row is persisted; failed_jobs count stays at 0. Live dispatch after the APP_NAME fix processed in ~6 seconds.
 RESIDUAL_RISK=Local secrets in docker-compose.yml (APP_KEY + a dev-only Nashmi signing secret) are placeholders; they MUST NOT be reused in any real deploy. `APP_ENV=staging` is a compromise — it clears ProductionSafety's most rigid checks but does not exercise the real-provider bindings for payment + JEA verifier, which remain BLOCKED_EXTERNAL_INPUT. The `worker` and `scheduler` services carry supervisord's default startup healthcheck (30s start period) — they show `health: starting` immediately after `docker compose up` even though `ps auxf` confirms the queue-worker processes are already polling.
 EXTERNAL_BLOCKER=BLK-01 (real payment gateway), BLK-02 (real JEA verifier), BLK-04 (real GSB IP allowlist), BLK-03 (real Nashmi signing secret + rotation policy) — none resolvable from a Dockerfile change.
-COMMIT=<recorded after commit — see ledger>
+COMMIT=5f1d305
 NEXT_ITEM=CS-10
 ```
 
