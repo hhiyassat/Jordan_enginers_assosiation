@@ -91,25 +91,46 @@ class ValidateIntegrationKey
                 return response()->json(['message' => 'Request timestamp outside allowed window.'], 401);
             }
 
-            // Nonce deduplication
+            // Nonce enforcement + deduplication.
+            //
+            // CS-07 (2026-07-31): nonce is REQUIRED in production. Missing
+            // nonce in prod → 401. Non-prod still tolerates omission so
+            // local dev + the existing test fixtures keep working. Storage
+            // uses Cache::add() (atomic put-if-missing) so two concurrent
+            // requests carrying the same nonce cannot both slip past —
+            // exactly one wins and the loser gets the replay 401.
             $nonce = $request->header('X-Nashmi-Nonce')
                 ?? $request->header('X-Integration-Nonce')
                 ?? $request->header('X-Request-Id');
 
-            if ($nonce) {
-                $cacheKey = "nashmi:nonce:" . md5((string) $nonce);
+            if ($isProduction && ($nonce === null || $nonce === '')) {
+                Log::channel('integration')->warning('Nashmi missing nonce in production', [
+                    'ip'   => $request->ip(),
+                    'path' => $request->path(),
+                ]);
+                SecurityEvents::integrationSignatureFailure($request, 'missing_nonce_in_production');
+                return response()->json(['message' => 'Missing nonce header (required in production).'], 401);
+            }
+
+            if ($nonce !== null && $nonce !== '') {
+                // Namespace the cache key by signing-secret fingerprint so
+                // rotating the secret invalidates the old nonce set — a
+                // replay under the previous secret cannot survive a key
+                // rotation.
+                $secretFingerprint = substr(hash('sha256', $signingSecret), 0, 12);
+                $cacheKey = "nashmi:nonce:{$secretFingerprint}:" . hash('sha256', (string) $nonce);
                 $nonceTtl = (int) config('nashmi.nonce_ttl_seconds', 600);
 
-                if (Cache::has($cacheKey)) {
+                // Atomic put-if-missing: returns true if the key was newly
+                // set, false if a concurrent request already claimed it.
+                if (! Cache::add($cacheKey, true, $nonceTtl)) {
                     Log::channel('integration')->warning('Nashmi replayed nonce detected', [
-                        'ip' => $request->ip(),
-                        'nonce' => $nonce,
+                        'ip'    => $request->ip(),
+                        'nonce' => (string) $nonce,
                     ]);
                     SecurityEvents::integrationSignatureFailure($request, 'nonce_replay');
                     return response()->json(['message' => 'Replay attempt detected.'], 401);
                 }
-
-                Cache::put($cacheKey, true, $nonceTtl);
             }
 
             // HMAC Signature comparison over raw body

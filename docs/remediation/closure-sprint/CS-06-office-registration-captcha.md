@@ -82,7 +82,7 @@ $ vendor/bin/phpstan analyse tests/Feature/OfficeRegistrationCaptchaTest.php
 ITEM_ID=CS-06
 ORIGINAL_FINDING=M-10 (public office-registration signup lacked captcha; only throttle:5,1)
 START_HEAD=0f33728
-END_HEAD=<recorded after commit — see ledger>
+END_HEAD=ee314661a78c367a5a595de539cd544535b0387c
 STATUS=FIXED
 ROOT_CAUSE=The captcha plugin and middleware alias existed but the route wiring never added the middleware. A rate limit alone lets a small IP pool steadily grow the pending queue.
 IMPLEMENTATION_DECISION=Add the existing `captcha` middleware alias to the office-registration submit route. Leave local + test-env behaviour unchanged via the pre-existing `esp.captcha_enabled` config flag (defaults to false; ProductionSafety refuses to boot production with it false). Six-test coverage: missing/invalid/expired/replayed/valid + a ProductionSafety regression guard.
@@ -96,7 +96,7 @@ STATIC_ANALYSIS_RESULT=PASS (PHPStan clean on the new test after `@param array<s
 RUNTIME_VERIFICATION=`test_replayed_captcha_rejected_after_first_use` proves the CaptchaService cache entry is dropped on any verify attempt — a captured answer cannot be reused even in the tight loop of two immediate submissions.
 RESIDUAL_RISK=Captcha is single-request-per-challenge; a determined attacker can still burn compute solving unlimited fresh challenges. Rate limit + captcha in tandem raise the bar significantly but not to zero — CS-10 backlog notes that adding a proof-of-work challenge or hCaptcha/reCAPTCHA is a further deterrence tier if abuse is observed.
 EXTERNAL_BLOCKER=none
-COMMIT=<recorded after commit — see ledger>
+COMMIT=ee31466
 NEXT_ITEM=CS-07
 ```
 
