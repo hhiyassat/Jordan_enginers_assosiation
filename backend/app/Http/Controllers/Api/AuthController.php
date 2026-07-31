@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Middleware\ReadTokenFromCookie;
+use App\Jobs\ProcessNotificationJob;
 use App\Models\AuditLog;
 use App\Models\User;
 use App\Support\PasswordHistory;
@@ -260,6 +261,26 @@ class AuthController extends Controller
 
         // P0-E-2: password_changed event for the security channel.
         SecurityEvents::passwordChanged($request, $user->id);
+
+        // CS-02: async security notice to the user's inbox. Queued
+        // (not synchronous) because the response should not block on
+        // the notification insert, and if the worker is transiently
+        // down the security-channel log above is still the primary
+        // audit trail — the inbox row is user-facing convenience.
+        $correlationId = (string) ($request->attributes->get('correlation_id')
+            ?? $request->header('X-Request-Id')
+            ?? (string) str()->uuid());
+
+        ProcessNotificationJob::dispatch(
+            userId:        $user->id,
+            type:          'security.password_changed',
+            titleAr:       'تم تغيير كلمة المرور',
+            titleEn:       'Password changed',
+            bodyAr:        'تم تغيير كلمة المرور لحسابك بنجاح. إن لم تكن أنت، الرجاء التواصل مع مسؤول النظام فورًا.',
+            bodyEn:        'Your account password was changed successfully. If this was not you, contact your administrator immediately.',
+            actionUrl:     null,
+            correlationId: $correlationId,
+        );
 
         return response()->json(['message' => 'تم تغيير كلمة المرور.']);
     }

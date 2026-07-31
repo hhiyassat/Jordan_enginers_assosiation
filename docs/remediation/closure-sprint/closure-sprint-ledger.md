@@ -7,8 +7,8 @@ Sprint start HEAD:   `a4224fcceff08a73d7c348b4a3324417fe66a413`
 
 | Item | Report | Status | Commit | Notes |
 | ---- | ------ | ------ | ------ | ----- |
-| CS-01 | [CS-01-new-a1-production-safety.md](CS-01-new-a1-production-safety.md) | FIXED | (pending) | Nashmi signing-secret config key corrected + regression tests. |
-| CS-02 | CS-02-queue-runtime-integration.md | pending | — | — |
+| CS-01 | [CS-01-new-a1-production-safety.md](CS-01-new-a1-production-safety.md) | FIXED | `5105257` | Nashmi signing-secret config key corrected + regression tests. |
+| CS-02 | [CS-02-queue-runtime-integration.md](CS-02-queue-runtime-integration.md) | FIXED | (pending) | Wired both jobs to real dispatchers + shipped jobs/failed_jobs/job_batches migrations + WithoutOverlapping idempotency + real worker integration test. |
 | CS-03 | CS-03-payment-gateway-runtime.md | pending | — | — |
 | CS-04 | CS-04-application-lookup-contract.md | pending | — | — |
 | CS-05 | CS-05-cross-module-boundaries.md | pending | — | — |
