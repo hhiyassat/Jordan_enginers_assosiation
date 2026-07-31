@@ -89,7 +89,7 @@ Fully specified in
 
 ```
 SPRINT_START_HEAD=a4224fcceff08a73d7c348b4a3324417fe66a413
-SPRINT_FINAL_HEAD=<recorded after this final commit — see closure-sprint-ledger>
+SPRINT_FINAL_HEAD=3f3e5af7a36e5a7c9ff47ed3b451f07f2f3daee0
 SPRINT_BRANCH=remediation/architecture-security-production-readiness
 SPRINT_COMMITS_CREATED=11 (10 per-item + 1 final-verification fix)
 
