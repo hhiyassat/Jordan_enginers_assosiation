@@ -43,6 +43,7 @@ final class HealthController extends Controller
         ], $overall ? 200 : 503);
     }
 
+    /** @return array{ok: bool, reason?: string} */
     private function checkDatabase(): array
     {
         try {
@@ -53,6 +54,7 @@ final class HealthController extends Controller
         }
     }
 
+    /** @return array{ok: bool, reason?: string} */
     private function checkCache(): array
     {
         try {

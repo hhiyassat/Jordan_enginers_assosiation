@@ -76,6 +76,9 @@ final class SecurityEvents
         ]);
     }
 
+    /**
+     * @param  list<string>  $rolesRequired  role strings expected by the CheckRole middleware
+     */
     public static function authorizationDenied(Request $request, array $rolesRequired): void
     {
         self::emit('authorization_denied', $request, [
@@ -86,6 +89,9 @@ final class SecurityEvents
         ]);
     }
 
+    /**
+     * @param  array<string, mixed>  $extra
+     */
     public static function integrationSignatureFailure(?Request $request, string $reason, array $extra = []): void
     {
         self::emit('integration_signature_failure', $request, array_merge([
@@ -93,6 +99,9 @@ final class SecurityEvents
         ], $extra));
     }
 
+    /**
+     * @param  array<string, mixed>  $extra
+     */
     public static function paymentCallbackFailure(?Request $request, string $reason, array $extra = []): void
     {
         self::emit('payment_callback_failure', $request, array_merge([
