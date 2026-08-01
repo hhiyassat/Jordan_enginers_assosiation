@@ -42,7 +42,10 @@ Route::prefix('api/v1')->middleware(['auth:sanctum', 'token.inactivity', 'passwo
     });
 
     // Admin surface — decide + issue + assign + close.
-    Route::middleware('role:admin,superuser')->group(function () {
+    // C-01: JEA discipline (complaints, sanctions, legal fines,
+    // supervision transfers) is admin territory. Superuser is
+    // user-management only.
+    Route::middleware('role:admin')->group(function () {
         Route::get ('admin/complaints',                              [ComplaintController::class, 'index']);
         Route::post('admin/complaints/{id}/decide',                  [ComplaintController::class, 'decide']);
 

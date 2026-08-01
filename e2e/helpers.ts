@@ -21,7 +21,10 @@ export async function login(page: Page, email: string, password: string): Promis
   // that would otherwise match a label-substring like "كلمة المرور".
   await page.getByRole('textbox', { name: /البريد الإلكتروني/ }).fill(email);
   await page.getByRole('textbox', { name: /كلمة المرور/ }).fill(password);
-  await page.getByRole('textbox', { name: /رمز التحقق/ }).fill('BYPASS');
+  const captchaInput = page.getByRole('textbox', { name: /رمز التحقق/ });
+  if (await captchaInput.isVisible().catch(() => false)) {
+    await captchaInput.fill('BYPASS');
+  }
 
   // Wait for the login POST response BEFORE clicking — the click races
   // the httpOnly cookie (JORD-30). Post-cookie, any subsequent goto

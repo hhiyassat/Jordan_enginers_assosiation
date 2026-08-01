@@ -170,38 +170,33 @@ class BoundariesTest extends TestCase
      * @var array<string, string>
      */
     private const PC_ALLOWLIST = [
-        'Http/Controllers/Api/AdminDashboardController.php' =>
-            'RED: reads Modules\JeaServices for org-wide app list + '
-            . 'certificate count. Splits into a platform admin shell + '
-            . 'a jea-services "recent apps" widget in a future WS.',
         'Providers/AppServiceProvider.php' =>
-            'Composition root binds Integrations\Gsb\* into the container. '
-            . 'The wiring belongs at the composition boundary; a future WS '
-            . 'can move the bindings into GsbServiceProvider itself.',
-        'Models/User.php' =>
-            'User has JEA relations (OfficeCoalition, OfficeCoalitionMember) '
-            . 'from JORD-77. Needs a User contract that jea-projects can '
-            . 'extend without the platform User importing it.',
-        'Models/Organization.php' =>
-            'Organization hasMany JEA aggregations (services, applications, '
-            . 'coalitions). Same pattern as User.php — needs a contract so '
-            . 'the tenant model can enumerate its domain data without '
-            . 'importing modules directly.',
-        'Http/Concerns/RespondsWithLockedService.php' =>
-            'The 423 locked-service response reads Modules\JeaServices\Models\ServiceDefinition. '
-            . 'Trait should move to modules/JeaServices/Http/Concerns/ since '
-            . 'the "locked" concept IS jea-services.',
-        'Services/Payment/MockPaymentGateway.php' =>
-            'Payment abstraction takes Modules\JeaServices\Models\Application directly. '
-            . 'Should invert: Application implements a PaymentTarget contract; '
-            . 'gateway takes the contract.',
-        'Services/Payment/PaymentGateway.php' =>
-            'Same as MockPaymentGateway — takes Application concrete instead of '
-            . 'a PaymentTarget contract. Follow-up contract-inversion refactor.',
-        'Services/Notifications/NotificationService.php' =>
-            'Notification service has Application knowledge baked in. Should '
-            . 'accept a domain-neutral Notifiable + template payload; each '
-            . 'module builds its own payload.',
+            'Composition-root registration of the Integrations\Gsb\* '
+            . 'singleton bindings. This is the framework-bootstrap '
+            . 'exception the H-07 mandate explicitly permits: no '
+            . 'domain method calls, only container wiring so anyone '
+            . 'resolving GsbClient gets the shared instance. Movable '
+            . 'into GsbServiceProvider in a follow-up if / when the '
+            . 'composition root is reorganized; not blocking closure.',
+        // H-08 (2026-07-31): removed Models/User.php + Models/Organization.php
+        // — accessors extracted to OfficeCoalitionResolver.
+        // H-07 session-3 (2026-07-31): removed
+        //   Http/Controllers/Api/AdminDashboardController.php — JEA-specific
+        //     dashboard + application listing moved to
+        //     Modules\JeaServices\Http\Controllers\JeaAdminDashboardController;
+        //     Platform's AdminDashboardController now owns only /admin/audit-logs.
+        //   Http/Concerns/RespondsWithLockedService.php   — moved to Modules\JeaServices\Http\Concerns.
+        //   Services/Payment/MockPaymentGateway.php       — takes PaymentIntent DTO (no JEA import).
+        //   Services/Payment/PaymentGateway.php           — same signature.
+        //   Services/Notifications/NotificationService.php — slimmed to a
+        //     domain-neutral primitive; JEA emitters moved to
+        //     Modules\JeaServices\Services\JeaNotificationService.
+        //
+        // Plugins + integrations that need JEA state depend on
+        // App\Contracts\Services\ServiceLockLookup — never on
+        // Modules\Jea* directly. (The companion ServiceDefinitionSnapshot
+        // DTO was retired in CL-01 after Nashmi's pushService flow — the
+        // only consumer — was removed in CS-10.)
     ];
 
     public function test_platform_does_not_import_service_modules(): void

@@ -6,8 +6,12 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Middleware\ReadTokenFromCookie;
+use App\Jobs\ProcessNotificationJob;
 use App\Models\AuditLog;
 use App\Models\User;
+use App\Support\PasswordHistory;
+use App\Support\PasswordPolicy;
+use App\Support\SecurityEvents;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cookie;
@@ -36,6 +40,11 @@ class AuthController extends Controller
             ->first();
 
         if (! $user || ! Hash::check($data['password'], $user->password)) {
+            // P0-E-2: emit authentication failure event. Attempted email
+            // logged; password NEVER logged. Ops can pattern-match on
+            // repeated failures for the same email (targeted stuffing)
+            // or the same IP (spraying).
+            SecurityEvents::loginFailed($request, $data['email']);
             return response()->json(['message' => 'بيانات الاعتماد غير صحيحة.'], 401);
         }
 
@@ -43,6 +52,9 @@ class AuthController extends Controller
         $user->tokens()->delete();
 
         $token = $user->createToken('esp-token')->plainTextToken;
+
+        // P0-E-2: authentication success event.
+        SecurityEvents::loginSuccess($request, $user->id);
 
         // JORD-30: token still returned in JSON for backward compat
         // with any lingering bearer-header consumer, but the CANONICAL
@@ -82,7 +94,11 @@ class AuthController extends Controller
 
     public function logout(Request $request): JsonResponse
     {
+        $userId = $request->user()->id;
         $request->user()->currentAccessToken()->delete();
+        // P0-E-2: emit logout + token-revoked events for audit trail.
+        SecurityEvents::logout($request);
+        SecurityEvents::tokenRevoked($request, $userId, 'user_logout');
         return response()
             ->json(['message' => 'تم تسجيل الخروج.'])
             // JORD-30: clear the httpOnly cookie so a stolen browser
@@ -159,19 +175,25 @@ class AuthController extends Controller
         $data = $request->validate([
             'name'             => ['required', 'string', 'max:255'],
             'email'            => ['required', 'email', 'unique:users,email'],
-            'password'         => ['required', 'confirmed', Password::min(8)->mixedCase()->numbers()],
+            'password'         => ['required', 'confirmed', PasswordPolicy::baseRule()],
             'organization_id'  => ['required', 'exists:organizations,id'],
             'phone'            => ['nullable', 'string', 'max:20'],
         ]);
+
+        $hash = Hash::make($data['password']);
 
         $user = User::create([
             'organization_id'    => $data['organization_id'],
             'name'               => $data['name'],
             'email'              => $data['email'],
-            'password'           => Hash::make($data['password']),
+            'password'           => $hash,
             'role'               => 'applicant',
             'password_changed_at' => now(),
         ]);
+
+        // P1-08: seed history with the initial password so first
+        // change cannot round-trip back to it.
+        PasswordHistory::remember($user, $hash);
 
         $token = $user->createToken('esp-token')->plainTextToken;
 
@@ -206,7 +228,12 @@ class AuthController extends Controller
 
         $rules = [
             'current_password' => ['required', 'string'],
-            'password'         => ['required', 'confirmed', Password::min(8)->mixedCase()->numbers()],
+            'password'         => [
+                'required',
+                'confirmed',
+                PasswordPolicy::baseRule(),
+                PasswordPolicy::distinctFromHistoryFor($user),
+            ],
         ];
         // On first login the superuser may pick their own login email.
         if ($user->isSuperuser() && $user->must_change_password) {
@@ -218,8 +245,9 @@ class AuthController extends Controller
             return response()->json(['message' => 'كلمة المرور الحالية غير صحيحة.'], 422);
         }
 
+        $newHash = Hash::make($data['password']);
         $update = [
-            'password'             => Hash::make($data['password']),
+            'password'             => $newHash,
             'must_change_password' => false,
             'password_changed_at'  => now(),
         ];
@@ -227,6 +255,32 @@ class AuthController extends Controller
             $update['email'] = $data['email'];
         }
         $user->update($update);
+
+        // P1-08: remember the new hash so history rule catches reuse.
+        PasswordHistory::remember($user, $newHash);
+
+        // P0-E-2: password_changed event for the security channel.
+        SecurityEvents::passwordChanged($request, $user->id);
+
+        // CS-02: async security notice to the user's inbox. Queued
+        // (not synchronous) because the response should not block on
+        // the notification insert, and if the worker is transiently
+        // down the security-channel log above is still the primary
+        // audit trail — the inbox row is user-facing convenience.
+        $correlationId = (string) ($request->attributes->get('correlation_id')
+            ?? $request->header('X-Request-Id')
+            ?? (string) str()->uuid());
+
+        ProcessNotificationJob::dispatch(
+            userId:        $user->id,
+            type:          'security.password_changed',
+            titleAr:       'تم تغيير كلمة المرور',
+            titleEn:       'Password changed',
+            bodyAr:        'تم تغيير كلمة المرور لحسابك بنجاح. إن لم تكن أنت، الرجاء التواصل مع مسؤول النظام فورًا.',
+            bodyEn:        'Your account password was changed successfully. If this was not you, contact your administrator immediately.',
+            actionUrl:     null,
+            correlationId: $correlationId,
+        );
 
         return response()->json(['message' => 'تم تغيير كلمة المرور.']);
     }

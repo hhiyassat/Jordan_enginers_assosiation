@@ -84,8 +84,8 @@ class Srv001EndToEndFlowTest extends TestCase
         $schema = $this->getJson('/api/v1/services/SRV-001')->assertOk()->json('service.schema');
         $governorate = collect($schema['fields'])->firstWhere('id', 'governorate');
         $this->assertCount(12, $governorate['options'], 'governorate must expose 12 canonical options');
-        $this->assertFalse(collect($schema['fields'])->contains('id', 'dls_key'),
-            'DLS KEY must be absent from the pilot');
+        $this->assertTrue(collect($schema['fields'])->contains('id', 'dls_key'),
+            'DLS KEY must be present per JEA meeting 2026-07-26 §IX (semantic_status=NEEDS_JEA_API)');
         $routing = collect($schema['workflow']['routing'] ?? []);
         $this->assertTrue(
             $routing->contains(fn ($r) => ($r['target'] ?? null) === 'SRV-006'),
@@ -177,6 +177,16 @@ class Srv001EndToEndFlowTest extends TestCase
             'floor_area'                     => 900,
             'length_lm'                      => 20,      // SiteSurveyFeesSeeder fee input
             'actual_exploration_point_count' => $actualPts,
+            // Meeting 2026-07-26 §IX required fields.
+            'contract_party_type'                     => 'متعاقد',
+            'tax_number'                              => '1234567890',
+            'contract_signed_at'                      => '2026-07-27',
+            'national_number'                         => '9701012345',
+            'building_count'                          => 1,
+            'has_partial_basement'                    => 'no',
+            'head_of_specialization_engineer_name'    => 'م. حسين',
+            'special_use_type'                        => 'none',
+            'exemption_flag'                          => 'no',
         ];
     }
 

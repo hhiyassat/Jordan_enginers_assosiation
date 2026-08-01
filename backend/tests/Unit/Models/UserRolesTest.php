@@ -80,12 +80,27 @@ class UserRolesTest extends TestCase
         }
     }
 
-    public function test_can_edit_services_is_admin_or_superuser_only(): void
+    public function test_can_edit_services_is_admin_only(): void
     {
+        // C-01: service-catalog authorship is admin (JEA business)
+        // territory. Superuser is user-management only.
         $this->assertTrue($this->make('admin')->canEditServices());
-        $this->assertTrue($this->make('superuser')->canEditServices());
+        $this->assertFalse($this->make('superuser')->canEditServices(),
+            'C-01: superuser must not edit service definitions');
         $this->assertFalse($this->make('auditor')->canEditServices());
         $this->assertFalse($this->make('staff')->canEditServices());
         $this->assertFalse($this->make('applicant')->canEditServices());
+    }
+
+    public function test_is_reviewer_excludes_superuser(): void
+    {
+        // C-01: reviewing applications is JEA business, not
+        // user-management. Superuser must not be a reviewer.
+        $this->assertTrue($this->make('staff')->isReviewer());
+        $this->assertTrue($this->make('auditor')->isReviewer());
+        $this->assertTrue($this->make('admin')->isReviewer());
+        $this->assertFalse($this->make('superuser')->isReviewer(),
+            'C-01: superuser must not be a reviewer');
+        $this->assertFalse($this->make('applicant')->isReviewer());
     }
 }

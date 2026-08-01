@@ -22,11 +22,16 @@ use Illuminate\Support\Facades\Auth;
  *     organization_id, queries auto-filter to that org unless
  *     ::withoutOrgScope() is used.
  *
- * The global scope silently no-ops when:
- *   - There is no authenticated user (console, seeders, integration jobs)
- *   - The authenticated user has no organization_id (superuser / integration)
- * This keeps existing seeders and cross-tenant admin queries working without
- * forcing every caller to opt out.
+ * The global scope behaves as follows:
+ *   - No authenticated user (console, seeders, integration jobs): no filter.
+ *     Trusted execution context.
+ *   - Authenticated user with a valid organization_id: filters to that org.
+ *   - Authenticated user with a NULL organization_id: FAILS CLOSED — returns
+ *     zero rows and emits a security warning. See OrganizationScope for
+ *     the H-01 remediation details.
+ *
+ * For legitimate cross-tenant reads (admin dashboards, integration jobs),
+ * call ::withoutOrgScope() explicitly at the call site.
  */
 trait BelongsToOrganization
 {
@@ -66,8 +71,18 @@ trait BelongsToOrganization
      */
     public function scopeForCurrentOrganization(Builder $query): Builder
     {
-        $orgId = Auth::check() ? (Auth::user()->organization_id ?? null) : null;
-        return $orgId ? $this->scopeForOrganization($query, $orgId) : $query;
+        if (!Auth::check()) {
+            // Trusted execution context (console, seeder). Caller is
+            // responsible for scoping.
+            return $query;
+        }
+        $orgId = Auth::user()->organization_id ?? null;
+        if (!$orgId) {
+            // H-01: authenticated user with no organization_id is a
+            // misconfiguration. Fail closed — return zero rows.
+            return $query->whereRaw('1 = 0');
+        }
+        return $this->scopeForOrganization($query, $orgId);
     }
 
     /**
@@ -79,5 +94,29 @@ trait BelongsToOrganization
     public static function withoutOrgScope(): Builder
     {
         return static::query()->withoutGlobalScope(OrganizationScope::class);
+    }
+
+    /**
+     * CL-04: tenant-scoped `findOrFail` helper for controller code paths
+     * that previously inlined `Model::forOrganization($orgId)->findOrFail($id)`.
+     *
+     * The org id is passed EXPLICITLY (no reliance on Auth resolution
+     * inside the helper) so the tenant intent stays visible at the
+     * callsite and there's no hidden `Auth::user()` coupling. Fails
+     * closed via `findOrFail` — returns 404 on cross-org access
+     * (never 403 with a leaky message) exactly like the inline pattern
+     * it replaces.
+     *
+     * @param  int         $orgId  The tenant id the caller has already resolved.
+     * @param  int|string  $id     The primary key of the target model.
+     * @return static
+     *
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     */
+    public static function findForOrganizationOrFail(int $orgId, int|string $id): static
+    {
+        /** @var static $model */
+        $model = static::forOrganization($orgId)->findOrFail($id);
+        return $model;
     }
 }

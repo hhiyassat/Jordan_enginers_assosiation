@@ -114,6 +114,10 @@ class DatabaseSeeder extends Seeder
             // are already in place. Manual-reference IDs are attached
             // downstream by ManualReferenceLinksSeeder.
             Srv001PilotSeeder::class,
+            // SG-04: register the three SRV-001 calculators as versioned rules.
+            // Must run after Srv001PilotSeeder so the SRV-001 row exists (even
+            // though rule rows themselves are not FK-linked to service_definitions).
+            \Modules\JeaServices\Database\Seeders\Srv001RulesSeeder::class,
             // JORD-85: admin-editable fee defaults for every service
             // whose fee block is still the placeholder `fixed 0` — sets
             // 50000 JOD until the F-07 amounts are wired per-service

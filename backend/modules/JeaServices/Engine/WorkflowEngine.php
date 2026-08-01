@@ -12,8 +12,9 @@ use App\Models\AuditLog;
 use Modules\JeaServices\Models\Certificate;
 use Modules\JeaServices\Models\ServiceDefinition;
 use App\Models\User;
-use App\Services\Notifications\NotificationService;
 use App\Services\Payment\PaymentReceipt;
+use Modules\JeaServices\Governance\ApplicationVersionBinder;
+use Modules\JeaServices\Services\JeaNotificationService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -102,6 +103,22 @@ class WorkflowEngine
         $prevStatus = $app->status;
 
         DB::transaction(function () use ($app, $actor, $firstReviewer, $prevStatus) {
+            // C-04 TOCTOU Guard: Re-evaluate cross-cutting submission pipeline inside the atomic
+            // transaction scope before status transition. Prevents concurrent submissions from
+            // separate organizations from bypassing cadastral and owner conflict guards.
+            $crossCuttingErrors = app(CrossCuttingSubmissionPipeline::class)->validate($app);
+            if (! empty($crossCuttingErrors)) {
+                $messages = [];
+                foreach ($crossCuttingErrors as $err) {
+                    if (is_array($err)) {
+                        $messages[] = implode(' ', $err);
+                    } elseif (is_string($err)) {
+                        $messages[] = $err;
+                    }
+                }
+                throw new Exceptions\ConflictException(implode(' ', $messages) ?: 'تعذر تقديم الطلب بسبب وجود تعارض في الحقول العامة.');
+            }
+
             // B-5 + WF-001: transition through ALLOWED_TRANSITIONS
             $this->transitionTo($app, Application::STATUS_SUBMITTED);
 
@@ -111,6 +128,10 @@ class WorkflowEngine
             if (isset($firstReviewer['sla_hours'])) {
                 $app->sla_deadline = now()->addHours($firstReviewer['sla_hours']);
             }
+
+            // SG-03: bind to currently-published service_definition_version if one exists.
+            // Legacy path (no published version) leaves FK null → LEGACY_UNVERSIONED.
+            app(ApplicationVersionBinder::class)->bindOrClassifyLegacy($app);
 
             $app->save();
 
@@ -133,7 +154,7 @@ class WorkflowEngine
         // must not block the workflow — swallow + log so the submit is
         // still returned success on any downstream notification failure.
         try {
-            app(NotificationService::class)->emitApplicationSubmitted($app->fresh());
+            app(JeaNotificationService::class)->emitApplicationSubmitted($app->fresh());
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::warning('notification emit failed', [
                 'event' => 'application.submitted',
@@ -426,7 +447,7 @@ class WorkflowEngine
         // case as under_review) so the notification would be noise.
         if ($nextStageIfApproving === null) {
             try {
-                app(NotificationService::class)
+                app(JeaNotificationService::class)
                     ->emitApplicationDecided($app->fresh(), $actor, $decision);
             } catch (\Throwable $e) {
                 \Illuminate\Support\Facades\Log::warning('notification emit failed', [
@@ -516,7 +537,7 @@ class WorkflowEngine
 
         // JORD-9: applicant should see the paid confirmation in the bell.
         try {
-            app(NotificationService::class)->emitPaymentConfirmed($app->fresh());
+            app(JeaNotificationService::class)->emitPaymentConfirmed($app->fresh());
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::warning('notification emit failed', [
                 'event' => 'application.paid',
@@ -609,7 +630,7 @@ class WorkflowEngine
 
         // JORD-9: notify the applicant that the certificate is ready.
         try {
-            app(NotificationService::class)->emitCertificateIssued($app->fresh());
+            app(JeaNotificationService::class)->emitCertificateIssued($app->fresh());
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::warning('notification emit failed', [
                 'event' => 'application.certificate_issued',
@@ -692,14 +713,21 @@ class WorkflowEngine
 
     private function allocateCertificateSerial(int $orgId, int $year): int
     {
-        // firstOrCreate is safe here because we're inside a transaction:
-        // if two writers race, one gets a unique-key violation and the
-        // outer transaction retries via Laravel's built-in retry logic
-        // for serialization errors.
-        \Modules\JeaServices\Models\CertificateCounter::firstOrCreate(
-            ['organization_id' => $orgId, 'year' => $year],
-            ['next_serial' => 1],
-        );
+        // H-03: The atomic sequence is `INSERT if missing → SELECT
+        // FOR UPDATE → increment`. The INSERT step uses insertOrIgnore
+        // (portable across Postgres `ON CONFLICT DO NOTHING`, MySQL
+        // `INSERT IGNORE`, SQLite `INSERT OR IGNORE`) so a concurrent
+        // race in the enclosing transaction does not poison the
+        // Postgres transaction (which would surface as 25P02 on the
+        // next statement). After this call the counter row exists —
+        // the SELECT FOR UPDATE below finds it deterministically.
+        \Illuminate\Support\Facades\DB::table('certificate_counters')->insertOrIgnore([
+            'organization_id' => $orgId,
+            'year'            => $year,
+            'next_serial'     => 1,
+            'created_at'      => now(),
+            'updated_at'      => now(),
+        ]);
 
         $row = \Modules\JeaServices\Models\CertificateCounter::where('organization_id', $orgId)
             ->where('year', $year)

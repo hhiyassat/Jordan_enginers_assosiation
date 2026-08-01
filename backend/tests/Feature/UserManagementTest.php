@@ -71,7 +71,7 @@ class UserManagementTest extends TestCase
         Sanctum::actingAs($this->admin);
         $this->postJson('/api/v1/admin/users', [
             'name' => 'موظف جديد', 'email' => 'new-staff@t.esp',
-            'password' => 'Aa123456', 'role' => 'staff',
+            'password' => 'Aa123456!Bcd', 'role' => 'staff',
         ])->assertCreated();
     }
 
@@ -80,7 +80,7 @@ class UserManagementTest extends TestCase
         Sanctum::actingAs($this->admin);
         $this->postJson('/api/v1/admin/users', [
             'name' => 'مدير آخر', 'email' => 'other-admin@t.esp',
-            'password' => 'Aa123456', 'role' => 'admin',
+            'password' => 'Aa123456!Bcd', 'role' => 'admin',
         ])->assertStatus(403);
     }
 
@@ -89,7 +89,7 @@ class UserManagementTest extends TestCase
         Sanctum::actingAs($this->admin);
         $this->postJson('/api/v1/admin/users', [
             'name' => 'مستخدم أعلى', 'email' => 'other-super@t.esp',
-            'password' => 'Aa123456', 'role' => 'superuser',
+            'password' => 'Aa123456!Bcd', 'role' => 'superuser',
         ])->assertStatus(403);
     }
 
@@ -143,7 +143,7 @@ class UserManagementTest extends TestCase
     {
         Sanctum::actingAs($this->superuser);
         $this->postJson('/api/v1/admin/users', [
-            'name' => 'مستخدم جديد', 'email' => 'new@t.esp', 'password' => 'Aa123456',
+            'name' => 'مستخدم جديد', 'email' => 'new@t.esp', 'password' => 'Aa123456!Bcd',
             'role' => 'staff',
         ])->assertCreated();
         $this->assertTrue(User::where('email', 'new@t.esp')->first()->must_change_password);
@@ -196,7 +196,9 @@ class UserManagementTest extends TestCase
         // Target superuser has must_change_password=false → CLI-only rotation.
         $target = $this->makeUser('superuser', 'target-super@t.esp');
         Sanctum::actingAs($this->superuser);
-        $this->putJson("/api/v1/admin/users/{$target->id}", ['password' => 'Newpass123'])
+        // P1-08: password must satisfy the new min-12 + symbols policy
+        // so validation passes and we reach the CLI-only lockout check.
+        $this->putJson("/api/v1/admin/users/{$target->id}", ['password' => 'Newpass1234!Bc'])
             ->assertStatus(403)
             ->assertJsonPath('message', fn($m) => str_contains($m, 'user:credentials'));
     }

@@ -56,7 +56,9 @@ class EnforcePasswordPolicy
         }
 
         // 2. Password expiry check
-        $expiryDays = (int) env('PASSWORD_EXPIRY_DAYS', 90);
+        // CS-10 / L-04: read via config() so php artisan config:cache
+        // does not turn the runtime env() into null.
+        $expiryDays = (int) config('esp.password_expiry_days', 90);
 
         if ($expiryDays > 0 && $user->password_changed_at) {
             $expiredAt = $user->password_changed_at->addDays($expiryDays);

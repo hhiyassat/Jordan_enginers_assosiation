@@ -3,21 +3,24 @@
 namespace Integrations\Nashmi\Services;
 
 use Integrations\Nashmi\Models\IntegrationCycle;
-use Modules\JeaServices\Models\ServiceDefinition;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 /**
  * NashmiIntegrationService
  *
- * Handles all outbound HTTP calls to the Nashmi AI Manager API.
+ * Handles the outbound HTTP call to Nashmi's AI Manager API.
  *
  * Outbound endpoint: POST {base_url}/api/integration/projects/create-from-requirements
  * Auth: X-Integration-Key header (shared secret)
  *
- * Two outbound use-cases:
- *   1. pushService()    — push a ServiceDefinition as a new requirements project
- *   2. notifyCodeDone() — notify Nashmi that code for a cycle is ready for review
+ * CS-10 (2026-08-01): the older `pushService()` code-path — which
+ * pushed a ServiceDefinitionSnapshot as a new requirements project
+ * — was never wired to a route or a caller and is deleted along
+ * with its helpers (generateServiceRequirementsDoc,
+ * buildServiceDescription). Only the outbound `notifyCodeDone`
+ * flow survives, and it is dispatched asynchronously through
+ * ProcessNashmiOutboundJob (CS-02).
  */
 class NashmiIntegrationService
 {
@@ -34,62 +37,12 @@ class NashmiIntegrationService
         $this->timeout        = config('nashmi.timeout',         30);
     }
 
-    // ── 1. Push a service definition as a project to Nashmi ──────────────────
+    // ── Notify Nashmi that code is done for a cycle ─────────────────────────
 
-    public function pushService(ServiceDefinition $service): array
-    {
-        $pdfContent = $this->generateServiceRequirementsDoc($service);
-        $tmpPath    = $this->writeMinimalPdf($pdfContent, 'esp_service_' . $service->id);
-
-        Log::channel('integration')->info('Nashmi push initiated', [
-            'service_code' => $service->code,
-            'service_name' => $service->name_en,
-        ]);
-
-        try {
-            $response = Http::timeout($this->timeout)
-                ->withHeaders([
-                    'X-Integration-Key' => $this->integrationKey,
-                    'Accept'            => 'application/json',
-                ])
-                ->attach(
-                    'pdf_file',
-                    file_get_contents($tmpPath),
-                    'esp_service_' . $service->code . '_requirements.pdf'
-                )
-                ->post($this->baseUrl . '/api/integration/projects/create-from-requirements', [
-                    'organization_id'     => $this->organizationId,
-                    'project_name'        => '[ESP] ' . $service->name_en . ' — ' . $service->name_ar,
-                    'project_description' => $this->buildServiceDescription($service),
-                ]);
-
-            @unlink($tmpPath);
-
-            if ($response->successful()) {
-                $data = $response->json();
-                Log::channel('integration')->info('Nashmi push success', $data ?? []);
-                return ['success' => true, 'data' => $data];
-            }
-
-            Log::channel('integration')->error('Nashmi push failed', [
-                'status' => $response->status(),
-                'body'   => $response->body(),
-            ]);
-
-            return [
-                'success' => false,
-                'error'   => $response->json('message') ?? 'Nashmi API error ' . $response->status(),
-            ];
-
-        } catch (\Throwable $e) {
-            @unlink($tmpPath);
-            Log::channel('integration')->error('Nashmi push exception', ['error' => $e->getMessage()]);
-            return ['success' => false, 'error' => $e->getMessage()];
-        }
-    }
-
-    // ── 2. Notify Nashmi that code is done for a cycle ────────────────────────
-
+    /**
+     * @param  array<string, mixed>  $codeSummary
+     * @return array<string, mixed>
+     */
     public function notifyCodeDone(IntegrationCycle $cycle, array $codeSummary): array
     {
         $pdfContent = $this->generateCodeDoneDoc($cycle, $codeSummary);
@@ -136,69 +89,11 @@ class NashmiIntegrationService
         }
     }
 
-    // ── Document generators ───────────────────────────────────────────────────
+    // ── Document generator ────────────────────────────────────────────────────
 
-    private function generateServiceRequirementsDoc(ServiceDefinition $service): string
-    {
-        $now     = now()->format('Y-m-d H:i');
-        $nameEn  = preg_replace('/[^\x20-\x7E]/', '', $service->name_en ?? '');
-        $descEn  = preg_replace('/[^\x20-\x7E\n]/', '', $service->description_en ?? '');
-        $status  = $service->status;
-
-        $fieldCount = count($service->schema['fields'] ?? []);
-        $docCount   = count($service->schema['documents'] ?? []);
-        $stageCount = count($service->schema['workflow']['stages'] ?? []);
-
-        return <<<TXT
-        EQRATECH SERVICES PLATFORM (ESP v2)
-        Service Requirements Document — Auto-generated
-        Generated: {$now}
-        ============================================================
-
-        SERVICE: {$nameEn}
-        CODE: {$service->code}
-        STATUS: {$status}
-
-        DESCRIPTION (English):
-        {$descEn}
-
-        SCHEMA SUMMARY:
-        - Form Fields: {$fieldCount}
-        - Required Documents: {$docCount}
-        - Workflow Stages: {$stageCount}
-
-        ============================================================
-        INTEGRATION CONTEXT
-        Platform: Eqratech Services Platform (ESP v2)
-        Standards: MODEE Annex 4.7 e-Government, WCAG 2.1 AA
-        Stack: Laravel 12 + React 18 + TypeScript + SQLite/MySQL
-        Language: Arabic (RTL) primary, English secondary
-        Auth: Laravel Sanctum RBAC (applicant | staff | auditor | admin)
-
-        TASKS FOR AI PIPELINE (Nashmi → assign to team):
-        1. Analyse requirements and finalize user stories
-        2. Design API and data model changes
-        3. Scaffold additional frontend pages if needed
-        4. Define acceptance criteria per MODEE standards
-
-        ============================================================
-        END OF REQUIREMENTS DOCUMENT
-        TXT;
-    }
-
-    private function buildServiceDescription(ServiceDefinition $service): string
-    {
-        return sprintf(
-            'ESP service module: %s (%s). Schema-driven — %d fields, %d docs, %d stages. Auto-generated from ESP service registry on %s.',
-            $service->name_en,
-            $service->code,
-            count($service->schema['fields'] ?? []),
-            count($service->schema['documents'] ?? []),
-            count($service->schema['workflow']['stages'] ?? []),
-            now()->toDateTimeString()
-        );
-    }
-
+    /**
+     * @param  array<string, mixed>  $summary
+     */
     private function generateCodeDoneDoc(IntegrationCycle $cycle, array $summary): string
     {
         $now       = now()->format('Y-m-d H:i');
@@ -257,6 +152,9 @@ class NashmiIntegrationService
         TXT;
     }
 
+    /**
+     * @param  array<string, mixed>  $summary
+     */
     private function buildCodeDoneDescription(IntegrationCycle $cycle, array $summary): string
     {
         return sprintf(

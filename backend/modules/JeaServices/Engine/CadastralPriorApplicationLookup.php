@@ -109,8 +109,8 @@ final class CadastralPriorApplicationLookup
             ->where('organization_id', '!=', $app->organization_id)
             ->whereIn('status', self::CONFLICTING_STATUSES)
             ->where('id', '!=', $app->id)
-            ->whereRaw("json_extract(data, '$.basin_number') = ?", [$triple['basin_number']])
-            ->whereRaw("json_extract(data, '$.parcel_number') = ?", [$triple['parcel_number']])
+            ->where('basin_number', $triple['basin_number'])
+            ->where('parcel_number', $triple['parcel_number'])
             ->get(['id', 'data', 'organization_id']);
 
         $normalizedName = ArabicNormalizer::normalize($triple['basin_or_location_name']);

@@ -14,6 +14,21 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  *   3. ESP notifies Nashmi that code is done (outbound)
  *   4. Nashmi sends reviewer/tester/QA feedback (inbound)
  *   5. Cycle closes or loops back to #2
+ *
+ * @property int                              $id
+ * @property string                           $cycle_ref
+ * @property string                           $service_name
+ * @property string|null                      $requirements_source
+ * @property string|null                      $requirements_file_path
+ * @property array<string, mixed>|null        $requirements_meta
+ * @property string                           $status
+ * @property int|null                         $nashmi_project_id
+ * @property array<string, mixed>|null        $code_summary
+ * @property array<string, mixed>|null        $feedback
+ * @property string|null                      $notes
+ * @property \Illuminate\Support\Carbon|null  $requirements_received_at
+ * @property \Illuminate\Support\Carbon|null  $code_done_notified_at
+ * @property \Illuminate\Support\Carbon|null  $feedback_received_at
  */
 class IntegrationCycle extends Model
 {

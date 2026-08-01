@@ -153,11 +153,29 @@ class ApplicationController extends Controller
             return response()->json(['message' => 'المسؤولون والموظفون لا يمكنهم تقديم طلبات.'], 403);
         }
 
-        // P-5: Organization-scoped service lookup
-        $service = ServiceDefinition::where('organization_id', $request->user()->organization_id)
+        // JEA-CATALOG: services are JEA-owned and shared across every tenant.
+        // The submitted Application row is still tenant-scoped (auto-assigned
+        // by BelongsToOrganization trait on create), so the application
+        // belongs to the applicant's office — only the service *definition*
+        // is looked up from the shared catalog. See ServiceCatalogController::index.
+        $service = ServiceDefinition::withoutOrgScope()
             ->where('code', $request->service_code)
             ->where('status', 'active')
             ->firstOrFail();
+
+        // RC-02 · SG-02 activation gate — reject creation when the service
+        // is not accepting new applications (unapproved / suspended /
+        // retired / effective_from in future). Verdict is LENIENT-mode by
+        // default so legacy `status='active'` services remain allowed
+        // through the transition window.
+        $availability = app(\Modules\JeaServices\Governance\ServiceAvailabilityPolicy::class)
+            ->evaluate($service, actorIsAdmin: (bool) $request->user()->isAdmin());
+        if (! $availability->applicationCreationAllowed) {
+            return response()->json([
+                'message' => 'لا يمكن إنشاء طلب جديد على هذه الخدمة في وضعها الحالي.',
+                'errors'  => ['service_code' => $availability->reasonCodes],
+            ], 422);
+        }
 
         // If project_id was passed, verify it belongs to the actor's org AND
         // is owned by them. Cross-org or cross-user access is an escalation
@@ -245,6 +263,20 @@ class ApplicationController extends Controller
         $app     = $this->findAccessible($request, $id);
         $service = $app->serviceDefinition;
 
+        // RC-02 · SG-02 activation gate — a draft against a service that has
+        // since been suspended / retired / had its publication revoked must
+        // not accept submission. LENIENT default preserves legacy behaviour.
+        if ($service instanceof ServiceDefinition) {
+            $availability = app(\Modules\JeaServices\Governance\ServiceAvailabilityPolicy::class)
+                ->evaluate($service, actorIsAdmin: (bool) $request->user()->isAdmin());
+            if (! $availability->submissionAllowed) {
+                return response()->json([
+                    'message' => 'لا يمكن تقديم هذا الطلب: الخدمة غير متاحة للتقديم في وضعها الحالي.',
+                    'errors'  => ['service_code' => $availability->reasonCodes],
+                ], 422);
+            }
+        }
+
         // EDA B-4 / WF-005: validate schema fields
         $dataErrors = (new SchemaValidator($service))->validateData($app->data ?? []);
         if ($dataErrors) {
@@ -311,7 +343,14 @@ class ApplicationController extends Controller
         // cannot submit ANY application until the sanction lapses.
         // Fires last so field / doc / capacity issues surface first
         // (fixable in-place), and the sanction message is a hard stop.
-        $sanctionErrors = app(\Modules\JeaDiscipline\Engine\SanctionGuard::class)->validate($app);
+        //
+        // CS-04: SanctionGuard consumes ApplicationSnapshot (not the
+        // JEA Application model), so the guard file no longer imports
+        // Modules\JeaServices\Models\Application and drops out of
+        // SM_ALLOWED_IMPORTS. We build the snapshot in one call here
+        // rather than re-fetching from the container.
+        $snapshot       = \Modules\JeaServices\Services\EloquentApplicationLookup::snapshotOf($app);
+        $sanctionErrors = app(\Modules\JeaDiscipline\Engine\SanctionGuard::class)->validate($snapshot);
         if ($sanctionErrors) {
             return response()->json([
                 'message' => 'لا يمكن تقديم الطلب بسبب عقوبة تأديبية نافذة على المكتب.',
@@ -378,12 +417,50 @@ class ApplicationController extends Controller
         return response()->json(['document' => $doc], 201);
     }
 
+    // ── Document download (P1-09) ───────────────────────────────────
+    //
+    // Serves a previously-uploaded ApplicationDocument to a caller who
+    // has read access to the parent Application. The invariant:
+    //   findAccessible() first — that enforces both the org filter
+    //   (BelongsToOrganization) and the applicant-own-only rule for
+    //   applicants. Then look up the document scoped by application_id
+    //   so a cross-application document ID request returns 404.
+    // Cross-tenant callers get 404 (findAccessible throws
+    // ModelNotFoundException) — never a redirect or a signed URL that
+    // could leak the storage path.
+
+    public function downloadDocument(Request $request, int $id, int $docId): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        $app = $this->findAccessible($request, $id);
+
+        $doc = ApplicationDocument::where('application_id', $app->id)
+            ->where('id', $docId)
+            ->firstOrFail();
+
+        $disk = \Illuminate\Support\Facades\Storage::disk($doc->disk);
+        if (! $disk->exists($doc->path)) {
+            abort(404, 'الملف غير متوفر.');
+        }
+
+        return $disk->download(
+            $doc->path,
+            $doc->original_filename ?: $doc->stored_filename,
+            [
+                'Content-Type'        => (string) ($doc->mime_type ?: 'application/octet-stream'),
+                // Never index/cache: the response is a scoped-authorized
+                // private file, not a public asset.
+                'Cache-Control'       => 'private, no-store',
+                'X-Content-Type-Options' => 'nosniff',
+            ],
+        );
+    }
+
     // Workstream 5B: reviewer queue + review dashboard + claim + decide
     // + confirmPayment + issueCertificate + verifyCertificate +
     // downloadCertificatePdf moved to purpose-built controllers.
     // Routes updated to match. ApplicationController now owns only the
     // JEA application-lifecycle CRUD (index, show, store, update,
-    // submit, uploadDocument).
+    // submit, uploadDocument, downloadDocument).
 
     // ── Private helpers ───────────────────────────────────────────────
 

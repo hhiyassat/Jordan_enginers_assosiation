@@ -77,25 +77,28 @@ class ApplicationReferenceTest extends TestCase
 
     public function test_sequence_increments_per_service_per_year(): void
     {
+        // H-02: the sequence is driven by an atomic per-(service, year)
+        // counter (application_counters), not by row counts against the
+        // applications table. Prior tests seeded rows via createApp() to
+        // exercise a count-based generator; that generator is gone.
         $service = $this->makeService('SVC-E');
 
-        // Insert a prior application for this service in the current year.
-        $this->createApp($service, 'first');
-
+        Application::generateReference($service); // consumes 0001
         $ref = Application::generateReference($service);
         $this->assertSame('0002', substr($ref, 6, 4));
     }
 
     public function test_sequence_is_independent_across_services(): void
     {
+        // H-02: each service has its own counter row.
         $a = $this->makeService('SVC-F');
         $b = $this->makeService('SVC-G');
 
-        $this->createApp($a, 'a1');
-        $this->createApp($a, 'a2');
-        // Service B has no prior apps → its next seq should be 0001.
+        Application::generateReference($a); // A: 1
+        Application::generateReference($a); // A: 2
+        // Service B has independent counter — next is 0001.
         $this->assertSame('0001', substr(Application::generateReference($b), 6, 4));
-        // Service A should be at 0003.
+        // Service A advances to 0003.
         $this->assertSame('0003', substr(Application::generateReference($a), 6, 4));
     }
 

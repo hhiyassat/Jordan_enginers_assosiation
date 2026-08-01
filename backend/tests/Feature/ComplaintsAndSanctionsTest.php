@@ -231,7 +231,9 @@ class ComplaintsAndSanctionsTest extends TestCase
             'status' => Application::STATUS_DRAFT,
             'data' => [], 'fee_amount' => 0,
         ]);
-        $this->assertSame([], app(SanctionGuard::class)->validate($app));
+        $this->assertSame([], app(SanctionGuard::class)->validate(
+            \Modules\JeaServices\Services\EloquentApplicationLookup::snapshotOf($app)
+        ));
     }
 
     public function test_sanction_guard_ignores_expired_suspension(): void
@@ -253,7 +255,9 @@ class ComplaintsAndSanctionsTest extends TestCase
             'status' => Application::STATUS_DRAFT,
             'data' => [], 'fee_amount' => 0,
         ]);
-        $this->assertSame([], app(SanctionGuard::class)->validate($app));
+        $this->assertSame([], app(SanctionGuard::class)->validate(
+            \Modules\JeaServices\Services\EloquentApplicationLookup::snapshotOf($app)
+        ));
     }
 
     public function test_admin_index_returns_org_complaints_only(): void

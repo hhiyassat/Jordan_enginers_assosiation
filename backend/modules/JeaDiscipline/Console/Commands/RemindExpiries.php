@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Modules\JeaDiscipline\Console\Commands;
 
 use Modules\JeaServices\Models\Application;
-use App\Services\Notifications\NotificationService;
+use Modules\JeaServices\Services\JeaNotificationService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
@@ -35,7 +35,7 @@ class RemindExpiries extends Command
      *  match on the same run (edge case at exactly-1-day-remaining). */
     private const THRESHOLDS = [1, 7, 30];
 
-    public function handle(NotificationService $notifier): int
+    public function handle(JeaNotificationService $notifier): int
     {
         $dryRun = $this->option('dry-run');
         $today = now();

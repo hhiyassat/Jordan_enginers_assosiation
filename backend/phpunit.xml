@@ -35,8 +35,12 @@
         <env name="APP_ENV" value="testing"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="CACHE_STORE" value="array"/>
-        <env name="DB_CONNECTION" value="sqlite"/>
-        <env name="DB_DATABASE" value=":memory:"/>
+        <!-- Default DB_CONNECTION for local test runs is sqlite in-memory.
+             The Postgres CI job sets DB_CONNECTION=pgsql + DB_HOST/DB_PORT
+             etc. via the job environment; PHPUnit's `force="false"` (the
+             default) lets the process-level env win when present. -->
+        <env name="DB_CONNECTION" value="sqlite" force="false"/>
+        <env name="DB_DATABASE" value=":memory:" force="false"/>
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>

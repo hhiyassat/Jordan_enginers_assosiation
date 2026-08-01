@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\JeaServices\Http\Controllers;
 
-use App\Http\Concerns\RespondsWithLockedService;
+use Modules\JeaServices\Http\Concerns\RespondsWithLockedService;
 use App\Http\Controllers\Controller;
 use Modules\JeaServices\Models\ServiceDefinition;
 use Illuminate\Http\JsonResponse;

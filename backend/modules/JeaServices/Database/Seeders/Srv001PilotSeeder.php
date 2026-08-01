@@ -249,6 +249,161 @@ class Srv001PilotSeeder extends Seeder
                 'min'      => 0,
             ],
 
+            // ── 5b. Meeting 2026-07-26 §IX additions ─────────────────
+            //
+            // Provisional field set from the JEA soil-testing meeting
+            // (docs/meetings/2026-07-26-jea-soil-testing.md). Uses field
+            // types already supported by DynamicForm.tsx — no renderer
+            // changes required. Auto-generated / API-linked slots are
+            // marked semantic_status='NEEDS_JEA_API' so W10 knows what
+            // to swap when the real integrations land.
+            [
+                'id'       => 'contract_party_type',
+                'label_ar' => 'نوع المتعاقد',
+                'label_en' => 'Contract Party Type',
+                'type'     => 'select',
+                'required' => true,
+                'options'  => [
+                    ['value' => 'متعاقد', 'label_ar' => 'متعاقد', 'label_en' => 'Contractor'],
+                    ['value' => 'ائتلاف', 'label_ar' => 'ائتلاف', 'label_en' => 'Coalition'],
+                ],
+            ],
+            [
+                'id'         => 'tax_number',
+                'label_ar'   => 'الرقم الضريبي',
+                'label_en'   => 'Tax Number',
+                'type'       => 'text',
+                'required'   => true,
+                'max_length' => 30,
+                'pattern'    => '^[0-9]+$',
+            ],
+            [
+                'id'       => 'contract_signed_at',
+                'label_ar' => 'تاريخ توقيع العقد',
+                'label_en' => 'Contract Signing Date',
+                'type'     => 'date',
+                'required' => true,
+            ],
+            [
+                'id'         => 'national_number',
+                'label_ar'   => 'الرقم الوطني',
+                'label_en'   => 'National Number',
+                'type'       => 'text',
+                'required'   => true,
+                'max_length' => 20,
+                'pattern'    => '^[0-9]+$',
+            ],
+            [
+                'id'              => 'dls_key',
+                'label_ar'        => 'مفتاح دائرة الأراضي (DLS Key)',
+                'label_en'        => 'DLS Key',
+                'type'            => 'text',
+                'required'        => false,
+                'max_length'      => 60,
+                'semantic_status' => 'NEEDS_JEA_API',
+                'description_ar'  => 'يُولَّد آلياً من سند التسجيل + الأراضي عند ربط API الدائرة (W10).',
+            ],
+            [
+                'id'       => 'building_count',
+                'label_ar' => 'عدد الأبنية',
+                'label_en' => 'Building Count',
+                'type'     => 'number',
+                'required' => true,
+                'min'      => 1,
+            ],
+            [
+                'id'       => 'has_partial_basement',
+                'label_ar' => 'هل يوجد تسوية جزئية؟',
+                'label_en' => 'Partial Basement?',
+                'type'     => 'radio',
+                'required' => true,
+                'options'  => [
+                    ['value' => 'no',  'label_ar' => 'لا',  'label_en' => 'No'],
+                    ['value' => 'yes', 'label_ar' => 'نعم', 'label_en' => 'Yes'],
+                ],
+            ],
+            [
+                'id'       => 'basement_area_m2',
+                'label_ar' => 'مساحة التسوية (م²)',
+                'label_en' => 'Basement Area (m²)',
+                'type'     => 'number',
+                'required' => false,
+                'min'      => 0,
+                'description_ar' => 'تُملأ عند اختيار "نعم" في التسوية الجزئية. تُحتسب طابقاً إضافياً في العمق الصافي.',
+            ],
+            [
+                'id'       => 'roof_area_m2',
+                'label_ar' => 'مساحة الروف (م²)',
+                'label_en' => 'Roof Area (m²)',
+                'type'     => 'number',
+                'required' => false,
+                'min'      => 0,
+            ],
+            [
+                'id'         => 'head_of_specialization_engineer_name',
+                'label_ar'   => 'اسم رئيس الاختصاص',
+                'label_en'   => 'Head of Specialization — Engineer Name',
+                'type'       => 'text',
+                'required'   => true,
+                'max_length' => 200,
+            ],
+            [
+                'id'              => 'head_of_specialization_engineer_number',
+                'label_ar'        => 'رقم المهندس',
+                'label_en'        => 'Engineer Number',
+                'type'            => 'text',
+                'required'        => false,
+                'max_length'      => 30,
+                'read_only'       => true,
+                'semantic_status' => 'NEEDS_JEA_API',
+                'description_ar'  => 'يُعبَّأ آلياً عند إدخال اسم المهندس بعد ربط API قاعدة بيانات النقابة (W10).',
+            ],
+            [
+                'id'       => 'special_use_type',
+                'label_ar' => 'نوع الاستخدام الخاص',
+                'label_en' => 'Special Use Type',
+                'type'     => 'select',
+                'required' => true,
+                'options'  => [
+                    ['value' => 'none',              'label_ar' => 'لا يوجد',      'label_en' => 'None'],
+                    ['value' => 'house_of_worship',  'label_ar' => 'دار عبادة',    'label_en' => 'House of Worship'],
+                    ['value' => 'charity',           'label_ar' => 'جمعية خيرية',  'label_en' => 'Charity Association'],
+                ],
+            ],
+            [
+                'id'         => 'special_use_entity_name',
+                'label_ar'   => 'اسم دار العبادة أو الجمعية',
+                'label_en'   => 'House of Worship / Charity Name',
+                'type'       => 'text',
+                'required'   => false,
+                'max_length' => 200,
+                'description_ar' => 'مطلوب عند اختيار "دار عبادة" أو "جمعية خيرية" في نوع الاستخدام.',
+            ],
+            [
+                'id'       => 'exemption_flag',
+                'label_ar' => 'مؤشر الإعفاء',
+                'label_en' => 'Exemption Indicator',
+                'type'     => 'radio',
+                'required' => true,
+                'options'  => [
+                    ['value' => 'no',  'label_ar' => 'لا',  'label_en' => 'No'],
+                    ['value' => 'yes', 'label_ar' => 'نعم', 'label_en' => 'Yes'],
+                ],
+            ],
+            [
+                'id'       => 'exemption_type',
+                'label_ar' => 'نوع الإعفاء',
+                'label_en' => 'Exemption Type',
+                'type'     => 'select',
+                'required' => false,
+                'options'  => [
+                    ['value' => 'engineering', 'label_ar' => 'إعفاء هندسي',  'label_en' => 'Engineering'],
+                    ['value' => 'social',      'label_ar' => 'إعفاء اجتماعي', 'label_en' => 'Social'],
+                    ['value' => 'other',       'label_ar' => 'إعفاء آخر',     'label_en' => 'Other'],
+                ],
+                'description_ar' => 'مطلوب عند اختيار "نعم" في مؤشر الإعفاء.',
+            ],
+
             // ── 6. Exploration — derived + entered (JORD-91) ──────────
             //
             // The derived fields are read-only on the form; server
@@ -281,6 +436,30 @@ class Srv001PilotSeeder extends Seeder
                 'type'     => 'number',
                 'required' => true,
                 'min'      => 0,
+            ],
+
+            // ── 7. Meeting-derived computed fields (§X, §XI) ─────────
+            //
+            // Populated by Srv001Guard at submit time via WellsCountCalculator
+            // and NetDepthTable. Read-only on the form; empty until first
+            // submission. Live-preview wiring is W3b.
+            [
+                'id'          => 'meeting_wells_count',
+                'label_ar'    => 'عدد الآبار المحسوب (اجتماع 2026-07-26)',
+                'label_en'    => 'Computed Wells Count (Meeting 2026-07-26)',
+                'type'        => 'number',
+                'required'    => false,
+                'read_only'   => true,
+                'computed_by' => 'WellsCountCalculator',
+            ],
+            [
+                'id'          => 'meeting_net_depth_total_m',
+                'label_ar'    => 'العمق الصافي لكل بئر (م)',
+                'label_en'    => 'Net Depth per Well (m)',
+                'type'        => 'number',
+                'required'    => false,
+                'read_only'   => true,
+                'computed_by' => 'NetDepthTable',
             ],
         ];
     }

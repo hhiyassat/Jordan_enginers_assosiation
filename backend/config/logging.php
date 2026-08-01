@@ -143,6 +143,22 @@ return [
             'days'   => 90,
         ],
 
+        // P0-E-2: dedicated security-event audit trail.
+        // Referenced by TokenInactivityCheck, AuthController, CheckRole,
+        // GsbClient (signature failures), Nashmi ValidateIntegrationKey
+        // (signature failures), Payment gateway callback (verification
+        // failures). Longer retention than the API-access log because
+        // it feeds incident-response investigations, not day-to-day
+        // ops. Never write raw secrets, tokens, PII values, or
+        // document contents to this channel — only structured
+        // metadata (event_type, user_id, ip, timestamp, reason_code).
+        'security' => [
+            'driver' => 'daily',
+            'path'   => storage_path('logs/security.log'),
+            'level'  => 'info',
+            'days'   => (int) env('SECURITY_LOG_RETENTION_DAYS', 365),
+        ],
+
     ],
 
 ];

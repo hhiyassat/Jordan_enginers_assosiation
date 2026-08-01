@@ -15,15 +15,28 @@ return [
     // Password policy (SEC-004, SEC-012)
     'password_expiry_days' => (int) env('PASSWORD_EXPIRY_DAYS', 90),
 
-    // SLA configuration (WF-008)
-    'default_sla_hours' => (int) env('DEFAULT_SLA_HOURS', 48),
+    // P1-08: rolling history size (rejects reuse of the last N hashes).
+    'password_history_size' => (int) env('PASSWORD_HISTORY_SIZE', 5),
 
-    // File upload limits (SEC-008)
-    'max_upload_size_mb' => (int) env('MAX_UPLOAD_SIZE_MB', 10),
+    // P1-08: HIBP k-anonymity check via Password::uncompromised(). Off
+    // by default because the check needs outbound network and can be
+    // flaky under CI; ProductionSafety enforces it true in production.
+    'password_check_compromised' => filter_var(env('PASSWORD_CHECK_COMPROMISED', false), FILTER_VALIDATE_BOOLEAN),
 
-    // Rate limiting (SEC-009)
-    'rate_limit_login'  => (int) env('RATE_LIMIT_LOGIN', 5),   // per minute
-    'rate_limit_api'    => (int) env('RATE_LIMIT_API', 120),    // per minute
+    // M-09: notification pruning windows. Consumed by
+    // App\Console\Commands\NotificationsPrune, scheduled daily.
+    'notification_retention_days'        => (int) env('NOTIFICATION_RETENTION_DAYS', 180),
+    'notification_unread_retention_days' => (int) env('NOTIFICATION_UNREAD_RETENTION_DAYS', 365),
+
+    // P2 / CL-02 retirement (2026-08-01): four legacy keys — `default_sla_hours`,
+    // `max_upload_size_mb`, `rate_limit_login`, `rate_limit_api` — were once
+    // defined here but never read. `login_rate_limit_per_minute` (below)
+    // supersedes `rate_limit_login`; per-service SLA values live in schema
+    // (`schema.workflow[*].sla_hours`) so a global default was unreachable;
+    // per-schema upload rules cover the size limit. CL-02 verified zero
+    // references across backend/frontend/env/deployment; the P2 protocol's
+    // deprecation window is closed. Do not re-add these keys — pick one of
+    // the surviving mechanisms above instead.
 
     // API read SLO (NFR-001) — LogApiAccess middleware emits `slow_request`
     // warnings when GET/HEAD requests exceed this (ms).

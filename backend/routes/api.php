@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AdminDashboardController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\HealthController;
 // Workstream 8A: EngineerController + ProjectController + OfficeSettingsController
 // moved to Modules\JeaProjects.
 // Workstream 8C: ApplicationController + ReviewDashboardController +
@@ -33,6 +34,11 @@ use Illuminate\Support\Facades\Route;
 // Workstream 14: Nashmi integration routes (NO Sanctum — X-Integration-Key)
 // moved to Integrations\Nashmi\routes.php. Removing 'nashmi' from
 // config/integrations.enabled drops all 6 /api/integration/* endpoints.
+
+// L-12: readiness probe. Sits OUTSIDE the /v1 prefix so orchestration
+// probes hit a stable path (`/api/ready`) independent of API versioning.
+// The `/up` liveness probe is registered by bootstrap/app.php.
+Route::get('ready', [HealthController::class, 'ready']);
 
 // ── Public routes (no auth) ─────────────────────────────────────────
 
@@ -72,7 +78,11 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'token.inactivity', 'password.p
     // red row in the browser console (JORD-84 PM). PATCH /auth/me
     // stays protected — profile updates require an active session.
     Route::post('auth/logout',             [AuthController::class, 'logout']);
-    Route::post('auth/password/change',    [AuthController::class, 'changePassword']);
+    // CS-10 / NEW-A11: rate-limited to make brute-forcing current_password
+    // via a stolen sanctum token infeasible (see the `password-change`
+    // limiter in AppServiceProvider — 5/min + 20/hour per user).
+    Route::post('auth/password/change',    [AuthController::class, 'changePassword'])
+        ->middleware('throttle:password-change');
     // JORD-10: user updates their own profile (name + phone).
     Route::patch('auth/me',                [AuthController::class, 'updateProfile']);
 
@@ -91,16 +101,15 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'token.inactivity', 'password.p
     // application flow.
 
     // ── Admin-only routes ─────────────────────────────────────────────
+    // C-01: superuser is user-management only; admin owns the JEA
+    // business admin surface (dashboard, applications, audit logs).
 
-    Route::middleware('role:admin,superuser')->group(function () {
-        // FR-014 to FR-016: Admin dashboard
-        // Workstream 5C: dashboard + applications + audit-logs extracted
-        // from AdminController.
-        Route::get('admin/dashboard',             [AdminDashboardController::class, 'dashboard']);
-        // User CRUD moved to the superuser role — see the role:superuser
-        // block further down. Admin keeps read-only visibility via dashboard
-        // stats but no longer touches the user roster.
-        Route::get('admin/applications',          [AdminDashboardController::class, 'allApplications']);
+    Route::middleware('role:admin')->group(function () {
+        // H-07 (session 3): /admin/dashboard and /admin/applications
+        // moved to Modules\JeaServices\Http\Controllers\JeaAdminDashboardController
+        // and are now declared in backend/modules/JeaServices/routes.php.
+        // Platform's AdminDashboardController retains only /admin/audit-logs
+        // since AuditLog is a Platform primitive.
         Route::get('admin/audit-logs',            [AdminDashboardController::class, 'auditLogs']);
 
         // Workstream 8C: admin service catalog + fee editor + lock/unlock

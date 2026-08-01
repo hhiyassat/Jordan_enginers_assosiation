@@ -153,6 +153,72 @@ class Srv001GuardTest extends TestCase
         $this->assertTrue($app->data['technical_review_required']);
     }
 
+    // ─── Meeting 2026-07-26 §X + §XI enrichment ─────────────────────
+
+    public function test_meeting_wells_and_depth_are_persisted_on_calculated_path(): void
+    {
+        // floors=5, area=800 → matrix: 4 points, 32 lm.
+        // §X: 800 m² → 4 wells (band a_601_800). §XI: 5 floors → total=12.
+        $app = $this->draft([
+            'project_sector' => 'خاص',
+            'floor_count'    => 5,
+            'floor_area'     => 800,
+            'actual_exploration_point_count' => 4,
+        ]);
+        (new Srv001Guard())->validate($app);
+        $app->refresh();
+
+        $this->assertSame(4,           $app->data['meeting_wells_count']);
+        $this->assertSame('a_601_800', $app->data['meeting_wells_band']);
+        $this->assertSame(5,           $app->data['meeting_net_depth_third_m']);
+        $this->assertSame(8,           $app->data['meeting_net_depth_two_thirds_m']);
+        $this->assertSame(12,          $app->data['meeting_net_depth_total_m']);
+    }
+
+    public function test_meeting_wells_persisted_even_when_matrix_defers_to_special_study(): void
+    {
+        // area=1500 m² is out of the matrix (>1200) → SPECIAL_STUDY,
+        // but §X extends: 1500 → 6 + ceil(300/300) = 7 wells.
+        // The meeting engine gives a computed value the matrix can't.
+        $app = $this->draft([
+            'project_sector' => 'خاص',
+            'floor_count'    => 3,
+            'floor_area'     => 1500,
+            'actual_exploration_point_count' => 20,
+        ]);
+        (new Srv001Guard())->validate($app);
+        $app->refresh();
+
+        $this->assertSame(
+            ExplorationRequirementMatrix::STATUS_SPECIAL_STUDY_REQUIRED,
+            $app->data['exploration_requirement_status'],
+        );
+        $this->assertSame(7,             $app->data['meeting_wells_count']);
+        $this->assertSame('a_1201_3000', $app->data['meeting_wells_band']);
+        $this->assertSame(9,             $app->data['meeting_net_depth_total_m']);
+    }
+
+    public function test_meeting_depth_absent_when_floors_below_three(): void
+    {
+        // floors=2 → NetDepthTable returns INELIGIBLE, so the meeting
+        // depth keys should not be added to app.data.
+        // (floors=2 also causes matrix to give real values for the 3-row
+        // since matrix maps 1..3 to the "3 أو أقل" row.)
+        $app = $this->draft([
+            'project_sector' => 'خاص',
+            'floor_count'    => 2,
+            'floor_area'     => 500,
+            'actual_exploration_point_count' => 3,
+        ]);
+        (new Srv001Guard())->validate($app);
+        $app->refresh();
+
+        // Wells still computed (§X is floor-independent).
+        $this->assertSame(3, $app->data['meeting_wells_count']);
+        // Depth intentionally missing when floors < 3.
+        $this->assertArrayNotHasKey('meeting_net_depth_total_m', $app->data);
+    }
+
     public function test_guard_is_no_op_for_non_srv001_services(): void
     {
         $drw = ServiceDefinition::where('organization_id', $this->org->id)

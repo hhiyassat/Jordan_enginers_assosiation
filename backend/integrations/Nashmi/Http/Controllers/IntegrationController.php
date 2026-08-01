@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace Integrations\Nashmi\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use Integrations\Nashmi\Models\IntegrationCycle;
-use Integrations\Nashmi\Services\NashmiIntegrationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Integrations\Nashmi\Jobs\ProcessNashmiOutboundJob;
+use Integrations\Nashmi\Models\IntegrationCycle;
 
 /**
  * IntegrationController
@@ -27,7 +27,12 @@ use Illuminate\Support\Facades\Storage;
  */
 class IntegrationController extends Controller
 {
-    public function __construct(private NashmiIntegrationService $nashmi) {}
+    // CS-02: NashmiIntegrationService is no longer constructor-injected — the
+    // outbound HTTP call now runs inside ProcessNashmiOutboundJob, which
+    // resolves the service via `handle()`. Removing the property closes a
+    // PHPStan `property.onlyWritten` finding and clarifies that this
+    // controller only enqueues; it does not perform outbound HTTP itself.
+    public function __construct() {}
 
     // ── 1. INBOUND: Receive requirements from Nashmi ──────────────────────────
 
@@ -146,7 +151,22 @@ class IntegrationController extends Controller
     {
         $cycle = IntegrationCycle::findOrFail($id);
 
-        if (!$cycle->canTransitionTo('code_done')) {
+        // Idempotency: if this cycle already has a dispatch recorded,
+        // return the durable state instead of duplicating outbound work.
+        // The queue driver + WithoutOverlapping middleware still protect
+        // against concurrent workers on the same cycle; this guard
+        // handles duplicate *requests* from the caller.
+        if ($cycle->code_done_notified_at !== null || $cycle->status === 'code_done') {
+            return response()->json([
+                'message'        => 'Nashmi already notified for this cycle.',
+                'cycle_ref'      => $cycle->cycle_ref,
+                'status'         => $cycle->status,
+                'notified_at'    => optional($cycle->code_done_notified_at)->toIso8601String(),
+                'idempotent'     => true,
+            ], 200);
+        }
+
+        if (! $cycle->canTransitionTo('code_done')) {
             return response()->json([
                 'message' => "Cannot transition from '{$cycle->status}' to 'code_done'.",
             ], 422);
@@ -173,29 +193,27 @@ class IntegrationController extends Controller
             'completed_at'   => now()->toISOString(),
         ];
 
-        $result = $this->nashmi->notifyCodeDone($cycle, $codeSummary);
+        $correlationId = (string) ($request->attributes->get('correlation_id')
+            ?? $request->header('X-Request-Id')
+            ?? (string) str()->uuid());
 
-        if (!$result['success']) {
-            return response()->json(['message' => 'Failed to notify Nashmi: ' . $result['error']], 502);
-        }
+        ProcessNashmiOutboundJob::dispatch(
+            cycleId:       $cycle->id,
+            payload:       ['summary' => $codeSummary],
+            correlationId: $correlationId,
+        );
 
-        $cycle->update([
-            'status'                => 'code_done',
-            'code_summary'          => $codeSummary,
-            'nashmi_project_id'     => $result['data']['project']['id'] ?? $cycle->nashmi_project_id,
-            'code_done_notified_at' => now(),
-        ]);
-
-        Log::channel('integration')->info('Code-done notification sent', [
-            'cycle_ref' => $cycle->cycle_ref,
+        Log::channel('integration')->info('Code-done notification queued', [
+            'cycle_ref'      => $cycle->cycle_ref,
+            'correlation_id' => $correlationId,
         ]);
 
         return response()->json([
-            'message'        => 'Nashmi notified. Reviewer/tester/QA tasks will be distributed.',
+            'message'        => 'Nashmi notification queued. Delivery will be attempted asynchronously.',
             'cycle_ref'      => $cycle->cycle_ref,
-            'nashmi_project' => $result['data']['project']           ?? null,
-            'ai_status'      => $result['data']['ai_pipeline_status'] ?? null,
-        ]);
+            'correlation_id' => $correlationId,
+            'accepted'       => true,
+        ], 202);
     }
 
     // ── 4. List cycles ────────────────────────────────────────────────────────

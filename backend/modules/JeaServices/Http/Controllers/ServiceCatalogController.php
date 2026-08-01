@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace Modules\JeaServices\Http\Controllers;
 
 use Modules\JeaServices\Engine\SchemaStructureValidator;
-use App\Http\Concerns\RespondsWithLockedService;
+use Modules\JeaServices\Governance\ServiceAvailabilityPolicy;
+use Modules\JeaServices\Http\Concerns\RespondsWithLockedService;
 use App\Http\Controllers\Controller;
 use Modules\JeaServices\Models\ServiceDefinition;
 use Illuminate\Http\JsonResponse;
@@ -157,26 +158,45 @@ class ServiceCatalogController extends Controller
         return response()->json(['service' => $service, 'message' => 'تم إقفال الخدمة — أصبحت للقراءة فقط.']);
     }
 
-    // lockedResponse() moved to App\Http\Concerns\RespondsWithLockedService
+    // lockedResponse() moved to Modules\JeaServices\Http\Concerns\RespondsWithLockedService
     // (Workstream 5). Both ServiceCatalogController and ServiceFeesController
     // consume the trait so the 423 envelope stays consistent.
 
     // ── Public catalog (active only) ──────────────────────────────────
+    //
+    // JEA-CATALOG: The service catalog is JEA-owned and shared across every
+    // office tenant. `service_definitions.code` is globally UNIQUE, which is
+    // the schema-level statement that codes describe a single JEA catalog —
+    // not one catalog per tenant. So the read paths bypass the per-org global
+    // scope via ::withoutOrgScope(). Admin write paths above keep the scope,
+    // so only the org that seeded the catalog (demo/JEA) can edit it.
+    //
+    // Without this, every newly-approved office would see an empty catalog
+    // and be unable to submit any service — since the office-registration
+    // approval flow does not (and should not) clone service definitions.
 
     public function index(Request $request): JsonResponse
     {
-        $services = ServiceDefinition::where('organization_id', $request->user()->organization_id)
-            ->where('status', 'active')
+        // SG-02 · Consult ServiceAvailabilityPolicy for each service. Under
+        // LENIENT default mode, legacy `status='active'` services remain
+        // visible so no existing catalog entry disappears; RETIRED and
+        // SUSPENDED services are hidden from applicants and visible to
+        // admins. See JDG-SG02-01 for the preference order.
+        $actorIsAdmin = (bool) ($request->user()?->isAdmin() ?? false);
+        $policy       = app(ServiceAvailabilityPolicy::class);
+
+        $rows = ServiceDefinition::withoutOrgScope()
             ->get([
                 'id', 'code', 'parent_code',
                 'subcategory_ar', 'subcategory_en',
                 'name_ar', 'name_en',
                 'description_ar', 'description_en', 'currency', 'base_fee', 'sla_hours',
-                'phase', 'schema',
-            ])
-            // Trim the schema down to a lightweight variant_keys list so the
-            // frontend can show a "Modify" CTA without pulling the full
-            // workflow tree on every catalog listing.
+                'phase', 'schema', 'status', 'publication_status', 'uat_status',
+                'effective_from',
+            ]);
+
+        $services = $rows
+            ->filter(fn (ServiceDefinition $s) => $policy->evaluate($s, $actorIsAdmin)->catalogVisible)
             ->map(function (ServiceDefinition $s) {
                 $variants = data_get($s->schema, 'workflow.variants', []);
                 $arr = $s->only([
@@ -187,17 +207,26 @@ class ServiceCatalogController extends Controller
                 ]);
                 $arr['variant_keys'] = is_array($variants) ? array_keys($variants) : [];
                 return $arr;
-            });
+            })
+            ->values();
 
         return response()->json(['services' => $services]);
     }
 
     public function show(Request $request, string $code): JsonResponse
     {
-        $service = ServiceDefinition::where('organization_id', $request->user()->organization_id)
+        // JEA-CATALOG: shared catalog — see index() comment above.
+        // SG-02: consult availability policy; return 404 if hidden.
+        $service = ServiceDefinition::withoutOrgScope()
             ->where('code', $code)
-            ->where('status', 'active')
             ->firstOrFail();
+
+        $actorIsAdmin = (bool) ($request->user()?->isAdmin() ?? false);
+        $verdict = app(ServiceAvailabilityPolicy::class)->evaluate($service, $actorIsAdmin);
+
+        if (!$verdict->catalogVisible) {
+            abort(404);
+        }
 
         return response()->json(['service' => $service]);
     }

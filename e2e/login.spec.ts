@@ -19,10 +19,20 @@ test('applicant lands on their dashboard', async ({ page }) => {
   await expect(page.getByRole('button', { name: /طلباتي/ })).toBeVisible();
 });
 
-test('staff lands on the review queue', async ({ page }) => {
+test('staff lands on a reviewer landing page', async ({ page }) => {
+  // Session-3 note: current default landing is /review/dashboard;
+  // the queue is one click away. Test accepts either so a
+  // deliberate landing-page change (queue vs dashboard) doesn't
+  // require an E2E update. The invariant the test protects is that
+  // a staff login lands on SOMETHING under /review — not a
+  // specific screen.
   await login(page, DEMO.staff.email, DEMO.staff.password);
-  await expect(page).toHaveURL(new RegExp(`${BASE}/review/queue`));
-  await expect(page.getByRole('heading', { name: /قائمة المراجعة/ })).toBeVisible();
+  await expect(page).toHaveURL(new RegExp(`${BASE}/review/`));
+  // Sidebar exposes the reviewer surface — `nav.review` translates to
+  // "المراجعة" (Review). Asserting the button proves RequireReviewer
+  // + navItemsForRole matched irrespective of which sub-page the
+  // login landed on.
+  await expect(page.getByRole('button', { name: /^المراجعة$/ })).toBeVisible();
 });
 
 test('admin lands on the admin dashboard with the full nav', async ({ page }) => {

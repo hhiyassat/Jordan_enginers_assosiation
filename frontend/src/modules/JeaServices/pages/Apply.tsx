@@ -10,7 +10,7 @@ import { WorkflowStepper } from '../../../components/ui/WorkflowStepper';
 import { ReportsPanel } from '../../../platform/ui/ReportsPanel';
 import { ServiceInfoCard } from '../../../components/ui/ServiceInfoCard';
 import { ComplianceNotesBanner } from '../../../components/ui/ComplianceNotesBanner';
-import { ProjectContextHeader } from '../../JeaProjects/pages/ProjectContextHeader';
+import { ProjectContextHeader } from './ProjectContextHeader';
 import { normalizeApplyError, labelForOtherKey, type ApiError } from './applyErrorHelpers';
 import { missingRequiredDocsFor } from './missingRequiredDocs';
 import { useAuth } from '../../../auth/AuthContext';

@@ -5,7 +5,10 @@ declare(strict_types=1);
 use Illuminate\Support\Facades\Route;
 use Modules\JeaServices\Http\Controllers\ApplicationController;
 use Modules\JeaServices\Http\Controllers\CertificatesController;
+use Modules\JeaServices\Http\Controllers\JeaAdminDashboardController;
 use Modules\JeaServices\Http\Controllers\ManualReferenceController;
+use Modules\JeaServices\Http\Controllers\OfficeRegistrationController;
+use Modules\JeaServices\Http\Controllers\PaymentCallbackController;
 use Modules\JeaServices\Http\Controllers\PaymentsController;
 use Modules\JeaServices\Http\Controllers\ReviewDashboardController;
 use Modules\JeaServices\Http\Controllers\ReviewQueueController;
@@ -64,7 +67,30 @@ Route::prefix('api/v1')->group(function () {
     // (applicants get the URL from the app-detail endpoint; third
     // parties get the token from the printed certificate QR).
     Route::get('certificates/{certNumber}/pdf', [CertificatesController::class, 'downloadPdf']);
+
+    // Office-registration signup — anonymous submit. Rate-limited so a
+    // scripted attacker can't flood the queue with junk registrations.
+    // See docs/architecture/office-registration-flow.md.
+    //
+    // CS-06 (2026-07-31): captcha middleware added — the throttle
+    // slows scripted floods but a real bot farm can burn 5 req/min
+    // per IP indefinitely. The captcha aliased by the Captcha plugin
+    // is one-time-use (see CaptchaService::verify — cache entry is
+    // dropped on any verify attempt) so replays fail. Middleware
+    // short-circuits when CAPTCHA_ENABLED=false (local dev + test
+    // fixtures); production requires CAPTCHA_ENABLED=true per
+    // ProductionSafety.
+    Route::post('office-registrations', [OfficeRegistrationController::class, 'submit'])
+        ->middleware(['throttle:5,1', 'captcha']);
 });
+
+// ── Gateway payment webhook (no auth — signature-verified) ────────
+// CS-03: unauthenticated route reachable by the payment provider.
+// The controller resolves PaymentGateway::verifyCallback which is the
+// signature check — invalid callers get 401 there, not at Sanctum.
+// Rate-limited to blunt scanning attempts.
+Route::post('/api/payment/callback', [PaymentCallbackController::class, 'handle'])
+    ->middleware('throttle:60,1');
 
 // ── Authenticated surface ─────────────────────────────────────────
 Route::prefix('api/v1')->middleware(['auth:sanctum', 'token.inactivity', 'password.policy', 'track.activity'])->group(function () {
@@ -89,6 +115,20 @@ Route::prefix('api/v1')->middleware(['auth:sanctum', 'token.inactivity', 'passwo
         Route::post('applications/{id}/submit',                [ApplicationController::class, 'submit']);
         Route::post('applications/{id}/documents',             [ApplicationController::class, 'uploadDocument'])
             ->middleware('throttle:document-upload');
+        // P1-09: authorized document download. findAccessible enforces
+        // both org scope and applicant-own-only; a cross-tenant / cross-
+        // application caller receives 404.
+        Route::get ('applications/{id}/documents/{docId}',     [ApplicationController::class, 'downloadDocument'])
+            ->whereNumber('id')->whereNumber('docId');
+
+        // P1-10: authenticated certificate PDF download — no token in URL.
+        // The public token-based route stays at `/certificates/{n}/pdf`
+        // (loaded elsewhere in this file) for QR-scan verification of
+        // physical certificates. This endpoint is what the SPA uses so
+        // the applicant's browser history + upstream logs never see
+        // the qr_token.
+        Route::get ('applications/{id}/certificate/pdf',        [CertificatesController::class, 'downloadPdfAuthenticated'])
+            ->whereNumber('id');
     });
 
     // Reviewer surface (staff/auditor/admin).
@@ -101,14 +141,38 @@ Route::prefix('api/v1')->middleware(['auth:sanctum', 'token.inactivity', 'passwo
         Route::post('applications/{id}/decide',    [ReviewQueueController::class, 'decide']);
     });
 
-    // Staff+admin (payment confirmation + certificate issuance).
+    // Applicant + staff/admin can initiate a payment via the gateway.
+    Route::middleware('role:applicant,staff,auditor,admin')->group(function () {
+        // CS-03: uses PaymentGateway::initiate — the only place ESP
+        // hands a PaymentIntent to the abstraction. Response returns
+        // the redirect URL the applicant follows.
+        Route::post('applications/{id}/initiate-payment', [PaymentsController::class, 'initiate']);
+    });
+
+    // Certificate issuance — staff + admin.
     Route::middleware('role:staff,admin')->group(function () {
-        Route::post('applications/{id}/confirm-payment',    [PaymentsController::class, 'confirm']);
         Route::post('applications/{id}/issue-certificate',  [CertificatesController::class, 'issue']);
     });
 
-    // Admin surface — service catalog admin, fee editor, lock/unlock.
-    Route::middleware('role:admin,superuser')->group(function () {
+    // Admin manual reconciliation only. CS-03: `confirm-payment` was
+    // formerly staff+admin and treated a raw payment_reference as
+    // proof; it now requires the admin role AND a `manual_reason`
+    // string and is explicitly NOT the proof-of-payment path.
+    Route::middleware('role:admin')->group(function () {
+        Route::post('applications/{id}/confirm-payment', [PaymentsController::class, 'confirm']);
+    });
+
+    // Admin surface — service catalog admin, fee editor, lock/unlock,
+    // manual references, office-registration review.
+    // C-01: service-catalog + operational admin is admin territory.
+    // Superuser is user-management only.
+    Route::middleware('role:admin')->group(function () {
+        // H-07 (session 3): JEA-specific dashboard + application listing
+        // moved out of App\Http\Controllers\Api\AdminDashboardController
+        // so Platform no longer imports JEA models. URLs unchanged.
+        Route::get  ('admin/dashboard',                       [JeaAdminDashboardController::class, 'dashboard']);
+        Route::get  ('admin/applications',                    [JeaAdminDashboardController::class, 'allApplications']);
+
         // FR-017: admin views all services regardless of status.
         Route::get  ('admin/services',                       [ServiceCatalogController::class, 'adminIndex']);
         Route::get  ('admin/services/{id}',                  [ServiceCatalogController::class, 'adminShow']);
@@ -128,5 +192,12 @@ Route::prefix('api/v1')->middleware(['auth:sanctum', 'token.inactivity', 'passwo
         // and the acknowledge endpoint clears the flag once dev updates.
         Route::patch('admin/manual-references/{id}',         [ManualReferenceController::class, 'update']);
         Route::post ('admin/manual-references/{id}/ack',     [ManualReferenceController::class, 'acknowledge']);
+
+        // Office-registration review (approve/reject public signups).
+        // See docs/architecture/office-registration-flow.md.
+        Route::get ('admin/office-registrations',                 [OfficeRegistrationController::class, 'index']);
+        Route::get ('admin/office-registrations/{id}',            [OfficeRegistrationController::class, 'show']);
+        Route::post('admin/office-registrations/{id}/approve',    [OfficeRegistrationController::class, 'approve']);
+        Route::post('admin/office-registrations/{id}/reject',     [OfficeRegistrationController::class, 'reject']);
     });
 });

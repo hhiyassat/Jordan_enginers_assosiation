@@ -3,7 +3,7 @@
 **Audit Date:** 2026-07-06 (v1 — Initial audit at build completion)  
 **System:** Eqratech Services Platform v2  
 **Methodology:** Eqratech IEEE-Aligned Decision Assurance Methodology v1.1  
-**Scope:** Backend (Laravel 12) + Frontend (React 18 / TypeScript)
+**Scope:** Backend (Laravel 13 / PHP 8.5) + Frontend (React 18 / TypeScript)
 
 **Build Contract:** BUILD_CONTRACT.md (written before first line of code)
 

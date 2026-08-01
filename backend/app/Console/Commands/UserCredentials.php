@@ -50,15 +50,19 @@ class UserCredentials extends Command
         }
 
         $newEmail = $this->option('new-email');
-        $password = $this->option('password') ?: $this->secret('New password (min 8, mixed case + numbers)');
+        $password = $this->option('password') ?: $this->secret('New password (min 12, mixed case + numbers + symbols)');
 
-        // Reject the same rule the API uses so CLI-set passwords still
-        // clear the login flow. secret() returns null on empty input.
+        // P1-08: same rule the API uses (min 12, mixedCase, numbers,
+        // symbols, optional HIBP check, history-distinct for this user).
         try {
             Validator::make(
                 ['password' => (string) $password, 'email' => $newEmail],
                 [
-                    'password' => ['required', Password::min(8)->mixedCase()->numbers()],
+                    'password' => [
+                        'required',
+                        \App\Support\PasswordPolicy::baseRule(),
+                        \App\Support\PasswordPolicy::distinctFromHistoryFor($user),
+                    ],
                     'email'    => ['nullable', 'email', 'unique:users,email,' . $user->id],
                 ]
             )->validate();
@@ -71,8 +75,9 @@ class UserCredentials extends Command
             return self::FAILURE;
         }
 
+        $newHash = Hash::make($password);
         $update = [
-            'password'             => Hash::make($password),
+            'password'             => $newHash,
             // Force the operator to pick their own final password on next
             // login — the CLI password is a bootstrap, never a keeper.
             'must_change_password' => true,
@@ -82,6 +87,10 @@ class UserCredentials extends Command
             $update['email'] = $newEmail;
         }
         $user->update($update);
+
+        // P1-08: record the CLI-set hash so the follow-up API change
+        // cannot rotate back to it.
+        \App\Support\PasswordHistory::remember($user->fresh(), $newHash);
 
         // Existing sessions on the old credentials are no longer valid.
         $user->tokens()->delete();

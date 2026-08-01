@@ -33,7 +33,9 @@ Route::prefix('api/v1')->middleware(['auth:sanctum', 'token.inactivity', 'passwo
     });
 
     // Admin surface — view + seed + pay.
-    Route::middleware('role:admin,superuser')->group(function () {
+    // C-01: dues administration is admin (JEA business) territory.
+    // Superuser is user-management only.
+    Route::middleware('role:admin')->group(function () {
         Route::get ('admin/offices/{id}/dues',           [RecurringDuesController::class, 'index']);
         Route::post('admin/offices/{id}/dues/register',  [RecurringDuesController::class, 'seedRegistration']);
         Route::post('admin/dues/{obligationId}/pay',     [RecurringDuesController::class, 'pay']);

@@ -4,163 +4,66 @@ declare(strict_types=1);
 
 namespace App\Services\Notifications;
 
-use Modules\JeaServices\Models\Application;
 use App\Models\Notification;
 use App\Models\User;
 
 /**
  * NotificationService (JORD-9).
  *
- * WorkflowEngine hooks call the emit* methods at the key transitions.
- * Each method builds a single row using dispatch() so callers can't
- * accidentally forget the organization_id (the biggest foot-gun on a
- * multi-tenant setup).
+ * Platform-neutral notification primitive. Callers hand the recipient
+ * (either a `User` or a plain user id) plus a structured payload; this
+ * service persists a row on the `notifications` table.
  *
- * Deliberately narrow surface: emitApplicationSubmitted,
- * emitApplicationDecided, emitPaymentConfirmed, emitCertificateIssued.
- * Adding a new event type = one new method here + one new label on the
- * frontend. Broadcasting / email fan-out can be layered on top later
- * without changing any callsites.
+ * H-07: JEA-shaped emitters (emitApplicationSubmitted / …Decided /
+ * …PaymentConfirmed / …CertificateIssued / …ExpiryReminder) moved to
+ * `Modules\JeaServices\Services\JeaNotificationService` so this
+ * primitive no longer imports `Modules\JeaServices\Models\Application`.
+ * Any module that wants domain-specific emitters composes them from
+ * `dispatch()` inside its own namespace.
  */
 final class NotificationService
 {
-    public function emitApplicationSubmitted(Application $app): Notification
-    {
-        return $this->dispatch(
-            $app->applicant,
-            type:  'application.submitted',
-            title: 'تم تقديم طلبك',
-            body:  "تم استلام طلبك رقم {$app->reference_number} وسيتم إشعارك بأي تحديثات.",
-            link:  "/my-applications",
-            app:   $app,
-        );
-    }
-
-    /**
-     * Fired after a reviewer approves / rejects / requests modifications.
-     * $decision is the ApplicationReview.decision value.
-     */
-    public function emitApplicationDecided(Application $app, User $reviewer, string $decision): Notification
-    {
-        $titles = [
-            'approved'                => 'تمت الموافقة على طلبك',
-            'rejected'                => 'تم رفض طلبك',
-            'modifications_requested' => 'مطلوب تعديل على طلبك',
-        ];
-        $title = $titles[$decision] ?? 'تحديث على طلبك';
-        $body  = "تحديث على الطلب رقم {$app->reference_number} من قِبَل {$reviewer->name}.";
-
-        return $this->dispatch(
-            $app->applicant,
-            type:    "application.{$decision}",
-            title:   $title,
-            body:    $body,
-            link:    "/my-applications",
-            app:     $app,
-            payload: ['decision' => $decision, 'reviewer_name' => $reviewer->name],
-        );
-    }
-
-    public function emitPaymentConfirmed(Application $app): Notification
-    {
-        return $this->dispatch(
-            $app->applicant,
-            type:  'application.paid',
-            title: 'تم تأكيد الدفع',
-            body:  "تم تأكيد استلام الدفع لطلبك رقم {$app->reference_number}.",
-            link:  "/my-applications",
-            app:   $app,
-        );
-    }
-
-    public function emitCertificateIssued(Application $app): Notification
-    {
-        return $this->dispatch(
-            $app->applicant,
-            type:  'application.certificate_issued',
-            title: 'صدرت شهادتك',
-            body:  "صدرت الشهادة لطلبك رقم {$app->reference_number}. يمكنك تنزيلها الآن.",
-            link:  "/my-applications",
-            app:   $app,
-        );
-    }
-
-    /**
-     * JORD-80: retention reminder — fires from the daily
-     * RemindExpiries cron when a drawing approval or supervision
-     * contract has X days left before it lapses. Idempotent per
-     * (application_id × kind × threshold_days): a duplicate call
-     * with the same tuple returns the existing notification rather
-     * than spamming the applicant.
-     *
-     * @param  'output_validity'|'supervision' $kind
-     */
-    public function emitExpiryReminder(
-        Application $app,
-        string $kind,
-        int $daysRemaining,
-    ): Notification {
-        $recipient = $app->applicant;
-        if (!$recipient) {
-            throw new \InvalidArgumentException('Application has no applicant to notify.');
+    public function sendToUser(
+        int $userId,
+        string $type,
+        string $titleAr,
+        string $titleEn,
+        string $bodyAr,
+        string $bodyEn,
+        ?string $actionUrl = null,
+    ): ?Notification {
+        $user = User::find($userId);
+        if (!$user) {
+            return null;
         }
 
-        $type = "reminder.{$kind}_expiry";
-        $payloadTag = ['threshold_days' => $daysRemaining];
-
-        // Idempotency: query for a prior reminder for this same
-        // (app, kind, threshold). Prevents the cron from re-sending
-        // the "7 days left" notice every day it re-runs during that
-        // 7-day window.
-        $existing = Notification::where('related_type', Application::class)
-            ->where('related_id', $app->id)
-            ->where('type', $type)
-            ->where('payload->threshold_days', $daysRemaining)
-            ->first();
-        if ($existing) return $existing;
-
-        $labels = [
-            'output_validity' => [
-                'ar' => 'صلاحية المخططات',
-                'en' => 'Drawing approval',
-            ],
-            'supervision' => [
-                'ar' => 'صلاحية عقد الإشراف',
-                'en' => 'Supervision contract',
-            ],
-        ][$kind] ?? ['ar' => 'صلاحية', 'en' => 'Expiry'];
-
         return $this->dispatch(
-            recipient: $recipient,
+            recipient: $user,
             type:      $type,
-            title:     sprintf('%s — تنتهي خلال %d %s',
-                          $labels['ar'],
-                          $daysRemaining,
-                          $daysRemaining === 1 ? 'يوم' : 'أيام'),
-            body:      sprintf('طلبك رقم %s: %s ستنتهي خلال %d %s. يُنصح باتخاذ الإجراء اللازم.',
-                          $app->reference_number,
-                          $labels['ar'],
-                          $daysRemaining,
-                          $daysRemaining === 1 ? 'يوم' : 'أيام'),
-            link:      "/my-applications",
-            app:       $app,
-            payload:   $payloadTag,
+            title:     $titleAr,
+            body:      $bodyAr,
+            link:      $actionUrl,
+            payload:   ['title_en' => $titleEn, 'body_en' => $bodyEn],
         );
     }
 
     /**
-     * Central builder. Every emit* method funnels through here so
-     * organization_id, related_type/id, and payload defaults land in one place.
+     * Central builder. Every module-specific emitter funnels through here
+     * so organization_id, related_type/id, and payload defaults land in
+     * one place.
      *
-     * @param  array<string, mixed> $payload
+     * @param  array<string, mixed>  $payload
+     * @param  class-string|null  $relatedType  fully-qualified class name of the related model
+     * @param  int|string|null  $relatedId
      */
-    private function dispatch(
+    public function dispatch(
         User $recipient,
         string $type,
         string $title,
         string $body,
         ?string $link = null,
-        ?Application $app = null,
+        ?string $relatedType = null,
+        int|string|null $relatedId = null,
         array $payload = [],
     ): Notification {
         return Notification::create([
@@ -170,8 +73,8 @@ final class NotificationService
             'title'           => $title,
             'body'            => $body,
             'link'            => $link,
-            'related_type'    => $app ? Application::class : null,
-            'related_id'      => $app?->id,
+            'related_type'    => $relatedType,
+            'related_id'      => $relatedId,
             'payload'         => $payload ?: null,
         ]);
     }

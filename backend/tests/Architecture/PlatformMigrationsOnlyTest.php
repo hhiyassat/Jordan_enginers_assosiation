@@ -53,6 +53,7 @@ class PlatformMigrationsOnlyTest extends TestCase
         'job_batches',
         'failed_jobs',
         'password_reset_tokens',
+        'password_history',           // P1-08: rolling password-reuse guard
     ];
 
     /**

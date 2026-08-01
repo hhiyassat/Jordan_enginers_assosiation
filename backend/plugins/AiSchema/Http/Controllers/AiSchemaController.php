@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Plugins\AiSchema\Http\Controllers;
 
+use App\Contracts\Services\ServiceLockLookup;
 use App\Http\Concerns\RequiresAdminTier;
 use App\Http\Controllers\Controller;
-use Modules\JeaServices\Models\ServiceDefinition;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
@@ -826,13 +826,14 @@ PROMPT;
         ]);
 
         if (isset($data['service_id'])) {
-            $target = ServiceDefinition::where('organization_id', $request->user()->organization_id)
-                ->find($data['service_id']);
-            if ($target && $target->isLocked()) {
+            $lock = app(ServiceLockLookup::class);
+            $orgId = (int) $request->user()->organization_id;
+            $svcId = (int) $data['service_id'];
+            if ($lock->isLocked($orgId, $svcId) === true) {
                 return response()->json([
-                    'error'   => 'service_locked',
-                    'message' => 'الخدمة مقفلة للتعديل — يجب فتح قفلها أولاً من قبل مسؤول.',
-                    'service_code' => $target->code,
+                    'error'        => 'service_locked',
+                    'message'      => 'الخدمة مقفلة للتعديل — يجب فتح قفلها أولاً من قبل مسؤول.',
+                    'service_code' => $lock->codeFor($orgId, $svcId),
                 ], 423);
             }
         }

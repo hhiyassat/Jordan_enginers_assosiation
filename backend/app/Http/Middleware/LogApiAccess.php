@@ -34,9 +34,21 @@ class LogApiAccess
 
     public function handle(Request $request, Closure $next): Response
     {
-        // Assign / propagate a correlation ID
-        $requestId = $request->header('X-Request-ID') ?: (string) \Illuminate\Support\Str::uuid();
-        $request->headers->set('X-Request-ID', $requestId);
+        // L-11: CorrelationId middleware runs before us and puts the
+        // authoritative request id into the request attribute bag under
+        // `correlation_id`. Previously we minted our own UUID here,
+        // ignoring the one CorrelationId echoed to the client — the
+        // two IDs drifted, the access log and the response header
+        // pointed at different values, and log correlation broke.
+        // Now we consult the attribute first, and only fall back to
+        // the header/UUID if for some reason the attribute wasn't set
+        // (e.g. under isolated test dispatch).
+        $requestId = (string) (
+            $request->attributes->get('correlation_id')
+            ?: $request->header('X-Request-Id')
+            ?: \Illuminate\Support\Str::uuid()
+        );
+        $request->headers->set('X-Request-Id', $requestId);
 
         $startedAt = microtime(true);
 
@@ -84,7 +96,11 @@ class LogApiAccess
 
         // Forward the request-id to the client for correlation, plus timing
         // header so tests, CI, and browser devtools can see the budget.
-        $response->headers->set('X-Request-ID', $requestId);
+        // CorrelationId middleware already sets X-Request-Id on the
+        // response, so setting it again is a no-op; kept for backward
+        // compatibility with any downstream that still keys on the exact
+        // spelling. See L-11 remediation.
+        $response->headers->set('X-Request-Id', $requestId);
         $response->headers->set('Server-Timing', "app;dur={$durationMs}");
 
         return $response;

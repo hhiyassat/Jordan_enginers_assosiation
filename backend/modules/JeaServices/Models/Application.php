@@ -32,6 +32,14 @@ use Modules\JeaProjects\Models\Project;
  * @property int|null                           $assigned_reviewer_id
  * @property array<string, mixed>|null          $data
  * @property float|string                       $fee_amount
+ * @property int|null                           $organization_id
+ * @property int|null                           $service_definition_id
+ * @property int|null                           $service_definition_version_id
+ * @property string|null                        $payment_status
+ * @property string|null                        $payment_reference
+ * @property \Illuminate\Support\Carbon|null    $payment_confirmed_at
+ * @property string|null                        $basin_number
+ * @property string|null                        $parcel_number
  * @property ServiceDefinition|null             $serviceDefinition
  * @property Project|null                       $project
  * @property Certificate|null                   $certificate
@@ -50,16 +58,32 @@ class Application extends Model
      */
     protected static function booted(): void
     {
+        static::saving(function (Application $app) {
+            $data = is_array($app->data) ? $app->data : [];
+            if ($app->isDirty('data') || ! empty($data)) {
+                $basin = isset($data['basin_number']) && $data['basin_number'] !== '' ? (string) $data['basin_number'] : null;
+                $parcel = isset($data['parcel_number']) && $data['parcel_number'] !== '' ? (string) $data['parcel_number'] : null;
+                if ($app->basin_number !== $basin) {
+                    $app->basin_number = $basin;
+                }
+                if ($app->parcel_number !== $parcel) {
+                    $app->parcel_number = $parcel;
+                }
+            }
+        });
+
         static::deleted(function (Application $app) {
             app(\Modules\JeaProjects\Engine\QuotaLedger::class)->releaseFor($app);
         });
     }
 
     protected $fillable = [
-        'reference_number', 'contract_no', 'organization_id', 'service_definition_id', 'project_id', 'applicant_id',
+        'reference_number', 'contract_no', 'organization_id', 'service_definition_id',
+        'service_definition_version_id', 'project_id', 'applicant_id',
         'assigned_reviewer_id', 'status', 'current_stage', 'data', 'fee_amount',
         'payment_status', 'payment_reference', 'payment_confirmed_at',
         'sla_deadline', 'sla_breached_at', 'review_round',
+        'basin_number', 'parcel_number',
     ];
 
     protected $casts = [
@@ -88,6 +112,26 @@ class Application extends Model
     public function serviceDefinition(): BelongsTo
     {
         return $this->belongsTo(ServiceDefinition::class);
+    }
+
+    /** @return BelongsTo<ServiceDefinitionVersion, $this> */
+    public function serviceDefinitionVersion(): BelongsTo
+    {
+        return $this->belongsTo(ServiceDefinitionVersion::class);
+    }
+
+    /**
+     * SG-03 · classification derived from the version binding state.
+     *
+     * Returns one of:
+     *   BOUND               — service_definition_version_id is set
+     *   LEGACY_UNVERSIONED  — FK is null (either pre-versioning or no published version at submit time)
+     */
+    public function legacyVersioningClassification(): string
+    {
+        return $this->service_definition_version_id === null
+            ? 'LEGACY_UNVERSIONED'
+            : 'BOUND';
     }
 
     /**
@@ -261,14 +305,57 @@ class Application extends Model
         $yy      = str_pad((string) (now()->year % 100), 2, '0', STR_PAD_LEFT);
         $svcCode = str_pad((string) ($service->id % 10000), 4, '0', STR_PAD_LEFT);
 
-        $yearStart = now()->startOfYear();
-        $seq = self::withoutOrgScope()
-            ->where('service_definition_id', $service->id)
-            ->where('created_at', '>=', $yearStart)
-            ->count() + 1;
+        $seq = self::allocateReferenceSerial((int) $service->id, (int) now()->year);
 
         $seqStr = str_pad((string) $seq, 4, '0', STR_PAD_LEFT);
 
         return $yy . $svcCode . $seqStr;
+    }
+
+    /**
+     * H-02: atomic per-(service, year) sequence allocation.
+     *
+     * Same shape as WorkflowEngine::allocateCertificateSerial (H-03):
+     * unconditional INSERT of the counter row (swallow the unique-
+     * constraint violation if a concurrent writer beat us there) →
+     * SELECT FOR UPDATE (guaranteed to find the row after the INSERT
+     * path) → increment. Two concurrent submits for the same
+     * (service, year) serialize cleanly on the lock and each gets a
+     * distinct serial.
+     *
+     * Public for tests + so callers can pre-warm counters if needed.
+     * Wraps its own DB::transaction with retry so callers do not
+     * have to reason about the concurrency envelope.
+     */
+    public static function allocateReferenceSerial(int $serviceDefinitionId, int $year): int
+    {
+        // insertOrIgnore is portable (`ON CONFLICT DO NOTHING` on Postgres,
+        // `INSERT IGNORE` on MySQL, `INSERT OR IGNORE` on SQLite). Doing
+        // the "create if missing" step OUTSIDE the surrounding
+        // transaction means a concurrent race can't poison the enclosing
+        // transaction on Postgres (which would otherwise leave the
+        // savepoint in an aborted state and cause 25P02 on the next
+        // statement). After this call the row exists — the lockForUpdate
+        // inside the transaction is guaranteed to find it.
+        \Illuminate\Support\Facades\DB::table('application_counters')->insertOrIgnore([
+            'service_definition_id' => $serviceDefinitionId,
+            'year'                  => $year,
+            'next_serial'           => 1,
+            'created_at'            => now(),
+            'updated_at'            => now(),
+        ]);
+
+        return \Illuminate\Support\Facades\DB::transaction(function () use ($serviceDefinitionId, $year) {
+            $row = ApplicationCounter::where('service_definition_id', $serviceDefinitionId)
+                ->where('year', $year)
+                ->lockForUpdate()
+                ->first();
+
+            $serial            = $row->next_serial;
+            $row->next_serial  = $serial + 1;
+            $row->save();
+
+            return $serial;
+        }, attempts: 5);
     }
 }

@@ -74,6 +74,79 @@ jobs:
           FILESYSTEM_DISK: local
         run: ./vendor/bin/phpstan analyse --memory-limit=1G --no-progress
 
+  backend-postgres:
+    name: Backend · PHPUnit on PostgreSQL 15
+    runs-on: ubuntu-latest
+    # C-05: run the same suite against a real Postgres so portability
+    # regressions (json_extract, lockForUpdate no-ops, sequence
+    # rollback behaviour, etc.) fail CI here instead of surfacing in
+    # production. Not a blocker for sqlite job — both must pass.
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_DB: esp_test
+          POSTGRES_USER: esp
+          POSTGRES_PASSWORD: esp
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U esp"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          # pdo_pgsql instead of / in addition to pdo_sqlite so the
+          # suite can drive the Postgres service. Keep sqlite too so
+          # the same PHP install can also run any legacy sqlite-only
+          # test if we add one.
+          extensions: bcmath, pdo_pgsql, pdo_sqlite, sqlite3, mbstring, intl
+          coverage: none
+          tools: composer:v2
+
+      - name: Cache Composer packages
+        uses: actions/cache@v4
+        with:
+          path: backend/vendor
+          key: composer-${{ runner.os }}-${{ hashFiles('backend/composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      - name: Prime .env for boot-time providers
+        run: cp .env.example .env
+
+      - name: Install PHP dependencies
+        env:
+          APP_ENV: testing
+          FILESYSTEM_DISK: local
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Finalise test environment
+        env:
+          APP_ENV: testing
+          FILESYSTEM_DISK: local
+        run: php artisan key:generate --ansi
+
+      - name: PHPUnit on Postgres
+        env:
+          APP_ENV: testing
+          FILESYSTEM_DISK: local
+          DB_CONNECTION: pgsql
+          DB_HOST: 127.0.0.1
+          DB_PORT: '5432'
+          DB_DATABASE: esp_test
+          DB_USERNAME: esp
+          DB_PASSWORD: esp
+        run: ./vendor/bin/phpunit --colors=always
+
   frontend:
     name: Frontend · Vitest
     runs-on: ubuntu-latest

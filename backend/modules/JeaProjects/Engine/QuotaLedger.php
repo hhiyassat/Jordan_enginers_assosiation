@@ -10,6 +10,7 @@ use Modules\JeaProjects\Models\EngineerDisciplineQuota;
 use Modules\JeaProjects\Models\OfficeCeiling;
 use Modules\JeaProjects\Models\OfficeCoalition;
 use Modules\JeaProjects\Models\QuotaConsumption;
+use Modules\JeaProjects\Support\OfficeCoalitionResolver;
 use App\Models\User;
 use Illuminate\Support\Facades\Log;
 
@@ -156,7 +157,7 @@ class QuotaLedger
         // Coalition-aware branch — coalitions are keyed on office_user_id
         // post-JORD-77 too (see OfficeCoalitionMember + User::activeCoalition).
         $officeUser = User::find($officeUserId);
-        $coalition  = $officeUser?->activeCoalition();
+        $coalition  = OfficeCoalitionResolver::activeCoalitionFor($officeUser);
         if ($coalition !== null) {
             return $this->remainingCoalitionCeiling($coalition, $discipline, $year, $governorate);
         }
@@ -262,7 +263,7 @@ class QuotaLedger
 
         // JORD-73 + JORD-77: coalition aggregation keyed on office_user_id.
         $officeUser = User::find($officeUserId);
-        $coalition  = $officeUser?->activeCoalition();
+        $coalition  = OfficeCoalitionResolver::activeCoalitionFor($officeUser);
         if ($coalition !== null) {
             $memberOfficeIds = $coalition->activeMembers()->pluck('office_user_id')->filter()->all();
             $caps = OfficeCeiling::whereIn('office_user_id', $memberOfficeIds)

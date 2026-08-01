@@ -94,7 +94,7 @@ final class Srv001Guard implements ServiceSubmissionGuard
                 'minimum_exploration_point_count' => null,
                 'minimum_total_depth_lm' => null,
                 'technical_review_required' => true,
-            ]);
+            ], self::meetingDerivedValues($floorCount, $floorArea));
             $app->save();
             return []; // pass — special-study cases are allowed to submit
         }
@@ -119,10 +119,47 @@ final class Srv001Guard implements ServiceSubmissionGuard
             'minimum_exploration_point_count' => $minPts,
             'minimum_total_depth_lm'          => $minDepth,
             'technical_review_required'       => false,
-        ]);
+        ], self::meetingDerivedValues($floorCount, $floorArea));
         $app->save();
 
         return [];
+    }
+
+    /**
+     * Enrich app.data with values from the 2026-07-26 JEA meeting §X + §XI.
+     *
+     * These co-exist with ExplorationRequirementMatrix — the matrix is
+     * still the authoritative validation source (from the technical
+     * instructions book). The meeting engines add display + fee-calc
+     * inputs, especially for area > 1200 m² where the matrix defers to
+     * special study but the meeting supplies a computed wells count.
+     *
+     * @return array{
+     *   meeting_wells_count?: int,
+     *   meeting_wells_band?: string,
+     *   meeting_net_depth_third_m?: int,
+     *   meeting_net_depth_two_thirds_m?: int,
+     *   meeting_net_depth_total_m?: int
+     * }
+     */
+    private static function meetingDerivedValues(int $floorCount, float $floorArea): array
+    {
+        $out = [];
+
+        $wells = WellsCountCalculator::compute($floorArea);
+        if ($wells['status'] === WellsCountCalculator::STATUS_CALCULATED) {
+            $out['meeting_wells_count'] = $wells['wells'];
+            $out['meeting_wells_band']  = $wells['band'];
+        }
+
+        $depth = NetDepthTable::compute($floorCount);
+        if ($depth['status'] === NetDepthTable::STATUS_CALCULATED) {
+            $out['meeting_net_depth_third_m']      = $depth['third_m'];
+            $out['meeting_net_depth_two_thirds_m'] = $depth['two_thirds_m'];
+            $out['meeting_net_depth_total_m']      = $depth['total_m'];
+        }
+
+        return $out;
     }
 
     /**

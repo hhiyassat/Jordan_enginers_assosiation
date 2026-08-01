@@ -6,6 +6,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Support\PasswordHistory;
+use App\Support\PasswordPolicy;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -95,21 +97,26 @@ class UserManagementController extends Controller
         $data = $request->validate([
             'name'     => ['required', 'string', 'max:255'],
             'email'    => ['required', 'email', 'unique:users,email'],
-            'password' => ['required', Password::min(8)->mixedCase()->numbers()],
+            'password' => ['required', PasswordPolicy::baseRule()],
             'role'     => ['required', 'in:applicant,staff,auditor,admin,superuser'],
             'phone'    => ['nullable', 'string', 'max:20'],
         ]);
 
         if ($refusal = $this->refuseTierCrossing($request, $data['role'])) return $refusal;
 
+        $hash = Hash::make($data['password']);
         $user = User::create([
             ...$data,
             'organization_id'      => $request->user()->organization_id,
-            'password'             => Hash::make($data['password']),
+            'password'             => $hash,
             'must_change_password' => true,
             'password_changed_at'  => null,
             'is_active'            => true,
         ]);
+
+        // P1-08: seed history so the applicant cannot immediately
+        // rotate back to the admin-issued initial password.
+        PasswordHistory::remember($user, $hash);
 
         return response()->json(['user' => $user], 201);
     }
@@ -128,7 +135,11 @@ class UserManagementController extends Controller
             'email'     => ['sometimes', 'email', 'unique:users,email,' . $target->id],
             'role'      => ['sometimes', 'in:applicant,staff,auditor,admin,superuser'],
             'is_active' => ['sometimes', 'boolean'],
-            'password'  => ['sometimes', Password::min(8)->mixedCase()->numbers()],
+            'password'  => [
+                'sometimes',
+                PasswordPolicy::baseRule(),
+                PasswordPolicy::distinctFromHistoryFor($target),
+            ],
         ]);
 
         // Nor can they promote a target into a tier above what they can manage.
@@ -166,6 +177,13 @@ class UserManagementController extends Controller
         }
 
         $target->update($data);
+
+        // P1-08: persist the new hash to history so the future changePassword
+        // rule catches reuse. Only when a password was actually rotated.
+        if (isset($data['password'])) {
+            PasswordHistory::remember($target->fresh(), $data['password']);
+        }
+
         return response()->json(['user' => $target]);
     }
 
