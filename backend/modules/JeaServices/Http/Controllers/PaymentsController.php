@@ -62,6 +62,24 @@ class PaymentsController extends Controller
             ], 200);
         }
 
+        // RC-02 · SG-02 activation gate — refuse to open a NEW payment
+        // demand when the service is not accepting payments (suspended,
+        // retired, unpublished). Prior demands are honoured by
+        // PaymentCallbackController::handle (system callback, unguarded)
+        // and PaymentsController::confirm (admin manual reconciliation
+        // of prior demand, unguarded).
+        $service = $app->serviceDefinition;
+        if ($service instanceof \Modules\JeaServices\Models\ServiceDefinition) {
+            $availability = app(\Modules\JeaServices\Governance\ServiceAvailabilityPolicy::class)
+                ->evaluate($service, actorIsAdmin: (bool) $request->user()->isAdmin());
+            if (! $availability->paymentAllowed) {
+                return response()->json([
+                    'message' => 'لا يمكن بدء دفعة جديدة على هذه الخدمة في وضعها الحالي.',
+                    'errors'  => ['service_code' => $availability->reasonCodes],
+                ], 422);
+            }
+        }
+
         $intent = new PaymentIntent(
             reference:      'app-' . $app->id,
             organizationId: (int) $app->organization_id,

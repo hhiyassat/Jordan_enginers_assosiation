@@ -163,6 +163,20 @@ class ApplicationController extends Controller
             ->where('status', 'active')
             ->firstOrFail();
 
+        // RC-02 · SG-02 activation gate — reject creation when the service
+        // is not accepting new applications (unapproved / suspended /
+        // retired / effective_from in future). Verdict is LENIENT-mode by
+        // default so legacy `status='active'` services remain allowed
+        // through the transition window.
+        $availability = app(\Modules\JeaServices\Governance\ServiceAvailabilityPolicy::class)
+            ->evaluate($service, actorIsAdmin: (bool) $request->user()->isAdmin());
+        if (! $availability->applicationCreationAllowed) {
+            return response()->json([
+                'message' => 'لا يمكن إنشاء طلب جديد على هذه الخدمة في وضعها الحالي.',
+                'errors'  => ['service_code' => $availability->reasonCodes],
+            ], 422);
+        }
+
         // If project_id was passed, verify it belongs to the actor's org AND
         // is owned by them. Cross-org or cross-user access is an escalation
         // vector we close at the controller boundary — the FormRequest's
@@ -248,6 +262,20 @@ class ApplicationController extends Controller
     {
         $app     = $this->findAccessible($request, $id);
         $service = $app->serviceDefinition;
+
+        // RC-02 · SG-02 activation gate — a draft against a service that has
+        // since been suspended / retired / had its publication revoked must
+        // not accept submission. LENIENT default preserves legacy behaviour.
+        if ($service instanceof ServiceDefinition) {
+            $availability = app(\Modules\JeaServices\Governance\ServiceAvailabilityPolicy::class)
+                ->evaluate($service, actorIsAdmin: (bool) $request->user()->isAdmin());
+            if (! $availability->submissionAllowed) {
+                return response()->json([
+                    'message' => 'لا يمكن تقديم هذا الطلب: الخدمة غير متاحة للتقديم في وضعها الحالي.',
+                    'errors'  => ['service_code' => $availability->reasonCodes],
+                ], 422);
+            }
+        }
 
         // EDA B-4 / WF-005: validate schema fields
         $dataErrors = (new SchemaValidator($service))->validateData($app->data ?? []);

@@ -34,6 +34,27 @@ class CertificatesController extends Controller
         }
 
         $app    = Application::findForOrganizationOrFail($request->user()->organization_id, $id);
+
+        // RC-02 · SG-02 activation gate — a service must be actively
+        // accepting new workflow output to issue a certificate. RETIRED
+        // / SUSPENDED services block new issuance (their verdict returns
+        // `certificateAllowed=true` for historical DOWNLOAD only — this
+        // endpoint issues NEW certificates, gated by `submissionAllowed`
+        // which is the closest capability flag for "actively processing
+        // workflow output"). Historical download paths (downloadPdf,
+        // downloadPdfAuthenticated) remain unguarded.
+        $service = $app->serviceDefinition;
+        if ($service instanceof \Modules\JeaServices\Models\ServiceDefinition) {
+            $availability = app(\Modules\JeaServices\Governance\ServiceAvailabilityPolicy::class)
+                ->evaluate($service, actorIsAdmin: (bool) $request->user()->isAdmin());
+            if (! $availability->submissionAllowed) {
+                return response()->json([
+                    'message' => 'لا يمكن إصدار شهادة جديدة على هذه الخدمة في وضعها الحالي.',
+                    'errors'  => ['service_code' => $availability->reasonCodes],
+                ], 422);
+            }
+        }
+
         $engine = new WorkflowEngine($app->serviceDefinition);
         $cert   = $engine->issueCertificate($app, $request->user());
 
