@@ -43,6 +43,16 @@ Residuals raised BY TD-00 (as opposed to inherited from SG-*/RC-*).
 |---|---|---|---|---|---|---|
 | **RES-TD03-01** | JDG-TD03-01 | TD-06 (audit-completeness) | LOW (informational) | Typed-decision dispatch in `ApplicationController::submit` uses `DB::transaction(function() { ... })` around a use case that itself opens a nested `DB::transaction` (Laravel savepoint). On production Postgres this is safe (SAVEPOINT rolls back atomically with the outer transaction); on SQLite the same nesting is preserved via Laravel's driver-level savepoint emulation. | OPEN (informational) | TD-06 audit-completeness review confirms the nested-transaction pattern is acceptable, or refactors the use case to skip its inner transaction when a caller-managed outer transaction is active. |
 
+## TD-07-owned residuals
+
+| RESIDUAL_ID | Raised by | Owner | Risk | Blocks | Status | Closure evidence |
+|---|---|---|---|---|---|---|
+| **RES-TD07-01** | JDG-TD07-01 | TD-07+ (workflow consumer) | LOW | `Srv001WorkflowGraph` + `WorkflowTransitionEvaluator` not container-bound; no runtime consumer. When wired, MUST fail-closed on `NOT_FOUND` / `BLOCKED_BY_OD` and MUST NOT be reachable by any existing controller until publication authorization lands. | OPEN | Container binding + runtime integration test proving BLOCKED_BY_OD short-circuits every downstream side effect. |
+| **RES-TD07-02** | JDG-TD07-01 | TD-07+ (grant persistence) | MEDIUM | PartialEditGrant use cases have no repository / audit-writer dependencies. When persistence + audit land, `ConsumePartialEditGrantUseCase` MUST commit decide-then-persist in one transaction. | OPEN | Repository + audit writer + `DB::transaction` wrapper + integration test proving the two writes commit or roll back together. |
+| **RES-TD07-03** | JDG-TD07-01 | External integration owners | HIGH | BURA + Map port adapters absent. Per-port closure requires signed integration contract + fake adapter promotion + contract test. | OPEN | Per-port: adapter + contract test. |
+| **RES-TD07-04** | JDG-TD07-01 | Publication authority | HIGH | Certificate rendering + signing adapters absent. Production issuance remains BLOCKED. Closure requires publication authorization + production configuration + verified adapter (5-step control axis). | OPEN | Signed publication authorization + adapters + production configuration + production verification. |
+| **RES-TD07-05** | JDG-TD07-01 | JEA product | HIGH | OD-18 special path resumption + reinforcement effects, OD-29 final action/state dictionary, OD-31/32/33/34 all unchanged. TD-07 preserves the block by NOT enumerating alternate paths. | OPEN | Per-OD signed closure. |
+
 ## TD-06-owned residuals
 
 | RESIDUAL_ID | Raised by | Owner | Risk | Blocks | Status | Closure evidence |
