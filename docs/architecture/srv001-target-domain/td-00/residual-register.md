@@ -43,6 +43,15 @@ Residuals raised BY TD-00 (as opposed to inherited from SG-*/RC-*).
 |---|---|---|---|---|---|---|
 | **RES-TD03-01** | JDG-TD03-01 | TD-06 (audit-completeness) | LOW (informational) | Typed-decision dispatch in `ApplicationController::submit` uses `DB::transaction(function() { ... })` around a use case that itself opens a nested `DB::transaction` (Laravel savepoint). On production Postgres this is safe (SAVEPOINT rolls back atomically with the outer transaction); on SQLite the same nesting is preserved via Laravel's driver-level savepoint emulation. | OPEN (informational) | TD-06 audit-completeness review confirms the nested-transaction pattern is acceptable, or refactors the use case to skip its inner transaction when a caller-managed outer transaction is active. |
 
+## TD-06-owned residuals
+
+| RESIDUAL_ID | Raised by | Owner | Risk | Blocks | Status | Closure evidence |
+|---|---|---|---|---|---|---|
+| **RES-TD06-01** | JDG-TD06-01 | External integration owners | HIGH | No production storage / AV / quarantine adapter wired. Every port is interface-only. Per-provider closure requires the full 5-step control axis (CONTROL_MODELLED / ADAPTER_IMPLEMENTED / ADAPTER_TESTED / PRODUCTION_CONFIGURED / PRODUCTION_VERIFIED). | OPEN | Per-port: adapter + integration test + production config + production verification. |
+| **RES-TD06-02** | JDG-TD06-01 | JEA product | HIGH | OD-24 unresolved. `AttachmentLimitPolicy` returns `CONFIGURATION_BLOCKED` for every category today. No file-upload UAT can complete until signed per-category limits publish. | OPEN | Signed OD-24 closure + limits registered via `AttachmentLimitPolicy::withPublishedLimit()` + integration test proving the limit is enforced at upload. |
+| **RES-TD06-03** | JDG-TD06-01 | TD-06+ (partial-edit controller) | MEDIUM | `PartialEditGrantEnforcementPolicy` is a pure Domain function; no runtime consumer wired. A partial-edit controller endpoint must resolve the policy from the container and enforce it before any mutation. | OPEN | Controller + integration test proving edits outside grant scope + edits on legally-locked fields are rejected. |
+| **RES-TD06-04** | JDG-TD06-01 | TD-06+ (persistence) | MEDIUM | `DocumentMetadata` + `PartialEditGrant` + `QuotaIncreaseReferral` + `InternalMandatoryNote` are VOs, not Eloquent models. When runtime consumers need persistence, additive migrations + models must land (VOs remain the payload shape). The existing `documents` table has some columns; a migration to align with the `DocumentMetadata` shape is out of TD-06 scope. | OPEN | Additive migrations + Eloquent models + persistence adapters. |
+
 ## TD-05-owned residuals
 
 | RESIDUAL_ID | Raised by | Owner | Risk | Blocks | Status | Closure evidence |
