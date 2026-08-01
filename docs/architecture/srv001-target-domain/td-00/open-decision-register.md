@@ -35,11 +35,20 @@ Legend:
 
 ## Proposed ODs — from Ground Truth §5 (Gaps needing new ODs)
 
-| OD_ID | Question | Ground Truth ref | Owner | Blocking scope | Blocks target-start? | Blocks publication? |
+Note (post-SRS-v1.2 reconciliation): OD-31, OD-32, OD-33 are **formally adopted in SRS v1.2 §18** — no longer "proposed", they are now RATIFIED-AS-OPEN blockers.
+
+| OD_ID | Question | Source | Owner | Blocking scope | Blocks target-start? | Blocks publication? |
 |---|---|---|---|---|---|---|
-| **OD-31** (proposed) | Committees replacing first auditor for energy projects — decision model (single/quorum) + inclusion in permission matrix and transitions | §5 GAP-01 | JEA product | BLOCKS_ROUTE | NO | YES |
-| **OD-32** (proposed) | Second-auditor substitution for first — conditions, same-person-both-stages permissibility, mandatory logging | §5 GAP-02 | JEA product | BLOCKS_ROUTE | NO | YES |
-| **OD-33** (proposed) | "Excavation done" gate event before sensory inspection — who reports, how verified | §5 GAP-03 | JEA product + ops | BLOCKS_ROUTE | NO | YES |
+| **OD-31** | Committees replacing first auditor for energy projects — decision model (single/quorum) + inclusion in permission matrix and transitions | SRS v1.2 §18 (formally adopted; was GT §5 GAP-01) | JEA product (مالك الخدمة) | BLOCKS_ROUTE | NO | YES (blocks energy path if adopted) |
+| **OD-32** | Second-auditor substitution for first — conditions, same-person-both-stages permissibility, mandatory logging | SRS v1.2 §18 (formally adopted; was GT §5 GAP-02) | JEA product (مالك الخدمة) | BLOCKS_ROUTE (regulatory) | NO | YES |
+| **OD-33** | "Excavation done" gate event before sensory inspection — who reports, how verified | SRS v1.2 §18 (formally adopted; was GT §5 GAP-03) | JEA product + ops (الفريق الفني) | BLOCKS_ROUTE (Sensory_Inspection state) | NO | YES |
+
+## ODs added in SRS v1.2 (§18)
+
+| OD_ID | Question | Source | Owner | Blocking scope | Blocks target-start? | Blocks publication? |
+|---|---|---|---|---|---|---|
+| **OD-34** | Final approval loop — does the transaction return to the First Auditor after the Second Auditor for a final approval (per Unified Report text) OR go directly to Approved_Technically (per v1.1 transition matrix)? | SRS v1.2 §7.2 step 4 + §18 (new in v1.2) | JEA service owner | BLOCKS_ROUTE (state matrix) + BLOCKS_FR (FR-SS-083 pending) | NO (state matrix extension deferred) | YES |
+| **OD-35** | Final signed list of tax-exempted governorates (currently: Karak, Ma'an, Tafileh — from Unified Report; plus Aqaba question from prior OD-05) + effective date | SRS v1.2 §6.2 + §18 (new; merges OD-05) | Finance / owner | BLOCKS_CALC (tax) | NO | YES |
 
 ## Depth-table OD (from §7 explicit note)
 
@@ -58,9 +67,13 @@ Legend:
 | RES-SG06-01 | Runtime path swap (legacy guard → typed decision consumer) | NO | Blocks legacy removal, not target-domain build |
 | RES-TD00-01 | Actual SRS v1.1 body file not in repo | NO (Ground Truth substitute) | Partial: blocks SRS §-level citation for any promotion |
 
+## OD-05 → merged into OD-35
+
+Per SRS v1.2 §18: "**OD-35** … يدمج OD-05". OD-05 (Aqaba tax question) is CLOSED-BY-MERGE. Any lingering reference to OD-05 in inherited registers should be re-directed to OD-35.
+
 ## Summary — target-start blocking count
 
-**Zero ODs block target-domain start.** All ODs listed above are either:
+**Zero ODs block target-domain start.** All ODs listed above (including the two new SRS-v1.2 additions OD-34/OD-35) are either:
 - Structural-implementation blockers (blocks calculation numeric changes) — target classes can be built with SIMULATION_ONLY outputs and PROVISIONAL classifications
 - Route/state-machine blockers — target work continues within the existing 7-state model until OD-18/29/31/32/33 close
 - Integration-contract blockers — target work builds the ports; adapters remain simulated until OD-30 closes
