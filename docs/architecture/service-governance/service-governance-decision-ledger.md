@@ -12,3 +12,6 @@ Running ledger of every material judgment across phases SG-00..SG-06. Each row c
 | JDG-SG01-02 | SG-01 | Publication صحة conditions and موانع | 8 blocker codes + maker-checker in `ServicePublicationPolicy` | ISSUED |
 | JDG-SG02-01 | SG-02 | Availability preference order (LENIENT vs STRICT) | LENIENT default; legacy status='active' fallback with warning | ISSUED |
 | JDG-SG02-02 | SG-02 | Integration surface scope | Catalog wired; RES-SG02-02 tracks the remaining four endpoints | ISSUED |
+| JDG-SG03-01 | SG-03 | Version snapshot scope | Schema-only; extension-declaration snapshotting deferred | ISSUED (closes RES-SG00-01) |
+| JDG-SG03-02 | SG-03 | Application-version binding timing | Bind at submit; drafts unbound | ISSUED |
+| JDG-SG03-03 | SG-03 | Legacy unversioned migration policy | No back-fill; explicit LEGACY_UNVERSIONED classification | ISSUED |

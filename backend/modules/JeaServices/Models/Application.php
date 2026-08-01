@@ -34,6 +34,7 @@ use Modules\JeaProjects\Models\Project;
  * @property float|string                       $fee_amount
  * @property int|null                           $organization_id
  * @property int|null                           $service_definition_id
+ * @property int|null                           $service_definition_version_id
  * @property string|null                        $payment_status
  * @property string|null                        $payment_reference
  * @property \Illuminate\Support\Carbon|null    $payment_confirmed_at
@@ -77,7 +78,8 @@ class Application extends Model
     }
 
     protected $fillable = [
-        'reference_number', 'contract_no', 'organization_id', 'service_definition_id', 'project_id', 'applicant_id',
+        'reference_number', 'contract_no', 'organization_id', 'service_definition_id',
+        'service_definition_version_id', 'project_id', 'applicant_id',
         'assigned_reviewer_id', 'status', 'current_stage', 'data', 'fee_amount',
         'payment_status', 'payment_reference', 'payment_confirmed_at',
         'sla_deadline', 'sla_breached_at', 'review_round',
@@ -110,6 +112,26 @@ class Application extends Model
     public function serviceDefinition(): BelongsTo
     {
         return $this->belongsTo(ServiceDefinition::class);
+    }
+
+    /** @return BelongsTo<ServiceDefinitionVersion, $this> */
+    public function serviceDefinitionVersion(): BelongsTo
+    {
+        return $this->belongsTo(ServiceDefinitionVersion::class);
+    }
+
+    /**
+     * SG-03 · classification derived from the version binding state.
+     *
+     * Returns one of:
+     *   BOUND               — service_definition_version_id is set
+     *   LEGACY_UNVERSIONED  — FK is null (either pre-versioning or no published version at submit time)
+     */
+    public function legacyVersioningClassification(): string
+    {
+        return $this->service_definition_version_id === null
+            ? 'LEGACY_UNVERSIONED'
+            : 'BOUND';
     }
 
     /**

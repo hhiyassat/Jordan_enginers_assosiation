@@ -13,6 +13,7 @@ use Modules\JeaServices\Models\Certificate;
 use Modules\JeaServices\Models\ServiceDefinition;
 use App\Models\User;
 use App\Services\Payment\PaymentReceipt;
+use Modules\JeaServices\Governance\ApplicationVersionBinder;
 use Modules\JeaServices\Services\JeaNotificationService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -127,6 +128,10 @@ class WorkflowEngine
             if (isset($firstReviewer['sla_hours'])) {
                 $app->sla_deadline = now()->addHours($firstReviewer['sla_hours']);
             }
+
+            // SG-03: bind to currently-published service_definition_version if one exists.
+            // Legacy path (no published version) leaves FK null → LEGACY_UNVERSIONED.
+            app(ApplicationVersionBinder::class)->bindOrClassifyLegacy($app);
 
             $app->save();
 
