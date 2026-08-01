@@ -193,9 +193,10 @@ class BoundariesTest extends TestCase
         //     Modules\JeaServices\Services\JeaNotificationService.
         //
         // Plugins + integrations that need JEA state depend on
-        // App\Contracts\Services\ServiceLockLookup and
-        // App\Contracts\Services\ServiceDefinitionSnapshot — never on
-        // Modules\Jea* directly. See ServiceLockLookup + snapshot DTO.
+        // App\Contracts\Services\ServiceLockLookup — never on
+        // Modules\Jea* directly. (The companion ServiceDefinitionSnapshot
+        // DTO was retired in CL-01 after Nashmi's pushService flow — the
+        // only consumer — was removed in CS-10.)
     ];
 
     public function test_platform_does_not_import_service_modules(): void
