@@ -15,3 +15,5 @@ Running ledger of every material judgment across phases SG-00..SG-06. Each row c
 | JDG-SG03-01 | SG-03 | Version snapshot scope | Schema-only; extension-declaration snapshotting deferred | ISSUED (closes RES-SG00-01) |
 | JDG-SG03-02 | SG-03 | Application-version binding timing | Bind at submit; drafts unbound | ISSUED |
 | JDG-SG03-03 | SG-03 | Legacy unversioned migration policy | No back-fill; explicit LEGACY_UNVERSIONED classification | ISSUED |
+| JDG-SG04-01 | SG-04 | Rule model granularity | Per-calculator; three RuleDefinition rows for SRV-001 | ISSUED |
+| JDG-SG04-02 | SG-04 | Recalculation policy | DRAFT overwrites; SUBMIT immutable; MANUAL_RECALC supersedes | ISSUED |
