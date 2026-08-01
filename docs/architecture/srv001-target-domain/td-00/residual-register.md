@@ -43,6 +43,13 @@ Residuals raised BY TD-00 (as opposed to inherited from SG-*/RC-*).
 |---|---|---|---|---|---|---|
 | **RES-TD03-01** | JDG-TD03-01 | TD-06 (audit-completeness) | LOW (informational) | Typed-decision dispatch in `ApplicationController::submit` uses `DB::transaction(function() { ... })` around a use case that itself opens a nested `DB::transaction` (Laravel savepoint). On production Postgres this is safe (SAVEPOINT rolls back atomically with the outer transaction); on SQLite the same nesting is preserved via Laravel's driver-level savepoint emulation. | OPEN (informational) | TD-06 audit-completeness review confirms the nested-transaction pattern is acceptable, or refactors the use case to skip its inner transaction when a caller-managed outer transaction is active. |
 
+## TD-04-owned residuals
+
+| RESIDUAL_ID | Raised by | Owner | Risk | Blocks | Status | Closure evidence |
+|---|---|---|---|---|---|---|
+| **RES-TD04-01** | JDG-TD04-01 | TD-05+ (target publisher) | LOW | `TargetRuleVersionPublicationPolicy` exists in source but is NOT bound in `JeaServicesServiceProvider` (intentional — no consumer today). When a `TargetRuleVersionPublisher` lands, it must (a) bind the policy, (b) consume it before every `APPROVED` transition. | OPEN | Container binding + publisher invocation + test proving the guard blocks a non-CALCULATED promotion attempt. |
+| **RES-TD04-02** | JDG-TD04-01 | TD-05+ (calculator wiring) | LOW | `Srv001CalculatorOutcomeClassifier` runs today only in unit tests; no `Target*` calculator wraps its own `ServiceCalculationResult` through the classifier at runtime. When TD-05+ activates the target calculator path, either the calculators or the `TargetSrv001SubmissionPolicy` composition boundary must produce `Srv001TypedCalculationResult` and persist `srv001_calculation_outcome` in the `calculation_snapshots.intermediate_values` payload. | OPEN | Runtime classifier invocation + snapshot payload assertion. |
+
 ## Explicit reaffirmation
 
 **RES-SG06-01 is CLOSED for SRV-001.** TD-03 wires the real production HTTP submit route through the transactional `SubmitApplicationUseCase`. `Srv001Guard::validate → $app->save` no longer runs on the runtime path (the legacy `ServiceSubmissionGuardRegistry` entry is skipped when a typed-decision policy is registered — which is the case for SRV-001). Closure evidence: five criteria proven, each by named integration test — see `../judgment-records/JDG-TD03-01-runtime-submission-integration.md` and `../td-03/TD-03-report.md`. `Srv001Guard.php` still exists and is still callable directly (offline tooling / non-HTTP tests) — that is intentional. RES-SG06-01 scope was closure of the runtime direct-write path, which is now delivered.

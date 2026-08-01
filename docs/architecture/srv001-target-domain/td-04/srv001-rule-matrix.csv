@@ -1,0 +1,4 @@
+rule_identifier,display_name,current_seeded_status,default_typed_outcome_when_calc_succeeds,binding,source_reference,od_closure_required,notes
+SRV001_EXPLORATION_MATRIX,SRV-001 exploration requirement matrix,APPROVED,CALCULATED,YES,كتاب التعليمات الفنية 2025 ص 230-231 (JEA-signed),NO for source reference; still SUBJECT to per-rule OD-Closure at target promotion,Matrix outcome branch STATUS=SPECIAL_STUDY_REQUIRED classifies as MANUAL_REVIEW regardless of rule-version status.
+SRV001_WELLS_COUNT,SRV-001 wells count calculator,PROVISIONAL,SIMULATION_ONLY,NO,محضر اجتماع JEA 2026-07-26 §IX (provisional),YES (OD-11 pending — band 801-1000 uncorroborated),Must never be published to APPROVED until OD-11 signed.
+SRV001_NET_DEPTH,SRV-001 net-depth table,PROVISIONAL,SIMULATION_ONLY,NO,محضر اجتماع JEA 2026-07-26 §IX (provisional),YES (OD-19/OD-20 pending — third/two_thirds invariant),Must never be published to APPROVED until OD-19/OD-20 signed.
