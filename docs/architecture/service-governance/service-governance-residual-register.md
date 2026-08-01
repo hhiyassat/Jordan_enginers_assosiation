@@ -10,6 +10,7 @@ Every residual raised by a judgment record, tracked to closure.
 | RES-SG03-03 | JDG-SG03-03 | ops | LOW | (per-application manual review) | OPEN | Manual attachment procedure with maker-checker + audit |
 | RES-SG04-01 | JDG-SG04-01 | per-service onboarding | LOW | Future services need rule definitions | OPEN | Copy Srv001RulesSeeder pattern per new service |
 | RES-SG04-02 | JDG-SG04-02 | ops follow-up | LOW | Manual recalc UX | OPEN | Manual recalc UI + audit event definition |
+| RES-SG05-01 | JDG-SG05-01 | as-needed | LOW | Deferred extension contracts | OPEN | Extract ServiceEligibilityPolicy / ServiceStageAction / ServiceFeeStrategy / ServiceIntegrationContributor when a second consumer appears |
 | RES-SG00-02 | JDG-SG00-02 | Product owner / JEA | HIGH | Migration of SRV-001 from LEGACY_PILOT to canonical | OPEN | Signed calculator source attached to service UAT |
 | RES-SG00-03 | JDG-SG00-03 | Product / JEA | MEDIUM | Publication of every service currently classified `_UNAPPROVED` | OPEN | Signed JEA decision per service |
 | RES-SG00-04 | JDG-SG00-04 | SG-06 | LOW | SG-06 completion | OPEN | SG-06 characterization tests + refactor commit |
