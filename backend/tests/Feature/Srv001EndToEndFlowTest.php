@@ -17,6 +17,7 @@ use Modules\JeaServices\Database\Seeders\ManualReferencesSeeder;
 use Modules\JeaServices\Database\Seeders\ServicePlan2026Seeder;
 use Modules\JeaServices\Database\Seeders\SiteSurveyFeesSeeder;
 use Modules\JeaServices\Database\Seeders\Srv001PilotSeeder;
+use Modules\JeaServices\Database\Seeders\Srv001RulesSeeder;
 use Modules\JeaServices\Database\Seeders\SurveyWorkflowsSeeder;
 use Modules\JeaServices\Models\Application;
 use Modules\JeaServices\Models\ServiceDefinition;
@@ -67,6 +68,11 @@ class Srv001EndToEndFlowTest extends TestCase
         $this->runSilently(new SurveyWorkflowsSeeder());
         $this->runSilently(new SiteSurveyFeesSeeder());
         $this->runSilently(new Srv001PilotSeeder());
+        // TD-03 · runtime submission now routes through LegacySrv001SubmissionPolicy →
+        // LegacyExplorationRequirementMatrixCalculator, which resolves a RuleDefinition
+        // by identifier. Match the production DatabaseSeeder order (rules run right
+        // after the pilot seeder).
+        $this->runSilently(new Srv001RulesSeeder());
         $this->runSilently(new ManualReferencesSeeder());
         $this->runSilently(new ManualReferenceLinksSeeder());
 

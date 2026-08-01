@@ -326,23 +326,33 @@ class SubmitApplicationUseCaseTest extends TestCase
 
     // ── TARGET_RUNTIME_ACTIVATED=NO ───────────────────────────────────
 
-    public function test_srv001guard_remains_the_only_wired_srv001_runtime(): void
+    public function test_target_srv001_submission_policy_remains_runtime_inactive(): void
     {
-        // Source-level assertion: no controller (Application / Payments /
-        // Certificates / Workflow) imports SubmitApplicationUseCase yet.
-        $controllerFiles = [
+        // TD-03 update: the SUBMIT ApplicationController now wires
+        // SubmitApplicationUseCase (this is the RES-SG06-01 closure work).
+        // The remaining TARGET_RUNTIME_ACTIVATED=NO invariant is about
+        // the *TargetSrv001SubmissionPolicy* — the provisional/unapproved
+        // target-domain policy from TD-01/TD-01A. That must remain
+        // absent from every controller + engine + provider.
+        $sourceFiles = [
             'modules/JeaServices/Http/Controllers/ApplicationController.php',
             'modules/JeaServices/Http/Controllers/PaymentsController.php',
             'modules/JeaServices/Http/Controllers/CertificatesController.php',
             'modules/JeaServices/Engine/WorkflowEngine.php',
+            'modules/JeaServices/Providers/JeaServicesServiceProvider.php',
         ];
-        foreach ($controllerFiles as $rel) {
+        foreach ($sourceFiles as $rel) {
             $src = file_get_contents(base_path($rel));
             $this->assertNotFalse($src, "unable to read {$rel}");
             $this->assertStringNotContainsString(
-                'SubmitApplicationUseCase',
+                'TargetSrv001SubmissionPolicy',
                 $src,
-                "{$rel} must not wire SubmitApplicationUseCase yet (TARGET_RUNTIME_ACTIVATED=NO invariant).",
+                "{$rel} must not wire TargetSrv001SubmissionPolicy (TARGET_RUNTIME_ACTIVATED=NO invariant).",
+            );
+            $this->assertStringNotContainsString(
+                'Domain\\Srv001\\Calculators\\Target',
+                $src,
+                "{$rel} must not reference any Target* domain calculator.",
             );
         }
     }

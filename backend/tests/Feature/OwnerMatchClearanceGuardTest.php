@@ -15,6 +15,7 @@ use Modules\JeaServices\Database\Seeders\JeaPortalTilesSeeder;
 use Modules\JeaServices\Database\Seeders\ServicePlan2026Seeder;
 use Modules\JeaServices\Database\Seeders\SiteSurveyFeesSeeder;
 use Modules\JeaServices\Database\Seeders\Srv001PilotSeeder;
+use Modules\JeaServices\Database\Seeders\Srv001RulesSeeder;
 use Modules\JeaServices\Database\Seeders\SurveyWorkflowsSeeder;
 use Modules\JeaServices\Engine\CrossCuttingSubmissionPipeline;
 use Modules\JeaServices\Engine\OwnerMatchClearanceGuard;
@@ -66,6 +67,10 @@ class OwnerMatchClearanceGuardTest extends TestCase
         $this->runSilently(new SurveyWorkflowsSeeder());
         $this->runSilently(new SiteSurveyFeesSeeder());
         $this->runSilently(new Srv001PilotSeeder());
+        // TD-03 · submission runtime routes through LegacySrv001SubmissionPolicy,
+        // which resolves SRV-001 rule versions. Mirror the production
+        // DatabaseSeeder order.
+        $this->runSilently(new Srv001RulesSeeder());
 
         $this->srv001 = ServiceDefinition::where('organization_id', $this->orgA->id)
             ->where('code', 'SRV-001')

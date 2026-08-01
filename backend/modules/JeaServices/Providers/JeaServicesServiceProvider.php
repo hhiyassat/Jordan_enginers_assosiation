@@ -14,6 +14,15 @@ use Modules\JeaServices\Engine\JeaMembershipVerifier;
 use Modules\JeaServices\Engine\OwnerMatchClearanceGuard;
 use Modules\JeaServices\Engine\ServiceSubmissionGuardRegistry;
 use Modules\JeaServices\Engine\Srv001Guard;
+use Modules\JeaServices\Governance\ApplicationVersionBinder;
+use Modules\JeaServices\Governance\ApplicationVersionBinderContract;
+use Modules\JeaServices\Governance\ServiceSubmissionPolicyRegistry;
+use Modules\JeaServices\Governance\Srv001\LegacyExplorationRequirementMatrixCalculator;
+use Modules\JeaServices\Governance\Srv001\LegacyNetDepthTableCalculator;
+use Modules\JeaServices\Governance\Srv001\LegacySrv001SubmissionPolicy;
+use Modules\JeaServices\Governance\Srv001\LegacyWellsCountCalculator;
+use Modules\JeaServices\Governance\SubmissionAuditRecorder;
+use Modules\JeaServices\Governance\SubmissionAuditRecorderContract;
 use Modules\JeaServices\Services\EloquentApplicationLookup;
 use Modules\JeaServices\Services\EloquentServiceLockLookup;
 
@@ -93,6 +102,30 @@ class JeaServicesServiceProvider extends ServiceProvider
                 Srv001Guard::SERVICE_CODE => new Srv001Guard(),
             ]);
         });
+
+        // TD-03 · typed-decision policy registry (parallel to the legacy
+        // guard registry above). ApplicationController::submit checks
+        // this registry first — when a policy is registered for a
+        // service_code, the controller routes through the transactional
+        // SubmitApplicationUseCase (audit + version binding + snapshots
+        // inside one DB transaction) instead of the legacy guard path.
+        // Service-code-agnostic dispatch: adding a new typed-decision
+        // service means adding one entry here.
+        $this->app->singleton(ServiceSubmissionPolicyRegistry::class, function () {
+            return new ServiceSubmissionPolicyRegistry([
+                LegacySrv001SubmissionPolicy::SERVICE_CODE => new LegacySrv001SubmissionPolicy(
+                    new LegacyExplorationRequirementMatrixCalculator(),
+                    new LegacyWellsCountCalculator(),
+                    new LegacyNetDepthTableCalculator(),
+                ),
+            ]);
+        });
+
+        // TD-03 · use-case runtime bindings. Concrete implementations
+        // exist for both port contracts extracted in TD-02/TD-02-SUPP;
+        // container resolves them wherever the use case is injected.
+        $this->app->bind(ApplicationVersionBinderContract::class, ApplicationVersionBinder::class);
+        $this->app->bind(SubmissionAuditRecorderContract::class, SubmissionAuditRecorder::class);
 
         // JEA membership verifier — external syndicate API abstraction.
         //

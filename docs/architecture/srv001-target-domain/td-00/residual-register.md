@@ -33,13 +33,19 @@ Residuals raised BY TD-00 (as opposed to inherited from SG-*/RC-*).
 
 | RESIDUAL_ID | Raised by | Owner | Risk | Blocks | Status | Closure evidence |
 |---|---|---|---|---|---|---|
-| **RES-TD02-01** | TD-02 report | TD-03+ (runtime consumer) | MEDIUM | Runtime consumer of `SubmitApplicationUseCase` (either a new submission controller or a `WorkflowEngine::submit` refactor); when built, closes RES-SG06-01 | OPEN | Runtime consumer commit + integration test proving `Srv001Guard::validate`'s `$app->save()` is bypassed on the new path |
-| **RES-TD02-02** | TD-02 report | TD-03+ (or provider-refactor phase) | LOW | Container binding `ApplicationVersionBinderContract → ApplicationVersionBinder` + `SubmissionAuditRecorderContract → SubmissionAuditRecorder` in `JeaServicesServiceProvider` (deferred — tests currently DI directly, no runtime consumer yet) | OPEN | Two `->bind()` calls in provider when runtime consumer arrives |
-| **RES-TD02-SUPP-01** | JDG-TD02-SUPP-01 | TD-03 (API-contract) | MEDIUM | Application-submission idempotency contract does NOT exist. Verified by repository-wide grep — no idempotency-key middleware, no `IdempotencyKey` table, no submission-scoped idempotency guard. Duplicate-attempt behaviour today: SG-04 unique constraint on `(application_id, rule_version_id, purpose='SUBMIT')` rolls back the second attempt atomically (`PARTIAL_PERSISTENCE=0`), but the caller receives a `rolledBack` result rather than the first-committed result. | OPEN | Signed idempotency-key spec + middleware + tests OR explicit documented decision to leave submission non-idempotent |
+| **RES-TD02-01** | TD-02 report | TD-03+ (runtime consumer) | MEDIUM | Runtime consumer of `SubmitApplicationUseCase` (either a new submission controller or a `WorkflowEngine::submit` refactor); when built, closes RES-SG06-01 | **CLOSED** | TD-03 wires `ApplicationController::submit` through `ServiceSubmissionPolicyRegistry → LegacySrv001SubmissionPolicy → SubmitApplicationUseCase` inside one `DB::transaction` with `WorkflowEngine::submit` as the final in-transaction step (WORKFLOW_TRANSACTION_MODEL=A). 17 integration tests exercise the real HTTP submit route. |
+| **RES-TD02-02** | TD-02 report | TD-03+ (or provider-refactor phase) | LOW | Container binding `ApplicationVersionBinderContract → ApplicationVersionBinder` + `SubmissionAuditRecorderContract → SubmissionAuditRecorder` in `JeaServicesServiceProvider` (deferred — tests currently DI directly, no runtime consumer yet) | **CLOSED** | TD-03 adds both bindings to `JeaServicesServiceProvider` alongside the new `ServiceSubmissionPolicyRegistry` singleton. |
+| **RES-TD02-SUPP-01** | JDG-TD02-SUPP-01 | TD-03 (API-contract) | MEDIUM | Application-submission idempotency contract does NOT exist. Verified by repository-wide grep — no idempotency-key middleware, no `IdempotencyKey` table, no submission-scoped idempotency guard. Duplicate-attempt behaviour today: SG-04 unique constraint on `(application_id, rule_version_id, purpose='SUBMIT')` rolls back the second attempt atomically (`PARTIAL_PERSISTENCE=0`), but the caller receives a `rolledBack` result rather than the first-committed result. | OPEN | Signed idempotency-key spec + middleware + tests OR explicit documented decision to leave submission non-idempotent. TD-03 explicitly did NOT introduce a contract (per mandate `IDEMPOTENCY_CONTRACT_STATUS=ABSENT`). |
+
+## TD-03-owned residuals
+
+| RESIDUAL_ID | Raised by | Owner | Risk | Blocks | Status | Closure evidence |
+|---|---|---|---|---|---|---|
+| **RES-TD03-01** | JDG-TD03-01 | TD-06 (audit-completeness) | LOW (informational) | Typed-decision dispatch in `ApplicationController::submit` uses `DB::transaction(function() { ... })` around a use case that itself opens a nested `DB::transaction` (Laravel savepoint). On production Postgres this is safe (SAVEPOINT rolls back atomically with the outer transaction); on SQLite the same nesting is preserved via Laravel's driver-level savepoint emulation. | OPEN (informational) | TD-06 audit-completeness review confirms the nested-transaction pattern is acceptable, or refactors the use case to skip its inner transaction when a caller-managed outer transaction is active. |
 
 ## Explicit reaffirmation
 
-**RES-SG06-01 remains OPEN.** TD-02 built the atomic submission use case as a callable-only orchestrator; runtime path unchanged. Per user TD-02 directive: *"Do not close unless the actual runtime direct-write path is replaced."* `Srv001Guard::validate` still calls `$app->save()` inside itself as the runtime path — that is the direct-write path referred to. It will remain the runtime path until the runtime consumer (RES-TD02-01) lands.
+**RES-SG06-01 is CLOSED for SRV-001.** TD-03 wires the real production HTTP submit route through the transactional `SubmitApplicationUseCase`. `Srv001Guard::validate → $app->save` no longer runs on the runtime path (the legacy `ServiceSubmissionGuardRegistry` entry is skipped when a typed-decision policy is registered — which is the case for SRV-001). Closure evidence: five criteria proven, each by named integration test — see `../judgment-records/JDG-TD03-01-runtime-submission-integration.md` and `../td-03/TD-03-report.md`. `Srv001Guard.php` still exists and is still callable directly (offline tooling / non-HTTP tests) — that is intentional. RES-SG06-01 scope was closure of the runtime direct-write path, which is now delivered.
 
 ## Inherited residuals (foundation SG-* + RC-*)
 
@@ -56,7 +62,7 @@ Reference `docs/architecture/service-governance/service-governance-residual-regi
 | RES-SG03-02 / RES-SG03-03 | UX/ops follow-ups |
 | RES-SG04-01 / RES-SG04-02 | Per-service onboarding pattern; manual recalc UX |
 | RES-SG05-01 | 4 deferred contracts (Eligibility/StageAction/FeeStrategy/IntegrationContributor) — extract on 2nd consumer |
-| RES-SG06-01 | Runtime swap from `Srv001Guard` to typed-decision consumer — TD-01+ natural work |
+| RES-SG06-01 | Runtime swap from `Srv001Guard` to typed-decision consumer — **CLOSED by TD-03** (2026-08-01) |
 | RES-SG00-04 | CLOSED |
 | RES-SG01-02 | CLOSED |
 | RES-SG00-01 | CLOSED |

@@ -10,6 +10,8 @@ use Modules\JeaServices\Engine\SchemaValidator;
 use Modules\JeaServices\Engine\ServiceSubmissionGuardRegistry;
 use Modules\JeaServices\Engine\WorkflowEngine;
 use App\Http\Controllers\Controller;
+use Modules\JeaServices\Governance\ServiceSubmissionPolicyRegistry;
+use Modules\JeaServices\Governance\ServiceSubmissionRejected;
 use Modules\JeaServices\Http\Requests\ConfirmPaymentRequest;
 use Modules\JeaServices\Http\Requests\DecideApplicationRequest;
 use Modules\JeaServices\Http\Requests\StoreApplicationRequest;
@@ -18,8 +20,10 @@ use Modules\JeaServices\Models\ApplicationDocument;
 use Modules\JeaServices\Models\ApplicationReview;
 use Modules\JeaServices\Models\Certificate;
 use Modules\JeaServices\Models\ServiceDefinition;
+use Modules\JeaServices\UseCases\SubmitApplication\SubmitApplicationUseCase;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 /**
@@ -312,18 +316,29 @@ class ApplicationController extends Controller
             ], 422);
         }
 
-        // Per-service submission guard. Resolves via the registry so the
-        // controller stays free of service-code branching — a new service
-        // with special submit-time rules registers a guard on the
-        // ServiceSubmissionGuardRegistry (see JeaServicesServiceProvider)
-        // and this call picks it up automatically. Services without a
-        // registered guard yield [] (pass-through).
-        $guardErrors = app(ServiceSubmissionGuardRegistry::class)->validate($app);
-        if ($guardErrors) {
-            return response()->json([
-                'message' => 'لا يمكن تقديم الطلب. راجع الحقول المحددة.',
-                'errors'  => $guardErrors,
-            ], 422);
+        // TD-03 · typed-decision policy lookup (service-code-agnostic).
+        // If registered, this service routes through the transactional
+        // SubmitApplicationUseCase after the platform-wide gates
+        // (capacity + sanction) below. The legacy guard registry is
+        // SKIPPED to prevent double-work + to prevent the legacy
+        // per-service guard's direct `$app->save()` (RES-SG06-01) from
+        // running on the typed-decision path.
+        $policyRegistry = app(ServiceSubmissionPolicyRegistry::class);
+        $typedPolicy    = $service !== null
+            ? $policyRegistry->forService($service->code)
+            : null;
+
+        if ($typedPolicy === null) {
+            // Legacy path — per-service guard via ServiceSubmissionGuardRegistry.
+            // Services with a registered legacy guard yield error arrays;
+            // services without one are a no-op pass-through.
+            $guardErrors = app(ServiceSubmissionGuardRegistry::class)->validate($app);
+            if ($guardErrors) {
+                return response()->json([
+                    'message' => 'لا يمكن تقديم الطلب. راجع الحقول المحددة.',
+                    'errors'  => $guardErrors,
+                ], 422);
+            }
         }
 
         // JORD-69: capacity gate — engineer's yearly discipline quota AND
@@ -358,7 +373,64 @@ class ApplicationController extends Controller
             ], 422);
         }
 
-        // WF-001: delegate to WorkflowEngine (EDA B-5, B-9)
+        // TD-03 · typed-decision runtime path. Application persistence +
+        // ServiceDefinitionVersion binding + calculation snapshots +
+        // audit persistence + workflow transition ALL commit atomically
+        // inside one DB::transaction. Rejection or any inner failure
+        // rolls back everything (PARTIAL_PERSISTENCE=0).
+        //
+        // WORKFLOW_TRANSACTION_MODEL=A — workflow transition is part of
+        // the same DB transaction as the use case. If WorkflowEngine::
+        // submit throws, the use case's writes (data merge + version
+        // bind + snapshots + audit) all roll back.
+        //
+        // Closes RES-SG06-01 for services with a registered typed-
+        // decision policy. Legacy numeric outputs are preserved verbatim
+        // — the registered policy delegates to legacy calculators.
+        if ($typedPolicy !== null) {
+            try {
+                DB::transaction(function () use ($typedPolicy, $app, $request, $service): void {
+                    $decision = $typedPolicy->evaluate($app);
+                    if (! $decision->accepted) {
+                        // ServiceSubmissionRejected is caught in the
+                        // outer scope and mapped to a 422 response;
+                        // throwing here aborts the transaction so
+                        // NOTHING was persisted for the rejected attempt.
+                        throw new ServiceSubmissionRejected($decision->errors);
+                    }
+                    $useCaseResult = app(SubmitApplicationUseCase::class)
+                        ->execute($app, $decision, $request->user());
+                    if (! $useCaseResult->succeeded) {
+                        throw new \RuntimeException(
+                            'submission use case rollback: '
+                            . ($useCaseResult->rollbackReason ?? 'unknown'),
+                        );
+                    }
+                    // Workflow transition — inside the same outer transaction.
+                    // WorkflowEngine::submit opens a nested transaction
+                    // (Laravel savepoint); its failure rolls the outer tx back,
+                    // discarding the use case's writes atomically.
+                    (new WorkflowEngine($service))->submit($app, $request->user());
+                });
+            } catch (ServiceSubmissionRejected $e) {
+                // API-shape preservation: SG-05 decisions carry
+                // `field_id => list<string>`; legacy JSON contract was
+                // `field_id => string`. Flatten so existing API consumers
+                // (tests, frontend, external) see no shape change.
+                $flatErrors = [];
+                foreach ($e->errors as $field => $msgs) {
+                    $flatErrors[$field] = is_array($msgs) ? implode(' ', $msgs) : (string) $msgs;
+                }
+                return response()->json([
+                    'message' => 'لا يمكن تقديم الطلب. راجع الحقول المحددة.',
+                    'errors'  => $flatErrors,
+                ], 422);
+            }
+
+            return response()->json(['application' => $app->fresh()]);
+        }
+
+        // Legacy path — WF-001: delegate to WorkflowEngine (EDA B-5, B-9)
         $engine = new WorkflowEngine($service);
         $app    = $engine->submit($app, $request->user());
 
