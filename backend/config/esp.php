@@ -28,14 +28,15 @@ return [
     'notification_retention_days'        => (int) env('NOTIFICATION_RETENTION_DAYS', 180),
     'notification_unread_retention_days' => (int) env('NOTIFICATION_UNREAD_RETENTION_DAYS', 365),
 
-    // P2 dead-key cleanup (architecture review): the four legacy keys
-    //   'default_sla_hours', 'max_upload_size_mb', 'rate_limit_login',
-    //   'rate_limit_api'
-    // were previously defined here but never read anywhere in the
-    // codebase. `login_rate_limit_per_minute` (below) supersedes
-    // `rate_limit_login`; per-service SLA values live in schema
-    // (schema.workflow[*].sla_hours) so a global default was
-    // unreachable; per-schema upload rules cover the size limit.
+    // P2 / CL-02 retirement (2026-08-01): four legacy keys — `default_sla_hours`,
+    // `max_upload_size_mb`, `rate_limit_login`, `rate_limit_api` — were once
+    // defined here but never read. `login_rate_limit_per_minute` (below)
+    // supersedes `rate_limit_login`; per-service SLA values live in schema
+    // (`schema.workflow[*].sla_hours`) so a global default was unreachable;
+    // per-schema upload rules cover the size limit. CL-02 verified zero
+    // references across backend/frontend/env/deployment; the P2 protocol's
+    // deprecation window is closed. Do not re-add these keys — pick one of
+    // the surviving mechanisms above instead.
 
     // API read SLO (NFR-001) — LogApiAccess middleware emits `slow_request`
     // warnings when GET/HEAD requests exceed this (ms).
