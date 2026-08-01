@@ -7,11 +7,11 @@ namespace Modules\JeaServices\Domain\Srv001;
 use Modules\JeaServices\Domain\Srv001\Calculators\TargetExplorationRequirementMatrixCalculator;
 use Modules\JeaServices\Domain\Srv001\Calculators\TargetNetDepthTableCalculator;
 use Modules\JeaServices\Domain\Srv001\Calculators\TargetWellsCountCalculator;
+use Modules\JeaServices\Domain\Srv001\Contracts\Srv001ExplorationStatus;
 use Modules\JeaServices\Domain\Srv001\ValueObjects\Srv001CalculationEvidence;
 use Modules\JeaServices\Domain\Srv001\ValueObjects\Srv001DerivedValues;
 use Modules\JeaServices\Domain\Srv001\ValueObjects\Srv001SubmissionInputs;
 use Modules\JeaServices\Domain\Srv001\ValueObjects\Srv001ValidationErrors;
-use Modules\JeaServices\Engine\ExplorationRequirementMatrix;
 use Modules\JeaServices\Governance\ServiceSubmissionDecision;
 use Modules\JeaServices\Governance\ServiceSubmissionPolicy;
 use Modules\JeaServices\Models\Application;
@@ -98,7 +98,7 @@ final class TargetSrv001SubmissionPolicy implements ServiceSubmissionPolicy
         $matrixOut = $matrixResult->outputs;
 
         // SPECIAL_STUDY_REQUIRED — accepted with technical-review flag.
-        if (($matrixOut['status'] ?? null) === ExplorationRequirementMatrix::STATUS_SPECIAL_STUDY_REQUIRED) {
+        if (($matrixOut['status'] ?? null) === Srv001ExplorationStatus::SPECIAL_STUDY_REQUIRED) {
             $derived = new Srv001DerivedValues(
                 explorationRequirementStatus:   $matrixOut['status'],
                 explorationSpecialStudyReason:  $matrixOut['reason'] ?? null,

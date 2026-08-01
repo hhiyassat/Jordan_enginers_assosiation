@@ -4,23 +4,22 @@ declare(strict_types=1);
 
 namespace Modules\JeaServices\Domain\Srv001\Calculators;
 
+use Modules\JeaServices\Domain\Srv001\Contracts\Srv001ExplorationMatrixRule;
 use Modules\JeaServices\Governance\ServiceCalculationPolicy;
 use Modules\JeaServices\Governance\ServiceCalculationResult;
-use Modules\JeaServices\Governance\Srv001\LegacyExplorationRequirementMatrixCalculator;
 
 /**
- * TD-01 · Target-domain calculator for the exploration-requirement
+ * TD-01A · Target-domain calculator for the exploration-requirement
  * matrix (SRS v1.2 §4.1 / كتاب التعليمات الفنية 2025 ص 230-231).
  *
- * SCOPE: parallel-implementation skeleton per JDG-TD00-02. Delegates
- * to the Legacy* calculator so numeric outputs remain identical.
- * NOT wired to runtime. Consumers are TargetSrv001SubmissionPolicy
- * + unit tests.
+ * BOUNDARY (JDG-TD01A-02): depends on the domain port
+ * Srv001ExplorationMatrixRule only. Legacy* delegation, when needed,
+ * flows in through an adapter outside the Domain namespace
+ * (Modules\JeaServices\Adapters\Srv001\LegacyBridgeExplorationMatrixRule).
  *
- * STATUS: TARGET_DOMAIN_PROVISIONAL. Advances beyond delegation only
- * once (a) the SRS §4.1 rows are BUSINESS_APPROVED via OD-Closure,
- * (b) the CONFLICTED 801-1000 band is resolved by OD-07, (c) the
- * ≥15-floor priority rule is resolved by OD-20.
+ * STATUS: TARGET_DOMAIN_PROVISIONAL. Runtime path unchanged
+ * (Srv001Guard still active). Publication BLOCKED until per-rule
+ * OD-Closure attached.
  */
 final class TargetExplorationRequirementMatrixCalculator implements ServiceCalculationPolicy
 {
@@ -29,7 +28,7 @@ final class TargetExplorationRequirementMatrixCalculator implements ServiceCalcu
     public const STATUS_CLASSIFICATION = 'TARGET_DOMAIN_PROVISIONAL';
 
     public function __construct(
-        private readonly LegacyExplorationRequirementMatrixCalculator $legacy,
+        private readonly Srv001ExplorationMatrixRule $rule,
     ) {
     }
 
@@ -43,35 +42,20 @@ final class TargetExplorationRequirementMatrixCalculator implements ServiceCalcu
      */
     public function compute(array $inputs): ServiceCalculationResult
     {
-        $legacyResult = $this->legacy->compute($inputs);
+        $floors = (int) ($inputs['floor_count'] ?? 0);
+        $area   = (float) ($inputs['floor_area'] ?? 0.0);
 
-        // Preserve numeric outputs verbatim. Add target-domain markers so
-        // downstream snapshot consumers can identify the source and warn
-        // about publication status.
-        $intermediate = array_merge(
-            $legacyResult->intermediateValues ?? [],
-            [
-                'target_domain_classification' => self::STATUS_CLASSIFICATION,
-                'delegated_to_legacy'          => true,
-            ],
-        );
-
-        $openDecisions = array_merge(
-            $legacyResult->openDecisions ?? [],
-            [
-                'TARGET_DOMAIN_PROVISIONAL — awaiting OD-Closure for SRS v1.2 §4.1 rows before promotion to BUSINESS_APPROVED',
-                'CONF-01 / OD-07 — 801-1000 band value remains disputed',
-                'CONF-05 / OD-20 — ≥15-floor priority rule not yet implemented',
-            ],
-        );
+        $outputs = $this->rule->compute($floors, $area);
 
         return new ServiceCalculationResult(
-            ruleVersionId:       $legacyResult->ruleVersionId,
-            inputs:              $legacyResult->inputs,
-            outputs:             $legacyResult->outputs,
-            intermediateValues:  $intermediate,
-            warnings:            $legacyResult->warnings,
-            openDecisions:       $openDecisions,
+            ruleVersionId:      $this->rule->ruleVersionId(),
+            inputs:             ['floor_count' => $floors, 'floor_area' => $area],
+            outputs:            $outputs,
+            intermediateValues: [
+                'target_domain_classification' => self::STATUS_CLASSIFICATION,
+                'rule_source'                  => $this->rule::class,
+            ],
+            openDecisions:      $this->rule->openDecisions(),
         );
     }
 }

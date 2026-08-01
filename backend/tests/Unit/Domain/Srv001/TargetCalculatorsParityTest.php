@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace Tests\Unit\Domain\Srv001;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Modules\JeaServices\Adapters\Srv001\LegacyBridgeExplorationMatrixRule;
+use Modules\JeaServices\Adapters\Srv001\LegacyBridgeNetDepthRule;
+use Modules\JeaServices\Adapters\Srv001\LegacyBridgeWellsCountRule;
 use Modules\JeaServices\Database\Seeders\Srv001RulesSeeder;
 use Modules\JeaServices\Domain\Srv001\Calculators\TargetExplorationRequirementMatrixCalculator;
 use Modules\JeaServices\Domain\Srv001\Calculators\TargetNetDepthTableCalculator;
@@ -16,15 +19,18 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 /**
- * TD-01 · Numeric parity — Target* calculators produce IDENTICAL
- * outputs to Legacy* for every input we test. This is the primary
- * safeguard against inadvertent behaviour drift while the skeleton
- * classes exist alongside the legacy path.
+ * TD-01A · Numeric parity — Target* calculators (constructed with a
+ * LegacyBridge* adapter) produce IDENTICAL outputs to Legacy* for
+ * every input we test.
  *
- * If any of these assertions fail, either the target class was
- * modified to change legacy behaviour (FORBIDDEN by JDG-TD00-02) or
- * the legacy class was modified in a way not mirrored (equally
- * FORBIDDEN in TD-01+ scope).
+ * Domain layer depends on the port only (Srv001{Wells,NetDepth,
+ * ExplorationMatrix}Rule); tests construct via LegacyBridge* adapters
+ * from Modules\JeaServices\Adapters\Srv001\ (outside Domain).
+ *
+ * If any of these assertions fail, either a Target* class or a
+ * LegacyBridge* adapter changed legacy behaviour (FORBIDDEN by
+ * JDG-TD00-02) or the legacy class was modified in a way not
+ * mirrored (equally FORBIDDEN in TD-* scope).
  */
 class TargetCalculatorsParityTest extends TestCase
 {
@@ -43,17 +49,20 @@ class TargetCalculatorsParityTest extends TestCase
     public function test_exploration_matrix_parity(array $inputs): void
     {
         $legacy = new LegacyExplorationRequirementMatrixCalculator();
-        $target = new TargetExplorationRequirementMatrixCalculator($legacy);
+        $target = new TargetExplorationRequirementMatrixCalculator(
+            new LegacyBridgeExplorationMatrixRule($legacy),
+        );
 
         $legacyResult = $legacy->compute($inputs);
         $targetResult = $target->compute($inputs);
 
         $this->assertSame($legacyResult->outputs, $targetResult->outputs, 'exploration matrix outputs must match legacy exactly');
         $this->assertSame($legacyResult->ruleVersionId, $targetResult->ruleVersionId);
-        $this->assertContains(
-            'TARGET_DOMAIN_PROVISIONAL — awaiting OD-Closure for SRS v1.2 §4.1 rows before promotion to BUSINESS_APPROVED',
-            $targetResult->openDecisions ?? [],
-            'target must add TARGET_DOMAIN_PROVISIONAL marker',
+        $joined = implode(' | ', $targetResult->openDecisions ?? []);
+        $this->assertStringContainsString(
+            'TARGET_DOMAIN_PROVISIONAL',
+            $joined,
+            'target must surface TARGET_DOMAIN_PROVISIONAL marker (via the injected rule port / bridge adapter)',
         );
     }
 
@@ -77,7 +86,7 @@ class TargetCalculatorsParityTest extends TestCase
     public function test_wells_count_parity(array $inputs): void
     {
         $legacy = new LegacyWellsCountCalculator();
-        $target = new TargetWellsCountCalculator($legacy);
+        $target = new TargetWellsCountCalculator(new LegacyBridgeWellsCountRule($legacy));
 
         $legacyResult = $legacy->compute($inputs);
         $targetResult = $target->compute($inputs);
@@ -107,7 +116,7 @@ class TargetCalculatorsParityTest extends TestCase
     public function test_net_depth_parity(array $inputs): void
     {
         $legacy = new LegacyNetDepthTableCalculator();
-        $target = new TargetNetDepthTableCalculator($legacy);
+        $target = new TargetNetDepthTableCalculator(new LegacyBridgeNetDepthRule($legacy));
 
         $legacyResult = $legacy->compute($inputs);
         $targetResult = $target->compute($inputs);
@@ -128,9 +137,15 @@ class TargetCalculatorsParityTest extends TestCase
 
     public function test_target_calculators_carry_target_domain_provisional_marker(): void
     {
-        $matrixTarget   = new TargetExplorationRequirementMatrixCalculator(new LegacyExplorationRequirementMatrixCalculator());
-        $wellsTarget    = new TargetWellsCountCalculator(new LegacyWellsCountCalculator());
-        $netDepthTarget = new TargetNetDepthTableCalculator(new LegacyNetDepthTableCalculator());
+        $matrixTarget   = new TargetExplorationRequirementMatrixCalculator(
+            new LegacyBridgeExplorationMatrixRule(new LegacyExplorationRequirementMatrixCalculator()),
+        );
+        $wellsTarget    = new TargetWellsCountCalculator(
+            new LegacyBridgeWellsCountRule(new LegacyWellsCountCalculator()),
+        );
+        $netDepthTarget = new TargetNetDepthTableCalculator(
+            new LegacyBridgeNetDepthRule(new LegacyNetDepthTableCalculator()),
+        );
 
         $m = $matrixTarget->compute(['floor_count' => 3, 'floor_area' => 500]);
         $w = $wellsTarget->compute(['floor_area' => 500]);

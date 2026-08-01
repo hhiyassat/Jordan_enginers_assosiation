@@ -17,6 +17,18 @@ Residuals raised BY TD-00 (as opposed to inherited from SG-*/RC-*).
 | **RES-TD00-06** | business-rule-register | TD-01+ | LOW | `WellsCountCalculator` uses total floor_area (not per-floor max as BR-CALC-01 requires); need per-floor input model when target replaces legacy | OPEN | TD-01+ introduces per-floor collection input; legacy calculator preserved as-is |
 | **RES-TD00-07** | source-register | JEA product | LOW | Verify `flowcahrt/تربة مقترح.drawio.pdf` and `تربة قائم.drawio.pdf` files exist and are accessible for future flowchart-source traceability | OPEN | File-existence check + reference table update |
 
+## TD-01A-owned residuals
+
+| RESIDUAL_ID | Raised by | Owner | Risk | Blocks | Status | Closure evidence |
+|---|---|---|---|---|---|---|
+| **RES-TD01A-01** | JDG-TD01A-01 | User / JEA | LOW (informational) | Every SOURCE_CONFIRMED rule per SRS v1.2 remains BUSINESS_APPROVAL_UNVERIFIED (SRS v1.2 self-declares non-contractual until baseline 2.0) | OPEN | Signed OD-Closure per rule OR baseline-2.0 signature by requirements owner. Identical semantics to RES-TD00-02 / RES-TD00-01b — recorded here for TD-01A traceability. |
+| **RES-TD01A-02** | JDG-TD01A-02 | closed by TD-01A commit | HIGH (was) | Domain\\Srv001 layer directly imported Governance\\Srv001\\Legacy* — boundary violation | **CLOSED** | TD-01A refactored to port + adapter pair (Srv001{ExplorationMatrix,WellsCount,NetDepth}Rule ports in Domain\\Srv001\\Contracts\\ + LegacyBridge* adapters in Modules\\JeaServices\\Adapters\\Srv001\\). Architecture test `Srv001DomainBoundariesTest` enforces the boundary going forward. |
+| **RES-TD01A-03** | this register | (post-target-canonical) | LOW | LegacyBridge* adapters continue delegating to Legacy* pilot calculators. When approved target rules land, adapters retire (or a native Domain rule replaces them). | OPEN | Approved target rule per calculator (linked to OD-Closures OD-07 / OD-11 / OD-19 / OD-20 / OD-22 / OD-23 / OD-DEPTH) |
+| **RES-TD01A-04** | TD-01A report | (informational) | LOW | Two Governance-namespace imports remain in Domain\\Srv001 by design: `ServiceCalculationPolicy` / `ServiceCalculationResult` / `ServiceSubmissionPolicy` / `ServiceSubmissionDecision`. These are SG-05 contract interfaces + value objects — dependency-inversion-correct (Domain implements outer contracts). NOT boundary violations. | ACCEPTED_BY_DESIGN | Documented so future audits do not attempt to remove them |
+| **RES-TD01A-05** | TD-01A report | TD-02+ (state machine) | MEDIUM | SRS v1.2 §19 release-allocation corrections: FR-SS-057..061 → R4 exclusively; FR-SS-062 → R5. Current 7-state Application machine does not yet distinguish R4/R5 stages. | OPEN | TD-02+ state-machine extension per RES-TD00-04, honouring SRS §19 R-allocation |
+| **RES-TD01A-06** | TD-01A report | TD-02+ (entities) | MEDIUM | SRS v1.2 §10 introduces two new entities: `QuotaIncreaseReferral` (application + requested quota + fee + decision) and `InternalMandatoryNote` (scope=office|parcel + decision + session + effect=Block|warning). Not implemented. | OPEN | Two additive migrations + Eloquent models when TD-02+ requires; RBAC additions (SRS §13) accompany |
+| **RES-TD01A-07** | TD-01A report | TD-02+ (RTM) | LOW | SRS v1.2 §17 RTM grouping corrections (fix GAP-05 attribution) — editorial correction against SG-* / TD-00 RTM references | OPEN | Emit an RTM cross-reference document at TD-N summary time |
+
 ## Inherited residuals (foundation SG-* + RC-*)
 
 Reference `docs/architecture/service-governance/service-governance-residual-register.md` for the full list. Summary of relevance to TD-01+:

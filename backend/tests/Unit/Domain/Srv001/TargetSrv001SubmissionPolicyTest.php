@@ -7,6 +7,9 @@ namespace Tests\Unit\Domain\Srv001;
 use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Modules\JeaServices\Adapters\Srv001\LegacyBridgeExplorationMatrixRule;
+use Modules\JeaServices\Adapters\Srv001\LegacyBridgeNetDepthRule;
+use Modules\JeaServices\Adapters\Srv001\LegacyBridgeWellsCountRule;
 use Modules\JeaServices\Database\Seeders\Srv001RulesSeeder;
 use Modules\JeaServices\Domain\Srv001\Calculators\TargetExplorationRequirementMatrixCalculator;
 use Modules\JeaServices\Domain\Srv001\Calculators\TargetNetDepthTableCalculator;
@@ -78,9 +81,15 @@ class TargetSrv001SubmissionPolicyTest extends TestCase
         (new Srv001RulesSeeder())->run();
 
         $this->target = new TargetSrv001SubmissionPolicy(
-            new TargetExplorationRequirementMatrixCalculator(new LegacyExplorationRequirementMatrixCalculator()),
-            new TargetWellsCountCalculator(new LegacyWellsCountCalculator()),
-            new TargetNetDepthTableCalculator(new LegacyNetDepthTableCalculator()),
+            new TargetExplorationRequirementMatrixCalculator(
+                new LegacyBridgeExplorationMatrixRule(new LegacyExplorationRequirementMatrixCalculator()),
+            ),
+            new TargetWellsCountCalculator(
+                new LegacyBridgeWellsCountRule(new LegacyWellsCountCalculator()),
+            ),
+            new TargetNetDepthTableCalculator(
+                new LegacyBridgeNetDepthRule(new LegacyNetDepthTableCalculator()),
+            ),
         );
         $this->legacy = new LegacySrv001SubmissionPolicy(
             new LegacyExplorationRequirementMatrixCalculator(),
