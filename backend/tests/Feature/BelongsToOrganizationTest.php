@@ -160,4 +160,73 @@ class BelongsToOrganizationTest extends TestCase
 
         $this->assertSame(3, Project::withoutOrgScope()->count());
     }
+
+    // ── CL-04 · findForOrganizationOrFail helper ─────────────────────────
+
+    public function test_find_for_organization_or_fail_returns_same_org_row(): void
+    {
+        $target = Project::create([
+            'organization_id' => $this->orgA->id,
+            'owner_user_id'   => $this->userA->id,
+            'name_ar'         => 'A-target', 'type' => 'سكني',
+            'area_m2'         => 400, 'status' => 'active',
+        ]);
+
+        $found = Project::findForOrganizationOrFail($this->orgA->id, $target->id);
+
+        $this->assertInstanceOf(Project::class, $found);
+        $this->assertSame($target->id, $found->id);
+    }
+
+    public function test_find_for_organization_or_fail_rejects_cross_org_row_with_404(): void
+    {
+        $orgATarget = Project::create([
+            'organization_id' => $this->orgA->id,
+            'owner_user_id'   => $this->userA->id,
+            'name_ar'         => 'A-cross', 'type' => 'سكني',
+            'area_m2'         => 100, 'status' => 'active',
+        ]);
+
+        // A caller resolving orgB's id but reaching for an OrgA row → 404,
+        // NOT a permission error, exactly like the inline pattern it replaces.
+        $this->expectException(\Illuminate\Database\Eloquent\ModelNotFoundException::class);
+        Project::findForOrganizationOrFail($this->orgB->id, $orgATarget->id);
+    }
+
+    public function test_find_for_organization_or_fail_missing_id_throws_404(): void
+    {
+        $this->expectException(\Illuminate\Database\Eloquent\ModelNotFoundException::class);
+        Project::findForOrganizationOrFail($this->orgA->id, 999999);
+    }
+
+    public function test_find_for_organization_or_fail_null_org_context_still_fails_closed(): void
+    {
+        // Even though the helper takes an explicit $orgId, the global
+        // OrganizationScope still fires when an auth user has null org
+        // (H-01). The two filters compose and the query returns nothing
+        // — 404 rather than a leaky cross-tenant leak.
+        Auth::login($this->userA);
+        Auth::user()->organization_id = null;
+
+        $orgATarget = Project::withoutOrgScope()->where('organization_id', $this->orgA->id)->first();
+
+        $this->expectException(\Illuminate\Database\Eloquent\ModelNotFoundException::class);
+        Project::findForOrganizationOrFail($this->orgA->id, $orgATarget->id);
+    }
+
+    public function test_find_for_organization_or_fail_does_not_bypass_the_global_scope(): void
+    {
+        // Regression guard: the helper wraps forOrganization() + findOrFail
+        // and does NOT call withoutOrgScope(). If someone ever changes the
+        // impl to `withoutOrgScope()->where(...)`, this test fails because
+        // an authenticated-as-B user asking for an A row must still 404
+        // (double filter: global scope filters to B; helper filters to A;
+        // intersection is empty).
+        Auth::login($this->userB);
+        $orgATarget = Project::withoutOrgScope()->where('organization_id', $this->orgA->id)->first();
+        $this->assertNotNull($orgATarget, 'seed data assumption: at least one Org A project');
+
+        $this->expectException(\Illuminate\Database\Eloquent\ModelNotFoundException::class);
+        Project::findForOrganizationOrFail($this->orgA->id, $orgATarget->id);
+    }
 }

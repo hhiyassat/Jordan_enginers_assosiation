@@ -95,4 +95,28 @@ trait BelongsToOrganization
     {
         return static::query()->withoutGlobalScope(OrganizationScope::class);
     }
+
+    /**
+     * CL-04: tenant-scoped `findOrFail` helper for controller code paths
+     * that previously inlined `Model::forOrganization($orgId)->findOrFail($id)`.
+     *
+     * The org id is passed EXPLICITLY (no reliance on Auth resolution
+     * inside the helper) so the tenant intent stays visible at the
+     * callsite and there's no hidden `Auth::user()` coupling. Fails
+     * closed via `findOrFail` — returns 404 on cross-org access
+     * (never 403 with a leaky message) exactly like the inline pattern
+     * it replaces.
+     *
+     * @param  int         $orgId  The tenant id the caller has already resolved.
+     * @param  int|string  $id     The primary key of the target model.
+     * @return static
+     *
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     */
+    public static function findForOrganizationOrFail(int $orgId, int|string $id): static
+    {
+        /** @var static $model */
+        $model = static::forOrganization($orgId)->findOrFail($id);
+        return $model;
+    }
 }

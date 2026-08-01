@@ -101,7 +101,7 @@ class ReviewQueueController extends Controller
 
     public function claim(Request $request, int $id): JsonResponse
     {
-        $app    = Application::forOrganization($request->user()->organization_id)->findOrFail($id);
+        $app    = Application::findForOrganizationOrFail($request->user()->organization_id, $id);
         $engine = new WorkflowEngine($app->serviceDefinition);
         $app    = $engine->claim($app, $request->user());
 
@@ -115,7 +115,7 @@ class ReviewQueueController extends Controller
      */
     public function release(Request $request, int $id): JsonResponse
     {
-        $app    = Application::forOrganization($request->user()->organization_id)->findOrFail($id);
+        $app    = Application::findForOrganizationOrFail($request->user()->organization_id, $id);
         $engine = new WorkflowEngine($app->serviceDefinition);
         $app    = $engine->release($app, $request->user());
 
@@ -124,7 +124,7 @@ class ReviewQueueController extends Controller
 
     public function decide(DecideApplicationRequest $request, int $id): JsonResponse
     {
-        $app    = Application::forOrganization($request->user()->organization_id)->findOrFail($id);
+        $app    = Application::findForOrganizationOrFail($request->user()->organization_id, $id);
         $engine = new WorkflowEngine($app->serviceDefinition);
         $review = $engine->decide(
             $app,

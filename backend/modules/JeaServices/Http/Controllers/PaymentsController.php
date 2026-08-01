@@ -47,7 +47,7 @@ class PaymentsController extends Controller
      */
     public function initiate(InitiatePaymentRequest $request, int $id): JsonResponse
     {
-        $app = Application::forOrganization($request->user()->organization_id)->findOrFail($id);
+        $app = Application::findForOrganizationOrFail($request->user()->organization_id, $id);
 
         if ($app->status !== Application::STATUS_APPROVED) {
             return response()->json([
@@ -111,7 +111,7 @@ class PaymentsController extends Controller
      */
     public function confirm(ConfirmPaymentRequest $request, int $id): JsonResponse
     {
-        $app    = Application::forOrganization($request->user()->organization_id)->findOrFail($id);
+        $app    = Application::findForOrganizationOrFail($request->user()->organization_id, $id);
         $engine = new WorkflowEngine($app->serviceDefinition);
         $actor  = $request->user();
 

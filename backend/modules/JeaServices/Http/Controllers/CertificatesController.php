@@ -33,7 +33,7 @@ class CertificatesController extends Controller
             abort(403, 'المسؤولون والموظفون فقط يمكنهم إصدار الشهادات.');
         }
 
-        $app    = Application::forOrganization($request->user()->organization_id)->findOrFail($id);
+        $app    = Application::findForOrganizationOrFail($request->user()->organization_id, $id);
         $engine = new WorkflowEngine($app->serviceDefinition);
         $cert   = $engine->issueCertificate($app, $request->user());
 
