@@ -18,3 +18,4 @@ Running ledger of every material judgment across phases SG-00..SG-06. Each row c
 | JDG-SG04-01 | SG-04 | Rule model granularity | Per-calculator; three RuleDefinition rows for SRV-001 | ISSUED |
 | JDG-SG04-02 | SG-04 | Recalculation policy | DRAFT overwrites; SUBMIT immutable; MANUAL_RECALC supersedes | ISSUED |
 | JDG-SG05-01 | SG-05 | Extension contract scope | Implement ServiceSubmissionPolicy + ServiceCalculationPolicy; defer 4 others | ISSUED |
+| JDG-SG06-01 | SG-06 | Legacy boundary approach | Parallel implementation; leave Srv001Guard runtime-wired | ISSUED |

@@ -13,7 +13,8 @@ Every residual raised by a judgment record, tracked to closure.
 | RES-SG05-01 | JDG-SG05-01 | as-needed | LOW | Deferred extension contracts | OPEN | Extract ServiceEligibilityPolicy / ServiceStageAction / ServiceFeeStrategy / ServiceIntegrationContributor when a second consumer appears |
 | RES-SG00-02 | JDG-SG00-02 | Product owner / JEA | HIGH | Migration of SRV-001 from LEGACY_PILOT to canonical | OPEN | Signed calculator source attached to service UAT |
 | RES-SG00-03 | JDG-SG00-03 | Product / JEA | MEDIUM | Publication of every service currently classified `_UNAPPROVED` | OPEN | Signed JEA decision per service |
-| RES-SG00-04 | JDG-SG00-04 | SG-06 | LOW | SG-06 completion | OPEN | SG-06 characterization tests + refactor commit |
+| RES-SG00-04 | JDG-SG00-04 | SG-06 | LOW | SG-06 completion | CLOSED | SG-06 parallel implementation demonstrates the target pattern; runtime swap is RES-SG06-01 |
+| RES-SG06-01 | JDG-SG06-01 | post-program | MEDIUM | Runtime consumption of typed decisions | OPEN | Wire calling use case to invoke LegacySrv001SubmissionPolicy and replace Srv001Guard runtime path |
 | RES-SG01-01 | JDG-SG01-01 | (out of program scope) | LOW | Legacy `status` column cleanup | OPEN | Future cleanup once every consumer migrated to `publication_status` |
 | RES-SG01-02 | JDG-SG01-02 | SG-02 | MEDIUM | SG-02 completion | CLOSED | Closed by JDG-SG02-01: LENIENT default with legacy fallback |
 | RES-SG02-01 | JDG-SG02-01 | ops | LOW | (observability only) | OPEN | Dashboard counter for AVAIL_LEGACY_STATUS_FALLBACK |
