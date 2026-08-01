@@ -43,6 +43,14 @@ Residuals raised BY TD-00 (as opposed to inherited from SG-*/RC-*).
 |---|---|---|---|---|---|---|
 | **RES-TD03-01** | JDG-TD03-01 | TD-06 (audit-completeness) | LOW (informational) | Typed-decision dispatch in `ApplicationController::submit` uses `DB::transaction(function() { ... })` around a use case that itself opens a nested `DB::transaction` (Laravel savepoint). On production Postgres this is safe (SAVEPOINT rolls back atomically with the outer transaction); on SQLite the same nesting is preserved via Laravel's driver-level savepoint emulation. | OPEN (informational) | TD-06 audit-completeness review confirms the nested-transaction pattern is acceptable, or refactors the use case to skip its inner transaction when a caller-managed outer transaction is active. |
 
+## TD-05-owned residuals
+
+| RESIDUAL_ID | Raised by | Owner | Risk | Blocks | Status | Closure evidence |
+|---|---|---|---|---|---|---|
+| **RES-TD05-01** | JDG-TD05-01 | External integration owners | MEDIUM | No SRV-001 port has a real production adapter today. Every port has either an in-memory fake or a `ContractMissing*` default. Per-port closure requires: signed integration contract + adapter + contract test + observability. Blocking ODs per port: OD-30 (Oracle), OD-31 (DLS), (BURA / engineering ceiling / mandatory-notes / correction-status / quota / specialization / title-deed QR — per-provider). | OPEN | Per-port: signed integration contract + adapter registration + green contract test. |
+| **RES-TD05-02** | JDG-TD05-01 | TD-05+ (submission pipeline extension) | LOW | `Srv001EligibilityGate` is not container-bound; `ApplicationController::submit` does not resolve it today. When a runtime consumer lands, the eligibility gate must be inserted BEFORE the typed-decision policy (SG-06 legacy or target) so that eligibility failures short-circuit before any calculation runs. | OPEN | Container binding + integration test proving the gate fires ahead of the calculation phase. |
+| **RES-TD05-03** | JDG-TD05-01 | TD-05+ (persistence) | LOW | `QuotaIncreaseReferral` + `InternalMandatoryNote` are immutable VOs. When a runtime consumer needs to persist them, additive migrations + Eloquent models must land (VOs remain the payload shape). | OPEN | Migrations + models + persistence adapter. |
+
 ## TD-04-owned residuals
 
 | RESIDUAL_ID | Raised by | Owner | Risk | Blocks | Status | Closure evidence |
