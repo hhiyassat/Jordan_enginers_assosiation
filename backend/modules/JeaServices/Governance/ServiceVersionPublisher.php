@@ -34,6 +34,15 @@ final class ServiceVersionPublisher
         ?string $approvalNotes = null,
     ): ServiceDefinitionVersion {
         return DB::transaction(function () use ($service, $versionIdentifier, $publisher, $approvalReference, $approver, $approvalNotes) {
+            // RC-03 · Serialise concurrent publishes for the same service.
+            // Without this lock, two concurrent publishes with distinct
+            // identifiers can both read "no prior published" and both
+            // promote to PUBLISHED, leaving the service with two current
+            // versions. The `lockForUpdate()` on the parent
+            // ServiceDefinition row forces one publisher to wait until the
+            // other's transaction commits.
+            ServiceDefinition::query()->whereKey($service->id)->lockForUpdate()->first();
+
             $schema = $service->schema ?? [];
 
             $version = new ServiceDefinitionVersion();
