@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Tests\Feature\Architecture;
+namespace Tests\Architecture;
 
 use Tests\TestCase;
 
