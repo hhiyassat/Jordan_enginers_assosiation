@@ -1,0 +1,37 @@
+FEATURE,GENERIC_ENGINE_HANDLES,SERVICE_SPECIFIC_CODE,SERVICE_SPECIFIC_DATA,COMMONALITY_TYPE,EVIDENCE
+Application creation (draft),YES,NONE,service_definitions.id + schema.fields,PURE_COMMON,ApplicationController::store L149 — service_definition_id + form data JSON generic across all 57 services
+Form rendering,YES,NONE,schema.fields (field type/label/required),PURE_COMMON,frontend/src/modules/JeaServices/pages/Apply.tsx — dynamic renderer; agent-3 verdict SCHEMA_DRIVEN with zero if(code===...) branches
+Field validation (schema),YES,NONE,schema.fields validation rules,PURE_COMMON,SchemaValidator::validateData — pure schema traversal
+Document validation,YES,NONE,schema.documents (required/optional/max_size),PURE_COMMON,SchemaValidator::validateDocuments
+Fee calculation,YES (5 fee types),NONE,schema.fee.type=fixed|tiered|formula|matrix|per_unit + surcharges,PURE_COMMON,FeeCalculator::calculateBreakdown — dispatches on schema.fee.type
+Workflow execution,YES,NONE,schema.workflow.stages[],PURE_COMMON,WorkflowEngine::submit/claim/decide operate on stages array
+SLA computation,YES,NONE,schema.workflow.stages[].sla_hours,PURE_COMMON,WorkflowEngine::submit sets sla_deadline from current stage
+Cross-cutting cadastral conflict check,YES,NONE,data.basin_number + data.parcel_number (any service),SERVICE_INDEPENDENT_INVARIANT,CadastralConflictGuard iterates all applications with basin/parcel across orgs
+Cross-cutting owner-match clearance,YES,NONE,data.owner_national_id (any service),SERVICE_INDEPENDENT_INVARIANT,OwnerMatchClearanceGuard invariant
+Sanction gate,YES,NONE,office organization_id + sanctions.effective_until,PLATFORM_INVARIANT,SanctionGuard in cross-cutting pipeline
+Capacity/quota gate,YES,NONE,engineers + quota_consumptions + office_ceilings,PLATFORM_INVARIANT,CapacityGuard in cross-cutting pipeline (JeaProjects module)
+Reference number allocation,YES,NONE,application_counters (service_id year),PURE_COMMON,Application::generateReference with lockForUpdate
+Certificate serial allocation,YES,NONE,certificate_counters (organization_id year),PURE_COMMON,WorkflowEngine::generateCertificateNumber
+Payment initiate,YES,NONE,fee_amount + PaymentGateway abstraction,PLATFORM_INVARIANT,PaymentsController::initiate → PaymentGateway::initiatePayment
+Payment confirmation (webhook),YES,NONE,payment_callbacks + WorkflowEngine::confirmPaymentFromReceipt,PLATFORM_INVARIANT,PaymentCallbackController
+Payment confirmation (manual),YES,NONE,manual_reason required,PLATFORM_INVARIANT,PaymentsController::confirm — separate invariant per DG-02 register
+Certificate PDF generation,YES,NONE,schema.certificate_template (optional),PURE_COMMON,CertificatesController::downloadPdf
+Notification dispatch,YES,NONE,schema.workflow.stages[].notifications,PURE_COMMON,JeaNotificationService::emit* + ProcessNotificationJob
+Audit log,YES,NONE,all state mutations,PLATFORM_INVARIANT,AuditLog observer on WorkflowEngine transitions
+Multi-tenant scope,YES,NONE,organization_id column on every mutable table,PLATFORM_INVARIANT,BelongsToOrganization trait + OrganizationScope global scope
+Service catalog listing,YES,NONE,service_definitions rows,PURE_COMMON,ServiceCatalogController::index
+Admin service management (lock/edit),YES,NONE,is_locked flag,PURE_COMMON,ServiceCatalogController::lock/unlock/update
+SRV-001 government routing rule,NO,Srv001Guard::validate L79,project_sector=حكومي → force SRV-006,SERVICE_SPECIFIC_BUSINESS_RULE,Srv001Guard.php line 79
+SRV-001 exploration matrix enforcement,NO,Srv001Guard::validate + ExplorationRequirementMatrix,floors×area_band → point count / SPECIAL_STUDY_REQUIRED / INELIGIBLE,SERVICE_SPECIFIC_BUSINESS_RULE,ExplorationRequirementMatrix.php (JORD-91)
+SRV-001 wells count calculation (PROVISIONAL),NO,WellsCountCalculator::compute,area_m2 → wells count band,SERVICE_SPECIFIC_CALCULATION,WellsCountCalculator.php header comment: source محضر اجتماع 2026-07-26 §X — NOT JEA-approved
+SRV-001 net depth table (PROVISIONAL),NO,NetDepthTable::forFloors,floor_count → third/two_thirds/total depths,SERVICE_SPECIFIC_CALCULATION,NetDepthTable.php header comment: source محضر اجتماع 2026-07-26 §XI — invariant third+two_thirds≠total not resolved
+Auto-fill area_m2 + governorate from project,NO,frontend Apply.tsx hardcoded field-id,when project_id present these two fields auto-fill,SERVICE_INDEPENDENT_FIELD_CONVENTION,frontend/src/modules/JeaServices/pages/Apply.tsx — only field-id references anywhere in frontend
+Special-study tagging (SRV-001),NO,Srv001Guard::validate,writes app.data.technical_review_required = true when SPECIAL_STUDY_REQUIRED,SERVICE_SPECIFIC_BUSINESS_RULE,Srv001Guard.php
+Drawing fee matrix (governorate×building_class),YES (matrix engine),NONE,schema.fee={type:matrix rows:...},PURE_COMMON,DrawingFeeMatrixSeeder + FeeCalculator matrix path
+Solar per-kW fee (DRW-P-006),YES (per_unit engine),NONE,schema.fee={type:per_unit unit:kW rate:4},PURE_COMMON,SolarFeeSeeder + FeeCalculator per_unit path
+Excavation 3.5 JOD/m² (SRV-007 SRV-012),YES (per_unit engine),NONE,schema.fee={type:per_unit unit:m2 rate:3.5},PURE_COMMON,ExcavationFeeSeeder + FeeCalculator per_unit path
+Survey 150 fils/lm + 1% (SRV-001..006),YES (per_unit engine),NONE,schema.fee={type:per_unit unit:lm rate:0.150 surcharge:0.01},PURE_COMMON,SiteSurveyFeesSeeder + FeeCalculator per_unit path
+Reviewer stage claim/release/decide,YES,NONE,schema.workflow.stages[].role,PURE_COMMON,WorkflowEngine
+first_auditor_is_external (SRV-001),YES (schema.workflow.stages[0].external),NONE,schema flag,PURE_COMMON via schema,SurveyWorkflowsSeeder soilProposedWorkflow — expressed as schema flag not code branch
+Certificate template selection,YES,NONE,schema.certificate_template,PURE_COMMON,CertificatesController::downloadPdf
+Modifications-requested cycle,YES,NONE,schema.workflow.stages[].can_request_modifications,PURE_COMMON,WorkflowEngine::decide + review_round column
