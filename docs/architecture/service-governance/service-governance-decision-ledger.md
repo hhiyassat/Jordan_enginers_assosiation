@@ -1,0 +1,10 @@
+# Service Governance Decision Ledger
+
+Running ledger of every material judgment across phases SG-00..SG-06. Each row cites the Judgment Record that carries the full reasoning chain.
+
+| Judgment ID | Phase | Title | Decision | Status |
+|---|---|---|---|---|
+| JDG-SG00-01 | SG-00 | Service configuration source-of-truth model | Adopt distributed model (schema + engine + guards + extensions + external state) | ISSUED |
+| JDG-SG00-02 | SG-00 | SRV-001 classification and terminology | Use four-classification set (PILOT_COMPLETE / PARTIAL / PARTIAL_OR_UNCONFIRMED / INCOMPLETE) | ISSUED |
+| JDG-SG00-03 | SG-00 | Count reconciliation | Use REAL_APPROVED / REAL_UNAPPROVED / PLACEHOLDER / ABSENT / UNKNOWN vocabularies | ISSUED |
+| JDG-SG00-04 | SG-00 | Service Package Contract persistence correction | Policies return typed decisions; use cases persist | ISSUED |
