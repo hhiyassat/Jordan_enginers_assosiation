@@ -29,6 +29,17 @@ Residuals raised BY TD-00 (as opposed to inherited from SG-*/RC-*).
 | **RES-TD01A-06** | TD-01A report | TD-02+ (entities) | MEDIUM | SRS v1.2 §10 introduces two new entities: `QuotaIncreaseReferral` (application + requested quota + fee + decision) and `InternalMandatoryNote` (scope=office|parcel + decision + session + effect=Block|warning). Not implemented. | OPEN | Two additive migrations + Eloquent models when TD-02+ requires; RBAC additions (SRS §13) accompany |
 | **RES-TD01A-07** | TD-01A report | TD-02+ (RTM) | LOW | SRS v1.2 §17 RTM grouping corrections (fix GAP-05 attribution) — editorial correction against SG-* / TD-00 RTM references | OPEN | Emit an RTM cross-reference document at TD-N summary time |
 
+## TD-02-owned residuals
+
+| RESIDUAL_ID | Raised by | Owner | Risk | Blocks | Status | Closure evidence |
+|---|---|---|---|---|---|---|
+| **RES-TD02-01** | TD-02 report | TD-03+ (runtime consumer) | MEDIUM | Runtime consumer of `SubmitApplicationUseCase` (either a new submission controller or a `WorkflowEngine::submit` refactor); when built, closes RES-SG06-01 | OPEN | Runtime consumer commit + integration test proving `Srv001Guard::validate`'s `$app->save()` is bypassed on the new path |
+| **RES-TD02-02** | TD-02 report | TD-03+ (or provider-refactor phase) | LOW | Container binding `ApplicationVersionBinderContract → ApplicationVersionBinder` in `JeaServicesServiceProvider` (deferred — tests currently DI directly, no runtime consumer yet) | OPEN | One-line `->bind()` in provider when runtime consumer arrives |
+
+## Explicit reaffirmation
+
+**RES-SG06-01 remains OPEN.** TD-02 built the atomic submission use case as a callable-only orchestrator; runtime path unchanged. Per user TD-02 directive: *"Do not close unless the actual runtime direct-write path is replaced."* `Srv001Guard::validate` still calls `$app->save()` inside itself as the runtime path — that is the direct-write path referred to. It will remain the runtime path until the runtime consumer (RES-TD02-01) lands.
+
 ## Inherited residuals (foundation SG-* + RC-*)
 
 Reference `docs/architecture/service-governance/service-governance-residual-register.md` for the full list. Summary of relevance to TD-01+:

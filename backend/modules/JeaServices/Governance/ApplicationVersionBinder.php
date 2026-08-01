@@ -19,7 +19,7 @@ use Modules\JeaServices\Models\Application;
  * It does NOT save the application — the caller (WorkflowEngine::submit)
  * saves inside its own transaction.
  */
-final class ApplicationVersionBinder
+final class ApplicationVersionBinder implements ApplicationVersionBinderContract
 {
     public function __construct(
         private readonly ServiceVersionPublisher $publisher,
