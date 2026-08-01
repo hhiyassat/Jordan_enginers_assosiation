@@ -43,6 +43,15 @@ Residuals raised BY TD-00 (as opposed to inherited from SG-*/RC-*).
 |---|---|---|---|---|---|---|
 | **RES-TD03-01** | JDG-TD03-01 | TD-06 (audit-completeness) | LOW (informational) | Typed-decision dispatch in `ApplicationController::submit` uses `DB::transaction(function() { ... })` around a use case that itself opens a nested `DB::transaction` (Laravel savepoint). On production Postgres this is safe (SAVEPOINT rolls back atomically with the outer transaction); on SQLite the same nesting is preserved via Laravel's driver-level savepoint emulation. | OPEN (informational) | TD-06 audit-completeness review confirms the nested-transaction pattern is acceptable, or refactors the use case to skip its inner transaction when a caller-managed outer transaction is active. |
 
+## TD-08-owned residuals
+
+| RESIDUAL_ID | Raised by | Owner | Risk | Blocks | Status | Closure evidence |
+|---|---|---|---|---|---|---|
+| **RES-TD08-01** | JDG-TD08-01 | JEA product + integration owners | HIGH | No financial rule is bound at runtime. Every FeeQuote/TaxQuote is constructed with a `FinancialRuleVersion` VO whose lifecycle prevents runtime selection. Closure requires signed OD-01/OD-10/OD-17/OD-19/OD-35 + published rule version + integration with a signed payment gateway contract. | OPEN | Signed ODs + published `FinancialRuleVersion` (lifecycle=PUBLISHED) + signed payment gateway contract + integration test. |
+| **RES-TD08-02** | JDG-TD08-01 | Payment integration owner | HIGH | No production payment adapter wired. `PaymentCallbackReplayGuard` is in-memory; production requires a DB-backed store + unique constraint on `(payment_intent_id, callback_signature)`. | OPEN | Sandbox adapter + migration (unique constraint) + contract test + integration test. |
+| **RES-TD08-03** | JDG-TD08-01 | TD-08+ (persistence) | MEDIUM | `ReceiptIssuanceRequest` is a VO. Persistence + rendering + serial-number allocation land when receipts + certificates go to production (chain: TD-06 storage + TD-07 certificate ports + TD-08 receipt VO). | OPEN | Additive migration + Eloquent model + persistence adapter + rendering adapter + serial allocation contract. |
+| **RES-TD08-04** | JDG-TD08-01 | TD-08+ (workflow consumer) | MEDIUM | `FinancialCorrectionRequest` has no workflow consumer. The distinction between "pre-payment return via PartialEditGrant" and "post-payment correction via FinancialCorrectionRequest" is documented but not enforced at runtime. | OPEN | Controller / use case + integration test proving post-payment edits route through this VO. |
+
 ## TD-07-owned residuals
 
 | RESIDUAL_ID | Raised by | Owner | Risk | Blocks | Status | Closure evidence |
