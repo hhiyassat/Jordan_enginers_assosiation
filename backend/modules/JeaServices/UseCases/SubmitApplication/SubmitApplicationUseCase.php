@@ -9,7 +9,10 @@ use Illuminate\Support\Facades\DB;
 use Modules\JeaServices\Governance\ApplicationVersionBinderContract;
 use Modules\JeaServices\Governance\CalculationSnapshotWriter;
 use Modules\JeaServices\Governance\ServiceSubmissionDecision;
+use Modules\JeaServices\Governance\SubmissionAuditRecorder;
+use Modules\JeaServices\Governance\SubmissionAuditRecorderContract;
 use Modules\JeaServices\Models\Application;
+use Modules\JeaServices\Models\RuleVersion;
 use Throwable;
 
 /**
@@ -49,6 +52,7 @@ final class SubmitApplicationUseCase
     public function __construct(
         private readonly ApplicationVersionBinderContract $versionBinder,
         private readonly CalculationSnapshotWriter $snapshotWriter,
+        private readonly SubmissionAuditRecorderContract $auditRecorder,
     ) {
     }
 
@@ -89,11 +93,13 @@ final class SubmitApplicationUseCase
                 //    constraint on (application_id, rule_version_id,
                 //    purpose='SUBMIT')). Any duplicate insert raises
                 //    QueryException → whole transaction rolls back.
-                $snapshotIds = [];
+                $snapshotIds        = [];
+                $ruleIdentifiers    = [];
                 foreach ($decision->calculationSnapshots as $payload) {
+                    $ruleVersion = RuleVersion::query()->findOrFail($payload['rule_version_id']);
                     $snap = $this->snapshotWriter->writeForSubmit(
                         application:        $application,
-                        ruleVersion:        \Modules\JeaServices\Models\RuleVersion::query()->findOrFail($payload['rule_version_id']),
+                        ruleVersion:        $ruleVersion,
                         inputs:             $payload['inputs'],
                         outputs:            $payload['outputs'],
                         intermediateValues: $payload['intermediate_values'] ?? null,
@@ -101,14 +107,35 @@ final class SubmitApplicationUseCase
                         openDecisions:      $payload['open_decisions'] ?? null,
                         calculatedByUserId: $actor->id,
                     );
-                    $snapshotIds[] = $snap->id;
+                    $snapshotIds[]     = $snap->id;
+                    $ruleIdentifiers[] = $ruleVersion->ruleDefinition->rule_identifier;
                 }
+
+                // 5. TD-02-SUPP · audit-event persistence inside the same
+                //    transaction. Any failure here (schema drift, DB error,
+                //    injected test-double throw) rolls back the entire
+                //    submission — application + version bind + snapshots
+                //    all revert, PARTIAL_PERSISTENCE=0.
+                $auditId = $this->auditRecorder->recordSubmissionCommitted(
+                    actor:       $actor,
+                    application: $application,
+                    extra: [
+                        'rule_id'                        => SubmissionAuditRecorder::ACTION,
+                        'service_definition_version_id'  => $boundVersionId,
+                        'version_binding_classification' => $classification,
+                        'snapshot_ids'                   => $snapshotIds,
+                        'rule_identifiers'               => $ruleIdentifiers,
+                        'derived_value_keys'             => array_keys($decision->derivedValues),
+                        'target_domain_provisional'      => true,
+                    ],
+                );
 
                 return SubmitApplicationResult::committed(
                     versionBindingClassification: $classification,
                     boundVersionId:               $boundVersionId,
                     snapshotIds:                  $snapshotIds,
                     derivedValuesPersisted:       $derivedPersisted,
+                    auditEventId:                 $auditId,
                 );
             });
 

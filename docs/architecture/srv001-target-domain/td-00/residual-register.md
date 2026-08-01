@@ -34,7 +34,8 @@ Residuals raised BY TD-00 (as opposed to inherited from SG-*/RC-*).
 | RESIDUAL_ID | Raised by | Owner | Risk | Blocks | Status | Closure evidence |
 |---|---|---|---|---|---|---|
 | **RES-TD02-01** | TD-02 report | TD-03+ (runtime consumer) | MEDIUM | Runtime consumer of `SubmitApplicationUseCase` (either a new submission controller or a `WorkflowEngine::submit` refactor); when built, closes RES-SG06-01 | OPEN | Runtime consumer commit + integration test proving `Srv001Guard::validate`'s `$app->save()` is bypassed on the new path |
-| **RES-TD02-02** | TD-02 report | TD-03+ (or provider-refactor phase) | LOW | Container binding `ApplicationVersionBinderContract → ApplicationVersionBinder` in `JeaServicesServiceProvider` (deferred — tests currently DI directly, no runtime consumer yet) | OPEN | One-line `->bind()` in provider when runtime consumer arrives |
+| **RES-TD02-02** | TD-02 report | TD-03+ (or provider-refactor phase) | LOW | Container binding `ApplicationVersionBinderContract → ApplicationVersionBinder` + `SubmissionAuditRecorderContract → SubmissionAuditRecorder` in `JeaServicesServiceProvider` (deferred — tests currently DI directly, no runtime consumer yet) | OPEN | Two `->bind()` calls in provider when runtime consumer arrives |
+| **RES-TD02-SUPP-01** | JDG-TD02-SUPP-01 | TD-03 (API-contract) | MEDIUM | Application-submission idempotency contract does NOT exist. Verified by repository-wide grep — no idempotency-key middleware, no `IdempotencyKey` table, no submission-scoped idempotency guard. Duplicate-attempt behaviour today: SG-04 unique constraint on `(application_id, rule_version_id, purpose='SUBMIT')` rolls back the second attempt atomically (`PARTIAL_PERSISTENCE=0`), but the caller receives a `rolledBack` result rather than the first-committed result. | OPEN | Signed idempotency-key spec + middleware + tests OR explicit documented decision to leave submission non-idempotent |
 
 ## Explicit reaffirmation
 

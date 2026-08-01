@@ -103,6 +103,7 @@ class SubmitApplicationUseCaseTest extends TestCase
         $this->useCase = new SubmitApplicationUseCase(
             versionBinder:   new ApplicationVersionBinder(new ServiceVersionPublisher()),
             snapshotWriter:  new CalculationSnapshotWriter(),
+            auditRecorder:   new \Modules\JeaServices\Governance\SubmissionAuditRecorder(),
         );
     }
 
@@ -226,6 +227,7 @@ class SubmitApplicationUseCaseTest extends TestCase
         $useCaseWithFailure = new SubmitApplicationUseCase(
             versionBinder:  $throwingBinder,
             snapshotWriter: new CalculationSnapshotWriter(),
+            auditRecorder:  new \Modules\JeaServices\Governance\SubmissionAuditRecorder(),
         );
 
         $app = $this->makeApp(['floor_count' => 3, 'floor_area' => 150, 'actual_exploration_point_count' => 2, 'project_sector' => 'خاص']);

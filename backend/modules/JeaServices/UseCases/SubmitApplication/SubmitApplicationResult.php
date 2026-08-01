@@ -22,6 +22,7 @@ final class SubmitApplicationResult
      * @param ?int                             $boundVersionId             set when classification=ALREADY_BOUND|BOUND
      * @param list<int>                        $snapshotIds                calculation_snapshots.id list (empty on failure)
      * @param bool                             $derivedValuesPersisted
+     * @param ?int                             $auditEventId               audit_logs.id of the submission commit record (TD-02-SUPP)
      */
     public function __construct(
         public readonly bool $succeeded,
@@ -31,6 +32,7 @@ final class SubmitApplicationResult
         public readonly ?int $boundVersionId,
         public readonly array $snapshotIds,
         public readonly bool $derivedValuesPersisted,
+        public readonly ?int $auditEventId = null,
     ) {
     }
 
@@ -47,6 +49,7 @@ final class SubmitApplicationResult
             boundVersionId: null,
             snapshotIds: [],
             derivedValuesPersisted: false,
+            auditEventId: null,
         );
     }
 
@@ -58,6 +61,7 @@ final class SubmitApplicationResult
         ?int $boundVersionId,
         array $snapshotIds,
         bool $derivedValuesPersisted,
+        ?int $auditEventId = null,
     ): self {
         return new self(
             succeeded: true,
@@ -67,11 +71,13 @@ final class SubmitApplicationResult
             boundVersionId: $boundVersionId,
             snapshotIds: $snapshotIds,
             derivedValuesPersisted: $derivedValuesPersisted,
+            auditEventId: $auditEventId,
         );
     }
 
     public static function rolledBack(string $reason): self
-    {
+    {   // note: rolled-back results carry no auditEventId — the audit
+        // write is inside the transaction, so a rollback discards it.
         return new self(
             succeeded: false,
             rejectionErrors: [],
