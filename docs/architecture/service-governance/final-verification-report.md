@@ -6,6 +6,8 @@
 
 Executes and reports on the required validation gates for the seven-phase governance foundation program (SG-00 → SG-06).
 
+> **Update (RC-07 closure):** foundation report's `CONCURRENCY_GATE=PARTIAL`, `E2E_GATE=PARTIAL`, `TRACKED_WORKTREE_CLEAN=NO`, `RES-SG02-02` (partial enforcement) all resolved by the subsequent `ESP_V2_SERVICE_GOVERNANCE_READINESS_CLOSURE` program. See `readiness-closure/RC-07-target-domain-readiness-verdict.md` for authoritative post-closure status.
+
 ---
 
 ## Commits produced (in order)
