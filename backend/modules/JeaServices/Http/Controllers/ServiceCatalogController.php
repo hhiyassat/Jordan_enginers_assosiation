@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\JeaServices\Http\Controllers;
 
 use Modules\JeaServices\Engine\SchemaStructureValidator;
+use Modules\JeaServices\Governance\ServiceAvailabilityPolicy;
 use Modules\JeaServices\Http\Concerns\RespondsWithLockedService;
 use App\Http\Controllers\Controller;
 use Modules\JeaServices\Models\ServiceDefinition;
@@ -176,18 +177,26 @@ class ServiceCatalogController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $services = ServiceDefinition::withoutOrgScope()
-            ->where('status', 'active')
+        // SG-02 · Consult ServiceAvailabilityPolicy for each service. Under
+        // LENIENT default mode, legacy `status='active'` services remain
+        // visible so no existing catalog entry disappears; RETIRED and
+        // SUSPENDED services are hidden from applicants and visible to
+        // admins. See JDG-SG02-01 for the preference order.
+        $actorIsAdmin = (bool) ($request->user()?->isAdmin() ?? false);
+        $policy       = app(ServiceAvailabilityPolicy::class);
+
+        $rows = ServiceDefinition::withoutOrgScope()
             ->get([
                 'id', 'code', 'parent_code',
                 'subcategory_ar', 'subcategory_en',
                 'name_ar', 'name_en',
                 'description_ar', 'description_en', 'currency', 'base_fee', 'sla_hours',
-                'phase', 'schema',
-            ])
-            // Trim the schema down to a lightweight variant_keys list so the
-            // frontend can show a "Modify" CTA without pulling the full
-            // workflow tree on every catalog listing.
+                'phase', 'schema', 'status', 'publication_status', 'uat_status',
+                'effective_from',
+            ]);
+
+        $services = $rows
+            ->filter(fn (ServiceDefinition $s) => $policy->evaluate($s, $actorIsAdmin)->catalogVisible)
             ->map(function (ServiceDefinition $s) {
                 $variants = data_get($s->schema, 'workflow.variants', []);
                 $arr = $s->only([
@@ -198,7 +207,8 @@ class ServiceCatalogController extends Controller
                 ]);
                 $arr['variant_keys'] = is_array($variants) ? array_keys($variants) : [];
                 return $arr;
-            });
+            })
+            ->values();
 
         return response()->json(['services' => $services]);
     }
@@ -206,10 +216,17 @@ class ServiceCatalogController extends Controller
     public function show(Request $request, string $code): JsonResponse
     {
         // JEA-CATALOG: shared catalog — see index() comment above.
+        // SG-02: consult availability policy; return 404 if hidden.
         $service = ServiceDefinition::withoutOrgScope()
             ->where('code', $code)
-            ->where('status', 'active')
             ->firstOrFail();
+
+        $actorIsAdmin = (bool) ($request->user()?->isAdmin() ?? false);
+        $verdict = app(ServiceAvailabilityPolicy::class)->evaluate($service, $actorIsAdmin);
+
+        if (!$verdict->catalogVisible) {
+            abort(404);
+        }
 
         return response()->json(['service' => $service]);
     }
