@@ -8,3 +8,5 @@ Every residual raised by a judgment record, tracked to closure.
 | RES-SG00-02 | JDG-SG00-02 | Product owner / JEA | HIGH | Migration of SRV-001 from LEGACY_PILOT to canonical | OPEN | Signed calculator source attached to service UAT |
 | RES-SG00-03 | JDG-SG00-03 | Product / JEA | MEDIUM | Publication of every service currently classified `_UNAPPROVED` | OPEN | Signed JEA decision per service |
 | RES-SG00-04 | JDG-SG00-04 | SG-06 | LOW | SG-06 completion | OPEN | SG-06 characterization tests + refactor commit |
+| RES-SG01-01 | JDG-SG01-01 | (out of program scope) | LOW | Legacy `status` column cleanup | OPEN | Future cleanup once every consumer migrated to `publication_status` |
+| RES-SG01-02 | JDG-SG01-02 | SG-02 | MEDIUM | SG-02 completion | OPEN | SG-02 defines the transition-window preference order in ServiceAvailabilityPolicy |
