@@ -47,15 +47,15 @@ Frontend KEEP_SEPARATE groups (FE-DG-02, FE-DG-03, FE-DG-04) are recorded in the
 
 | Phase | Report | Status | Commit | Notes |
 |---|---|---|---|---|
-| CL-01 | [CL-01-dead-service-definition-snapshot.md](CL-01-dead-service-definition-snapshot.md) | pending | — | — |
-| CL-02 | [CL-02-unused-config-keys.md](CL-02-unused-config-keys.md) | pending | — | — |
-| CL-03 | [CL-03-unfinished-scaffold-decision.md](CL-03-unfinished-scaffold-decision.md) | pending | — | doc-only |
-| CL-04 | [CL-04-dg01-org-scoped-lookups.md](CL-04-dg01-org-scoped-lookups.md) | pending | — | — |
-| CL-05 | [CL-05-dg09-engineer-project-scoped-lookups.md](CL-05-dg09-engineer-project-scoped-lookups.md) | pending | — | — |
-| CL-06 | [CL-06-dg13-user-management-scoped-lookups.md](CL-06-dg13-user-management-scoped-lookups.md) | pending | — | — |
-| Phase 6 | [justified-duplication-register.md](justified-duplication-register.md) | pending | — | doc-only |
-| Phase 7 | [duplicate-consolidation-backlog.md](duplicate-consolidation-backlog.md) | pending | — | doc-only |
-| Final | [final-cleanup-report.md](final-cleanup-report.md) | pending | — | doc-only |
+| CL-01 | [CL-01-dead-service-definition-snapshot.md](CL-01-dead-service-definition-snapshot.md) | done | `38a39a4` | Deleted the DTO + BoundariesTest doc-comment cleanup. |
+| CL-02 | [CL-02-unused-config-keys.md](CL-02-unused-config-keys.md) | superseded_with_evidence | `3be07ed` | Keys already absent; deprecation comment locked. |
+| CL-03 | [CL-03-unfinished-scaffold-decision.md](CL-03-unfinished-scaffold-decision.md) | reserved_extension_with_contract | `0a44c38` | HttpJeaMembershipVerifier: BLK-02 blocker. |
+| CL-04 | [CL-04-dg01-org-scoped-lookups.md](CL-04-dg01-org-scoped-lookups.md) | done | `bb748fb` | Consolidated 7 Application sites via `findForOrganizationOrFail` helper. |
+| CL-05 | [CL-05-dg09-engineer-project-scoped-lookups.md](CL-05-dg09-engineer-project-scoped-lookups.md) | superseded_to_keep_separate | `fcdb7a0` | Office-owner scoping ≠ tenant scoping. |
+| CL-06 | [CL-06-dg13-user-management-scoped-lookups.md](CL-06-dg13-user-management-scoped-lookups.md) | superseded_to_keep_separate | `4896e29` | User model can't use trait; 2 sites stay inline. |
+| Phase 6 | [justified-duplication-register.md](justified-duplication-register.md) | done | `45a0318` | 11 groups (8 backend + 3 frontend) registered. |
+| Phase 7 | [duplicate-consolidation-backlog.md](duplicate-consolidation-backlog.md) | done | `cfd92cd` | 3 explicit backlog entries with acceptance criteria. |
+| Final | [final-cleanup-report.md](final-cleanup-report.md) | done | (this commit) | All gates PASS. |
 
 ## Governance
 
