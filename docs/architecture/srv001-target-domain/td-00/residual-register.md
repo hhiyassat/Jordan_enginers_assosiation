@@ -43,6 +43,13 @@ Residuals raised BY TD-00 (as opposed to inherited from SG-*/RC-*).
 |---|---|---|---|---|---|---|
 | **RES-TD03-01** | JDG-TD03-01 | TD-06 (audit-completeness) | LOW (informational) | Typed-decision dispatch in `ApplicationController::submit` uses `DB::transaction(function() { ... })` around a use case that itself opens a nested `DB::transaction` (Laravel savepoint). On production Postgres this is safe (SAVEPOINT rolls back atomically with the outer transaction); on SQLite the same nesting is preserved via Laravel's driver-level savepoint emulation. | OPEN (informational) | TD-06 audit-completeness review confirms the nested-transaction pattern is acceptable, or refactors the use case to skip its inner transaction when a caller-managed outer transaction is active. |
 
+## TD-09-owned residuals
+
+| RESIDUAL_ID | Raised by | Owner | Risk | Blocks | Status | Closure evidence |
+|---|---|---|---|---|---|---|
+| **RES-TD09-01** | JDG-TD09-01 | JEA product | MEDIUM | RTM is comprehensive (90/90 FR-SS rows with valid dispositions) but dispositions have not been ratified by JEA product. | OPEN | JEA product signs off on each row's disposition. |
+| **RES-TD09-02** | JDG-TD09-01 | JEA IT + product | HIGH | UAT-dedicated environment not provisioned. Test roles + permissions matrix documented but not assigned. | OPEN | Dedicated env + role assignments + published fixtures. |
+
 ## TD-08-owned residuals
 
 | RESIDUAL_ID | Raised by | Owner | Risk | Blocks | Status | Closure evidence |

@@ -1,0 +1,14 @@
+contract_id,provider,scope,port,adapter_status,operational_status,blocking_od,notes
+CONTRACT-ORACLE-DECISION,Oracle,office/engineer/discipline decision retrieval,OracleDecisionPort,contract-missing default,NOT_OPERATIONAL,OD-30,ContractMissingOracleDecisionAdapter fails closed
+CONTRACT-ORACLE-TAX,Oracle,tax collection + calculation,(not modelled),NOT_IMPLEMENTED,NOT_OPERATIONAL,OD-30,
+CONTRACT-DLS,DLS,cadastral / parcel lookup,DlsLookupPort,not implemented,NOT_OPERATIONAL,OD-30,TD-01 port only
+CONTRACT-BURA-256,BURA,inspection addition,InspectionAdditionPort,not implemented,NOT_OPERATIONAL,OD-30,
+CONTRACT-BURA-235,BURA,transaction stop,TransactionStopPort,not implemented,NOT_OPERATIONAL,OD-30,
+CONTRACT-BURA-514,BURA,prior transaction lookup,PriorTransactionPort,not implemented,NOT_OPERATIONAL,OD-30,TD-05 port only
+CONTRACT-MAP,Map provider,location link generation,LocationLinkPort,not implemented,NOT_OPERATIONAL,,non-critical
+CONTRACT-STORAGE,Object storage provider,attachment storage,ObjectStoragePort,not implemented,NOT_OPERATIONAL,,TD-06 port only
+CONTRACT-MALWARE,Malware scanner,attachment scanning,MalwareScannerPort,not implemented,NOT_OPERATIONAL,,TD-06 port only
+CONTRACT-PAYMENT-GATEWAY,Payment provider,payment intent + callback,(generic port pending),NOT_IMPLEMENTED,NOT_OPERATIONAL,OD-30,replay guard in-memory only
+CONTRACT-CERT-RENDERER,Certificate rendering,PDF generation,CertificateRenderingPort,not implemented,NOT_OPERATIONAL,,
+CONTRACT-CERT-SIGNER,Certificate signing,cryptographic signing,CertificateSigningPort,not implemented,NOT_OPERATIONAL,,
+CONTRACT-TITLE-DEED-QR,QR extraction,title deed QR decoding,TitleDeedQrPort,not implemented,NOT_OPERATIONAL,,

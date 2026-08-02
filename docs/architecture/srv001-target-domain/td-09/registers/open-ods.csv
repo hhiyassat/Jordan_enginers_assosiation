@@ -1,0 +1,23 @@
+od_id,area,summary,blocks,owner,status
+OD-01,financial,income-tax basis / total contract value formula,FR-SS-061..070 tax rules,JEA product,UNRESOLVED
+OD-02,workflow,dispute area (referenced in ground-truth),misc,JEA product,UNRESOLVED
+OD-07,calculations,tower-threshold formula,FR-SS-029,JEA product,UNRESOLVED
+OD-10,financial,tax collection model,tax rules,JEA product,UNRESOLVED
+OD-11,calculations,wells count 801-1000 band,FR-SS-022,JEA product,UNRESOLVED
+OD-13,calculations,roof 50 m² boundary,FR-SS-030,JEA product,UNRESOLVED
+OD-15,financial,exemption effect,FR-SS-061..070,JEA product,UNRESOLVED
+OD-17,financial,quota-increase fees,FR-SS-081,JEA product,UNRESOLVED
+OD-18,workflow,special-path resumption + reinforcement effects,FR-SS-047,JEA product,UNRESOLVED
+OD-19,financial,units / currency / rounding rule,financial rules,JEA product,UNRESOLVED
+OD-20,calculations,net-depth invariant,FR-SS-023,JEA product,UNRESOLVED
+OD-21,calculations,net-depth two-thirds semantics,FR-SS-023,JEA product,UNRESOLVED
+OD-22,calculations,above-3000 m² formula,FR-SS-028,JEA product,UNRESOLVED
+OD-23,calculations,above-3000 m² formula (companion),FR-SS-028,JEA product,UNRESOLVED
+OD-24,documents,attachment size limits per category,FR-SS-031..040,JEA product,UNRESOLVED
+OD-29,workflow,final action/state dictionary + service-path model,FR-SS-041..050,JEA product,UNRESOLVED
+OD-30,integrations,Oracle/payment/DLS/BURA integration contracts,external integrations,JEA product + IT,UNRESOLVED
+OD-31,workflow,committee replacement for first reviewer,FR-SS-043,JEA product,UNRESOLVED
+OD-32,workflow,second-reviewer substitution,FR-SS-044,JEA product,UNRESOLVED
+OD-33,workflow,excavation gate before sensory inspection,FR-SS-045,JEA product,UNRESOLVED
+OD-34,workflow,final approval loop back to first reviewer,FR-SS-046 / FR-SS-083,JEA product,UNRESOLVED
+OD-35,financial,tax-exempt governorates + effective date,tax rules,JEA product,UNRESOLVED
