@@ -43,6 +43,15 @@ Residuals raised BY TD-00 (as opposed to inherited from SG-*/RC-*).
 |---|---|---|---|---|---|---|
 | **RES-TD03-01** | JDG-TD03-01 | TD-06 (audit-completeness) | LOW (informational) | Typed-decision dispatch in `ApplicationController::submit` uses `DB::transaction(function() { ... })` around a use case that itself opens a nested `DB::transaction` (Laravel savepoint). On production Postgres this is safe (SAVEPOINT rolls back atomically with the outer transaction); on SQLite the same nesting is preserved via Laravel's driver-level savepoint emulation. | OPEN (informational) | TD-06 audit-completeness review confirms the nested-transaction pattern is acceptable, or refactors the use case to skip its inner transaction when a caller-managed outer transaction is active. |
 
+## TD-10-owned residuals
+
+| RESIDUAL_ID | Raised by | Owner | Risk | Blocks | Status | Closure evidence |
+|---|---|---|---|---|---|---|
+| **RES-TD10-01** | JDG-TD10-01 | JEA product + engineering | LOW | Dual-run classifier has no container binding; no runtime consumer exercises target simulation today. VO construction guard prevents any target writes if a future consumer wires the classifier. | OPEN | JEA product signs off on comparison scope + runtime consumer wired (with target writes still forbidden by VO). |
+| **RES-TD10-02** | JDG-TD10-01 | JEA IT | HIGH | Migration dry-run tooling proven at unit level. Production data inventory + rehearsal against a production snapshot pending. | OPEN | Historical inventory captured + rehearsal executed on UAT-scoped snapshot. |
+| **RES-TD10-03** | JDG-TD10-01 | JEA IT + support | HIGH | Rollback plan documented (`td-10/rollback-plan.md`). Rehearsal not performed. | OPEN | Rehearsal executed + timing measured within 5-minute window. |
+| **RES-TD10-04** | JDG-TD10-01 | JEA product + JEA IT | HIGH | Cutover checklist enumerates 25 items; current state map is ALL FALSE. `CUTOVER_READINESS_VERDICT=NOT_CUTOVER_READY`. | OPEN | Each item's blocker resolved (see `td-10/cutover-checklist.md` for per-item blockers). |
+
 ## TD-09-owned residuals
 
 | RESIDUAL_ID | Raised by | Owner | Risk | Blocks | Status | Closure evidence |
