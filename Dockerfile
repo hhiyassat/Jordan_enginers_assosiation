@@ -32,7 +32,11 @@ RUN apk add --no-cache \
         curl \
         bash \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install pdo pdo_pgsql gd opcache zip pcntl \
+    # bcmath is required by JeaServices/Engine/FeeCalculator (bcmul, bcadd,
+    # bcdiv, bccomp — arbitrary-precision arithmetic for fee/tax totals to
+    # avoid IEEE-754 rounding on JOD values). Missing it → `Call to
+    # undefined function bcmul()` HTTP 500 on POST /api/v1/applications.
+    && docker-php-ext-install pdo pdo_pgsql gd opcache zip pcntl bcmath \
     && apk add --no-cache --virtual .build-deps autoconf g++ make linux-headers \
     && pecl install redis \
     && docker-php-ext-enable redis \

@@ -91,6 +91,39 @@ describe('validateAll — JORD-16 pre-submit sweep', () => {
     expect(errors.spouse_name).toBeTruthy();
   });
 
+  // fix/frontend-vite-proxy-port · widened `conditional.value` to
+  // accept a list of strings. A field renders (and is required-checked)
+  // when the source field matches ANY listed value.
+  it('honours a list-valued conditional guard (any-of match)', () => {
+    const s = schema([
+      { id: 'special_use_type', label_ar: 's', label_en: 's', type: 'select', required: true },
+      {
+        id: 'special_use_entity_name', label_ar: 'n', label_en: 'n', type: 'text', required: true,
+        conditional: { field: 'special_use_type', value: ['house_of_worship', 'charity'] },
+      },
+    ]);
+    // Hidden when the source doesn't match either listed value.
+    let r = validateAll(s, { special_use_type: 'none' });
+    expect(r.valid).toBe(true);
+    expect(r.errors.special_use_entity_name).toBeUndefined();
+
+    // Visible + required when the source matches EITHER listed value.
+    r = validateAll(s, { special_use_type: 'house_of_worship' });
+    expect(r.errors.special_use_entity_name).toBeTruthy();
+    r = validateAll(s, { special_use_type: 'charity' });
+    expect(r.errors.special_use_entity_name).toBeTruthy();
+
+    // Backward-compat: the historical single-string form still works.
+    const s2 = schema([
+      { id: 'flag',   label_ar: 'f', label_en: 'f', type: 'radio', required: true },
+      { id: 'detail', label_ar: 'd', label_en: 'd', type: 'text',  required: true,
+        conditional: { field: 'flag', value: 'yes' },
+      },
+    ]);
+    expect(validateAll(s2, { flag: 'no'  }).errors.detail).toBeUndefined();
+    expect(validateAll(s2, { flag: 'yes' }).errors.detail).toBeTruthy();
+  });
+
   it('returns valid:true + empty errors when every visible field passes', () => {
     const s = schema([
       { id: 'name', label_ar: 'n', label_en: 'n', type: 'text',  required: true },

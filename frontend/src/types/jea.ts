@@ -43,7 +43,14 @@ export interface SchemaField {
    * static options or this endpoint, not both.
    */
   options_endpoint?: string;
-  conditional?: { field: string; value: string };
+  /**
+   * fix/frontend-vite-proxy-port · `value` accepts a single string (kept
+   * for backward compatibility with older schemas) OR a list of strings
+   * (show when the source field matches ANY of them). Used e.g. for
+   * `special_use_entity_name` which must render when `special_use_type`
+   * is either `house_of_worship` OR `charity`.
+   */
+  conditional?: { field: string; value: string | string[] };
   /**
    * JORD-48a: optional render order within a section. When set,
    * fields sort by display_order ascending (nulls last). Absent =
@@ -68,7 +75,14 @@ export interface SchemaDocument {
   max_size_mb: number;
   description_ar?: string;
   description_en?: string;
-  conditional?: { field: string; value: string };
+  /**
+   * fix/frontend-vite-proxy-port · `value` accepts a single string (kept
+   * for backward compatibility with older schemas) OR a list of strings
+   * (show when the source field matches ANY of them). Used e.g. for
+   * `special_use_entity_name` which must render when `special_use_type`
+   * is either `house_of_worship` OR `charity`.
+   */
+  conditional?: { field: string; value: string | string[] };
   /**
    * REPORT vs CONTRACT (etc). ReportsPanel filters on category === 'REPORT';
    * the ordinary documents section renders everything so contracts stay

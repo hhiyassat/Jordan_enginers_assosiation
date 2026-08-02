@@ -2,6 +2,12 @@ backend/vendor/
 backend/.env
 frontend/node_modules/
 frontend/.env
+
+# fix/frontend-vite-proxy-port · developers copy docker-compose.override.yml.example
+# to docker-compose.override.yml for the local CAPTCHA-off profile. Auto-loaded
+# by `docker compose up`; must not be committed (may contain per-machine tweaks).
+docker-compose.override.yml
+
 mcp/node_modules/
 *.log
 .DS_Store

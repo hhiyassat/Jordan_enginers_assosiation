@@ -330,6 +330,9 @@ class Srv001PilotSeeder extends Seeder
                 'required' => false,
                 'min'      => 0,
                 'description_ar' => 'تُملأ عند اختيار "نعم" في التسوية الجزئية. تُحتسب طابقاً إضافياً في العمق الصافي.',
+                // fix/frontend-vite-proxy-port · hide unless the applicant
+                // explicitly selected "yes" for has_partial_basement.
+                'conditional'    => ['field' => 'has_partial_basement', 'value' => 'yes'],
             ],
             [
                 'id'       => 'roof_area_m2',
@@ -378,6 +381,11 @@ class Srv001PilotSeeder extends Seeder
                 'required'   => false,
                 'max_length' => 200,
                 'description_ar' => 'مطلوب عند اختيار "دار عبادة" أو "جمعية خيرية" في نوع الاستخدام.',
+                // fix/frontend-vite-proxy-port · hide unless special_use_type
+                // is house_of_worship OR charity (the two options that make
+                // the field meaningful). Requires the widened conditional
+                // shape (array-valued `value`).
+                'conditional'    => ['field' => 'special_use_type', 'value' => ['house_of_worship', 'charity']],
             ],
             [
                 'id'       => 'exemption_flag',
@@ -402,6 +410,8 @@ class Srv001PilotSeeder extends Seeder
                     ['value' => 'other',       'label_ar' => 'إعفاء آخر',     'label_en' => 'Other'],
                 ],
                 'description_ar' => 'مطلوب عند اختيار "نعم" في مؤشر الإعفاء.',
+                // fix/frontend-vite-proxy-port · hide unless exemption_flag=yes.
+                'conditional'    => ['field' => 'exemption_flag', 'value' => 'yes'],
             ],
 
             // ── 6. Exploration — derived + entered (JORD-91) ──────────

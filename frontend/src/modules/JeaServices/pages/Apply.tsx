@@ -424,8 +424,13 @@ export function Apply() {
 
       {/* EDA-10 error banner — headline summary + explicit list of the
           non-schema errors (project_id, service_code, ...). Schema field
-          errors are inlined by DynamicForm; we don't repeat them here. */}
-      {(Object.keys(errors).length > 0 || Object.keys(otherErrors).length > 0) && step === 'form' && (
+          errors are inlined by DynamicForm; we don't repeat them here.
+          fix/frontend-vite-proxy-port · also render when the backend
+          returned only a top-level summary (e.g. HTTP 500 "Server
+          Error" with no `errors` field). Previously the banner was
+          gated on field/otherErrors non-empty, so a 500 left the user
+          staring at a blank form with no indication anything failed. */}
+      {(Object.keys(errors).length > 0 || Object.keys(otherErrors).length > 0 || errorSummary) && step === 'form' && (
         <div
           role="alert"
           className="mb-6 bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-700"

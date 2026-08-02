@@ -71,8 +71,29 @@ export function LoginPage(): JSX.Element {
         setCaptcha({ id: '', answer: '' });
       }
       const captchaMsg = e.errors?.captcha_answer?.[0];
-      if (captchaMsg && CAPTCHA_ENABLED) {
-        setCaptchaError(captchaMsg);
+      // fix/frontend-vite-proxy-port · always surface captcha_answer errors.
+      // Previously the `&& CAPTCHA_ENABLED` gate silently dropped the
+      // message when the widget was hidden — leaving the user with only
+      // the generic top-level message ("رمز التحقق غير صحيح") and no
+      // clue that the backend was rejecting a missing captcha because
+      // the frontend/backend config disagreed. Under a disagreement we
+      // now show a developer-facing hint in dev builds so the config
+      // mismatch is immediately obvious.
+      if (captchaMsg) {
+        if (CAPTCHA_ENABLED) {
+          setCaptchaError(captchaMsg);
+        } else if (import.meta.env.DEV) {
+          setError(
+            t('auth.captchaConfigMismatch', {
+              defaultValue:
+                'Backend requires CAPTCHA but VITE_CAPTCHA_ENABLED=false. ' +
+                'Set CAPTCHA_ENABLED=false on the backend (see ' +
+                'docker-compose.override.yml.example) or enable both sides.',
+            }),
+          );
+        } else {
+          setError(captchaMsg);
+        }
       } else {
         setError(e.message || t('auth.loginError'));
       }

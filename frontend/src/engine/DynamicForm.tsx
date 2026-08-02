@@ -65,7 +65,7 @@ export function DynamicForm({ schema, values, errors = {}, onChange, disabled = 
 
   const isVisible = (field: SchemaField): boolean => {
     if (!field.conditional) return true;
-    return values[field.conditional.field] === field.conditional.value;
+    return conditionalMatches(field.conditional, values);
   };
 
   return (
@@ -114,6 +114,27 @@ interface FieldProps {
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /**
+ * fix/frontend-vite-proxy-port · evaluate a schema field's `conditional`
+ * clause. Supports the historical single-string form
+ * (`value: 'yes'`) AND the widened list form
+ * (`value: ['house_of_worship', 'charity']`) — a field renders when the
+ * source field matches ANY listed value.
+ *
+ * This helper is used by BOTH the runtime render guard (`isVisible`)
+ * AND the preflight validator (`validateAll`) so a hidden field is
+ * never required.
+ */
+function conditionalMatches(
+  cond: { field: string; value: string | string[] },
+  values: Record<string, unknown>,
+): boolean {
+  const observed = String(values[cond.field] ?? '');
+  return Array.isArray(cond.value)
+    ? cond.value.includes(observed)
+    : observed === cond.value;
+}
+
+/**
  * JORD-16: exported so callers (e.g. Apply's handleSaveDraft) can
  * re-validate every visible field client-side before hitting the
  * backend. Returns a { fieldId → error } map with only failing rows,
@@ -133,7 +154,7 @@ export function validateAll(
   for (const field of schema.fields) {
     // Skip fields hidden by a conditional guard — you can't require
     // the applicant to fill a field they can't see.
-    if (field.conditional && values[field.conditional.field] !== field.conditional.value) {
+    if (field.conditional && !conditionalMatches(field.conditional, values)) {
       continue;
     }
     const msg = validateField(field, values[field.id], lng);
