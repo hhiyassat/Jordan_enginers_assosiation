@@ -108,6 +108,9 @@ docker compose up -d --force-recreate app
 | Stale environment values | Vite didn't pick up `.env` change | Restart `npm run dev` — Vite reads envs at server start |
 | Backend env change not applied | Docker container not recreated | `docker compose up -d --force-recreate app worker scheduler` |
 | `docker compose exec app php artisan ...` fails with `bash: composer: command not found` | Wrong container (worker/scheduler runs supervisord only) | Use the `app` service — it has PHP + composer |
+| POST `/api/v1/applications` returns HTTP 500 `Server Error`, log shows `Call to undefined function bcmul()` | Docker image built before the `bcmath` extension was added | `docker compose build app && docker compose up -d --force-recreate app worker scheduler` |
+| Document upload returns HTTP 500, log shows `Class "League\Flysystem\AwsS3V3\..." not found` | Missing `league/flysystem-aws-s3-v3` composer package | Rebuild after `composer.lock` update: `docker compose build app && docker compose up -d --force-recreate app worker scheduler` |
+| Document upload returns HTTP 500, log shows `basename(): Argument #1 ($path) must be of type string, false given` | MinIO bucket `esp-v2` missing (fresh compose volume) | `docker compose up -d minio-init` (idempotent) |
 
 ## How to inspect problems
 

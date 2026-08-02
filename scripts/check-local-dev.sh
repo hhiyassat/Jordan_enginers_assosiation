@@ -133,7 +133,18 @@ else
     pass "no pending migrations (or migrate:status unavailable)"
 fi
 
-# --- 7. Worker + scheduler ---------------------------------------------------
+# --- 7a. MinIO bucket present -----------------------------------------------
+# Uploads land in the `esp-v2` bucket on the docker-compose MinIO service.
+# Missing bucket → storeAs returns false → basename(false) → HTTP 500 on
+# every document upload. `minio-init` should create it automatically on
+# `docker compose up`; this check catches the case where minio-init didn't run.
+if docker compose exec -T minio sh -c 'ls /data/esp-v2 >/dev/null 2>&1'; then
+    pass "MinIO bucket 'esp-v2' present (document uploads will land)"
+else
+    fail "MinIO bucket 'esp-v2' missing — run: docker compose up -d minio-init"
+fi
+
+# --- 7b. Worker + scheduler ---------------------------------------------------
 if docker compose ps --format '{{.Service}}\t{{.State}}' 2>/dev/null | grep -qE "worker\s+running"; then
     pass "docker-compose 'worker' service is running"
 else
