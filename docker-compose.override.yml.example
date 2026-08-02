@@ -1,0 +1,37 @@
+# =============================================================================
+# ESP-v2 · docker-compose override example (LOCAL DEV)
+# =============================================================================
+# Copy to `docker-compose.override.yml` before running `docker compose up`.
+# Docker Compose auto-loads `docker-compose.override.yml` alongside
+# `docker-compose.yml`, so no `-f` flag is required.
+#
+# Purpose:
+#   • Turn OFF the CAPTCHA in local dev so the frontend widget (which is
+#     hidden by default via VITE_CAPTCHA_ENABLED=false) doesn't mismatch
+#     the backend's demand for `captcha_id` / `captcha_answer`.
+#   • Keep the compose committed defaults suitable for staging-like
+#     smoke tests without leaking dev-only knobs into staging.
+#
+# Do NOT copy this file into production or staging environments. It
+# intentionally weakens the CAPTCHA gate for local convenience.
+#
+# When you WANT to exercise the CAPTCHA end-to-end locally, delete this
+# override (or set CAPTCHA_ENABLED: "true" here) AND set
+# VITE_CAPTCHA_ENABLED=true in frontend/.env, then restart both.
+# =============================================================================
+
+services:
+
+  app:
+    environment:
+      # Frontend `.env.example` ships with VITE_CAPTCHA_ENABLED=false; this
+      # override aligns the backend so the two sides never disagree.
+      CAPTCHA_ENABLED: "false"
+
+  worker:
+    environment:
+      CAPTCHA_ENABLED: "false"
+
+  scheduler:
+    environment:
+      CAPTCHA_ENABLED: "false"
