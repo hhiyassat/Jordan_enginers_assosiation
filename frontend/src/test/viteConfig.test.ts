@@ -10,25 +10,18 @@
  *   • the proxy target is derived from an env variable (VITE_DEV_PROXY_TARGET)
  */
 import { describe, it, expect } from 'vitest';
-
-// Load fs/path via a runtime `require` — `@types/node` isn't in the
-// frontend `tsconfig.json` `types` list, so `import 'node:fs'` would
-// break `npm run build`'s tsc pass. Vitest runs in Node so `require`
-// is available at test time.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const _require = (0, eval)('require') as (m: string) => any;
-const fs = _require('fs') as { readFileSync: (p: string, e: string) => string };
-const path = _require('path') as { resolve: (...s: string[]) => string };
-const configSource = fs.readFileSync(
-  path.resolve(path.resolve(), 'vite.config.ts'),
-  'utf8',
-);
+// Vite's `?raw` suffix loads a file as a plain string at bundle time.
+// This avoids needing `@types/node` (frontend tsconfig doesn't include
+// it) and avoids Vitest's ESM `require`-not-defined problem.
+// The `?raw` module type is declared by `vite/client` which is already
+// in tsconfig `types`.
+import configSource from '../../vite.config.ts?raw';
 
 describe('vite.config.ts · dev proxy is env-driven, not hardcoded', () => {
   it('does NOT reintroduce the deprecated localhost:8002 target', () => {
     // Comments about the historical failure are allowed to mention 8002
     // so we look for the string in a proxy-value context.
-    const proxyLines = configSource
+    const proxyLines = (configSource as string)
       .split('\n')
       .filter((line: string) => /(proxy|VITE_DEV_PROXY_TARGET)/.test(line));
     for (const line of proxyLines) {
