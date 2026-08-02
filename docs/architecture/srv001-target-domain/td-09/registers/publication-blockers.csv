@@ -1,0 +1,10 @@
+blocker_id,summary,artefact,resolves_when
+PUB-01,No signed SRS baseline 2.0,SRS v1.2 DRAFT_REVIEW,baseline 2.0 signed
+PUB-02,No target calculation RuleVersion published (Wells/NetDepth PROVISIONAL),Srv001RulesSeeder,OD-11/OD-19/OD-20 signed + rule published
+PUB-03,No workflow version marked runtime-active,Srv001WorkflowGraph.currentVersion.runtimeStatus=INACTIVE,graph approved + OD-18/29/31/32/33/34 signed
+PUB-04,No financial RuleVersion published,FinancialRuleVersion.lifecycle=DRAFT/PROVISIONAL,OD-01/10/17/19/35 signed
+PUB-05,Attachment limits unpublished (OD-24),AttachmentLimitPolicy returns CONFIGURATION_BLOCKED,OD-24 signed
+PUB-06,No signed integration contracts,external-contracts.csv,OD-30 + per-provider contracts signed
+PUB-07,No production storage / AV adapters,storage + malware ports,adapters implemented + verified
+PUB-08,No production payment gateway,payment infrastructure,payment gateway contract signed
+PUB-09,No production certificate rendering + signing,certificate ports,signing authority + renderer verified

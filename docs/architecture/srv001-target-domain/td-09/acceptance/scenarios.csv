@@ -1,0 +1,51 @@
+scenario_id,scenario_title,area,classification,test_files,blocking_ids,notes
+TC-APP-001,"Applicant creates SRV-001 draft","draft creation",EXECUTABLE_ACCEPTANCE,tests/Feature/Srv001EndToEndFlowTest.php,,"legacy pilot path"
+TC-APP-002,"Draft persists across sessions","draft creation",EXECUTABLE_ACCEPTANCE,tests/Feature/Srv001EndToEndFlowTest.php,,
+TC-SUB-001,"Submit routes through atomic use case",submission,EXECUTABLE_ACCEPTANCE,tests/Feature/UseCases/Srv001TransactionalSubmissionTest.php,,"RES-SG06-01 closure"
+TC-SUB-002,"Government sector rejected → SRV-006",submission,EXECUTABLE_ACCEPTANCE,tests/Feature/Srv001EndToEndFlowTest.php,,
+TC-BIND-001,"ServiceDefinitionVersion binding recorded","service-version binding",EXECUTABLE_ACCEPTANCE,tests/Feature/UseCases/SubmitApplicationUseCaseTest.php,,
+TC-SNAP-001,"Calculation snapshots persisted per rule","calculation snapshots",EXECUTABLE_ACCEPTANCE,tests/Feature/UseCases/Srv001TransactionalSubmissionTest.php,,
+TC-ELIG-001,"Office eligibility gate — ELIGIBLE",eligibility,EXECUTABLE_ACCEPTANCE,tests/Unit/Domain/Srv001/Srv001EligibilityGateTest.php,,
+TC-ELIG-002,"Office eligibility gate — CONTRACT_MISSING",eligibility,SIMULATION,tests/Unit/Domain/Srv001/Srv001EligibilityGateTest.php,,"fail-closed default"
+TC-QUOTA-001,"Yearly quota exhausted returns QUOTA_EXHAUSTED",quota,EXECUTABLE_ACCEPTANCE,tests/Unit/Domain/Srv001/Srv001EligibilityGateTest.php,,
+TC-SPEC-001,"Specialization suspension blocks submission",specialization,BLOCKED_PENDING_CONTRACT,,OD-30,"FR-SS-082 — port only"
+TC-NOTE-001,"Reinforcement/mandatory notes retrieval","mandatory notes",BLOCKED_PENDING_CONTRACT,,OD-30,"Oracle reinforcement-note contract"
+TC-DOC-001,"Signed contract locks legally protected fields","signed-contract locking",EXECUTABLE_ACCEPTANCE,tests/Unit/Domain/Documents/SignedContractLockTest.php,,
+TC-DOC-002,"Attachment limit blocked when configuration unpublished",documents,BLOCKED_PENDING_OD,tests/Unit/Domain/Documents/DocumentMetadataTest.php,OD-24,"OD-24 unresolved"
+TC-DOC-003,"MIME mismatch flagged",documents,EXECUTABLE_ACCEPTANCE,tests/Unit/Domain/Documents/DocumentMetadataTest.php,,
+TC-DOC-004,"Malware UNKNOWN not treated as clean",documents,EXECUTABLE_ACCEPTANCE,tests/Unit/Domain/Documents/PartialEditGrantTest.php,,
+TC-PEG-001,"Valid PartialEditGrant permits in-scope edit",PartialEditGrant,EXECUTABLE_ACCEPTANCE,tests/Unit/Domain/Documents/UseCases/PartialEditGrantUseCasesTest.php,,
+TC-PEG-002,"Expired PartialEditGrant rejected",PartialEditGrant,EXECUTABLE_ACCEPTANCE,tests/Unit/Domain/Documents/UseCases/PartialEditGrantUseCasesTest.php,,
+TC-PEG-003,"PartialEditGrant persistence + atomicity",PartialEditGrant,BLOCKED_PENDING_ADAPTER,,RES-TD07-02,"persistence + audit writer pending"
+TC-CALC-001,"Exploration matrix legacy pilot compute",calculations,EXECUTABLE_ACCEPTANCE,tests/Unit/ExplorationRequirementMatrixTest.php,,
+TC-CALC-002,"Wells count SIMULATION_ONLY typed outcome",calculations,SIMULATION,tests/Feature/Domain/Srv001/Srv001CalculatorOutcomeClassifierTest.php,OD-11,"PROVISIONAL rule"
+TC-CALC-003,"Net-depth SIMULATION_ONLY typed outcome",calculations,SIMULATION,tests/Feature/Domain/Srv001/Srv001CalculatorOutcomeClassifierTest.php,"OD-19,OD-20",
+TC-WF-001,"Draft → submitted transition ALLOWED",workflow,EXECUTABLE_ACCEPTANCE,tests/Unit/Domain/Workflow/Srv001WorkflowGraphTest.php,,
+TC-WF-002,"Second-reviewer final approval routing",workflow,BLOCKED_PENDING_OD,tests/Unit/Domain/Workflow/Srv001WorkflowGraphTest.php,OD-34,"SUSPENDED — blocked pending OD-34"
+TC-WF-003,"Committee substitution path — NOT_FOUND in graph",workflow,BLOCKED_PENDING_OD,tests/Unit/Domain/Workflow/Srv001WorkflowGraphTest.php,OD-31,
+TC-WF-004,"Alternate second reviewer — NOT_FOUND",workflow,BLOCKED_PENDING_OD,tests/Unit/Domain/Workflow/Srv001WorkflowGraphTest.php,OD-32,
+TC-WF-005,"Sensory-inspection gate — NOT_FOUND",workflow,BLOCKED_PENDING_OD,tests/Unit/Domain/Workflow/Srv001WorkflowGraphTest.php,OD-33,
+TC-REV-001,"First-reviewer approve → allowed","first review",CHARACTERIZATION,tests/Unit/Domain/Workflow/Srv001WorkflowGraphTest.php,,"graph structure only"
+TC-REV-002,"Mandatory-rejection note required on RETURN/REJECT","first review",EXECUTABLE_ACCEPTANCE,tests/Unit/Domain/Certificates/CertificateFoundationTest.php,,"construction invariant"
+TC-REV-003,"Second-reviewer routing","second review",BLOCKED_PENDING_OD,,OD-34,
+TC-SP-001,"Special-path resumption + reinforcement","special paths",BLOCKED_PENDING_OD,,OD-18,
+TC-PAY-001,"Payment eligibility boundary — ELIGIBLE","payment eligibility",EXECUTABLE_ACCEPTANCE,tests/Unit/Domain/Certificates/CertificateFoundationTest.php,,
+TC-PAY-002,"Payment initiation refuses simulation quote","financial quotations",EXECUTABLE_ACCEPTANCE,tests/Unit/Domain/Payment/Srv001PaymentFoundationTest.php,,
+TC-PAY-003,"Only CONFIRMED unlocks receipt",payment,EXECUTABLE_ACCEPTANCE,tests/Unit/Domain/Payment/Srv001PaymentFoundationTest.php,,
+TC-PAY-004,"Callback replay detected",payment,EXECUTABLE_ACCEPTANCE,tests/Unit/Domain/Payment/Srv001PaymentFoundationTest.php,,
+TC-TAX-001,"Regional exemption blocked by OD-35","financial quotations",BLOCKED_PENDING_OD,tests/Unit/Domain/Financial/Srv001FinancialFoundationTest.php,OD-35,"SUSPENDED — OD-35 unresolved"
+TC-TAX-002,"Income-tax rule returns CONFLICTED","financial quotations",SIMULATION,tests/Unit/Domain/Financial/Srv001FinancialFoundationTest.php,OD-01,
+TC-TAX-003,"Total contract value BLOCKED","financial quotations",SIMULATION,tests/Unit/Domain/Financial/Srv001FinancialFoundationTest.php,OD-01,
+TC-EXEM-001,"Engineer exemption has no runtime effect",exemptions,EXECUTABLE_ACCEPTANCE,tests/Unit/Domain/Financial/Srv001FinancialFoundationTest.php,,hasRuntimeFinancialEffect()=false
+TC-CAMP-001,"Mandatory campaign missing authority rejected","donation campaigns",EXECUTABLE_ACCEPTANCE,tests/Unit/Domain/Financial/Srv001FinancialFoundationTest.php,,"construction invariant"
+TC-REC-001,"Receipt refuses non-CONFIRMED payment","receipt eligibility",EXECUTABLE_ACCEPTANCE,tests/Unit/Domain/Payment/Srv001PaymentFoundationTest.php,,
+TC-REC-002,"Receipt freezes fee + tax snapshots","receipt eligibility",EXECUTABLE_ACCEPTANCE,tests/Unit/Domain/Payment/Srv001PaymentFoundationTest.php,,
+TC-CERT-001,"Certificate blocked without payment evidence","certificate eligibility",EXECUTABLE_ACCEPTANCE,tests/Unit/Domain/Certificates/CertificateFoundationTest.php,,
+TC-CERT-002,"Certificate blocked when OD-34 open","certificate eligibility",BLOCKED_PENDING_OD,tests/Unit/Domain/Certificates/CertificateFoundationTest.php,OD-34,
+TC-CERT-003,"Production certificate issuance inactive","certificate eligibility",BLOCKED_PENDING_ADAPTER,tests/Unit/Domain/Certificates/CertificateFoundationTest.php,RES-TD07-04,"no renderer/signer adapter"
+TC-EXT-001,"BURA inspection port — missing contract","external integrations",BLOCKED_PENDING_CONTRACT,,OD-30,
+TC-EXT-002,"Map link port — non-critical fallback","external integrations",BLOCKED_PENDING_ADAPTER,,,
+TC-EXT-003,"Oracle decision port — CONTRACT_MISSING","external integrations",BLOCKED_PENDING_CONTRACT,tests/Unit/Domain/Srv001/Srv001PortsAndEntitiesTest.php,OD-30,"ContractMissingOracleDecisionAdapter proves fail-closed default"
+TC-EXT-004,"DLS lookup port — no adapter","external integrations",BLOCKED_PENDING_CONTRACT,,,RES-TD05-01
+TC-DUAL-001,"Dual-run legacy=target for accepted case","dual-run preparation",CHARACTERIZATION,tests/Feature/DualRun/Srv001DualRunTest.php,,"TD-10 comparison"
+TC-DUAL-002,"Dual-run target-only structure classified","dual-run preparation",CHARACTERIZATION,tests/Feature/DualRun/Srv001DualRunTest.php,,
